@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DHS Logistics Order Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Layout: a dispatch-desk tool — sticky header + tab strip, one working panel per tab; ticket-stub tokens, number-plate vehicle chips. */
+:root{
+  --bg:#eceff1; --surface:#ffffff; --surface-2:#f5f7f8; --ink:#1b2227; --muted:#5b6770; --line:#d3d9dd;
+  --accent:#e9a514; --accent-ink:#6b4a00; --accent-soft:#fbefd2;
+  --pending:#b8431b; --pending-soft:#fbe6dd; --done:#2b7a4b; --done-soft:#dcefe3;
+  --road:#2560a0; --road-soft:#dde8f5; --void:#7b858c; --void-soft:#e7eaec;
+  --plate:#ffffff; --plate-ink:#111;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13171a; --surface:#1b2125; --surface-2:#20272c; --ink:#e5e9eb; --muted:#9ba6ad; --line:#2f383e;
+  --accent:#f0b429; --accent-ink:#f6cf74; --accent-soft:#3a2f12;
+  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f;
+  --road:#7fb0ea; --road-soft:#182a3f; --void:#8d979e; --void-soft:#262d32;
+  --plate:#e9ecee; --plate-ink:#111; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13171a; --surface:#1b2125; --surface-2:#20272c; --ink:#e5e9eb; --muted:#9ba6ad; --line:#2f383e;
+  --accent:#f0b429; --accent-ink:#f6cf74; --accent-soft:#3a2f12;
+  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f;
+  --road:#7fb0ea; --road-soft:#182a3f; --void:#8d979e; --void-soft:#262d32;
+  --plate:#e9ecee; --plate-ink:#111; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.mark{width:34px;height:34px;border-radius:8px;background:var(--accent);display:grid;place-items:center}
+.mark svg{width:20px;height:20px}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;margin:0;line-height:1}
+.brand small{display:block;color:var(--muted);font-size:12px;letter-spacing:.04em}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.who img{width:26px;height:26px;border-radius:50%}
+.conn{font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--void-soft);color:var(--void)}
+.conn.ok{background:var(--done-soft);color:var(--done)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{appearance:none;border:0;background:none;color:var(--muted);font:600 15px var(--f-body);padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .n{font:600 12px var(--f-body);background:var(--pending-soft);color:var(--pending);border-radius:99px;padding:1px 7px}
+.tab .n:empty{display:none}
+main{padding-block:20px 60px}
+section.view{display:grid;gap:18px}
+h2{font-family:var(--f-display);font-weight:600;font-size:26px;margin:0;text-wrap:balance;letter-spacing:.01em}
+h3{font-family:var(--f-display);font-weight:600;font-size:19px;margin:0;letter-spacing:.02em}
+.sub{color:var(--muted);margin:2px 0 0;max-width:68ch}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.cols{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+/* form */
+form.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:520px){form.grid{grid-template-columns:minmax(0,1fr)}}
+.fld{display:grid;gap:5px;min-width:0}
+.fld.wide{grid-column:1/-1}
+label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+label .req{color:var(--pending)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:42px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;font:600 15px var(--f-body);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 16px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;justify-content:center}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1b1400}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.go{background:var(--done);border-color:var(--done);color:#fff}
+.btn.sm{font-size:13px;padding:6px 11px}
+.btn.danger{color:var(--pending);border-color:var(--pending)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+/* ticket */
+.ticket{display:flex;align-items:stretch;border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);overflow:hidden}
+.ticket .stub{background:var(--accent);color:#1b1400;padding:10px 16px;display:grid;place-items:center;text-align:center;min-width:92px}
+.ticket .stub b{font:700 40px/1 var(--f-display)}
+.ticket .stub span{font:600 11px var(--f-body);letter-spacing:.1em;text-transform:uppercase}
+.ticket .body{padding:12px 16px;display:grid;gap:2px;align-content:center;min-width:0}
+.ticket .body strong{font-size:16px}
+/* token chip */
+.tok{font:700 20px/1 var(--f-display);font-variant-numeric:tabular-nums;display:inline-grid;place-items:center;min-width:42px;padding:6px 6px 5px;border-radius:6px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent)}
+.tok small{display:block;font:600 10px var(--f-body);letter-spacing:.05em;color:var(--muted);margin-top:2px}
+.plate{font:600 12px/1 ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;background:var(--plate);color:var(--plate-ink);border:1.5px solid #222;border-radius:4px;padding:3px 6px;letter-spacing:.06em;white-space:nowrap}
+.pill{font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap;display:inline-block}
+.pill.Pending{background:var(--pending-soft);color:var(--pending)}
+.pill.Dispatched{background:var(--done-soft);color:var(--done)}
+.pill.Cancelled{background:var(--void-soft);color:var(--void);text-decoration:line-through}
+/* list rows */
+.list{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.row .main{min-width:0}
+.row .main b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta{color:var(--muted);font-size:13px;display:flex;gap:10px;flex-wrap:wrap}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+/* queue cards */
+.qcard{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;padding:14px;border:1px solid var(--line);border-left:4px solid var(--pending);border-radius:var(--r);background:var(--surface)}
+.qcard.road{border-left-color:var(--road)}
+.qpos{display:grid;place-items:center;align-content:center;text-align:center}
+.qpos b{font:700 38px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.qpos span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.qcard .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.qcard .top b{font-size:17px}
+.qcard .facts{display:flex;gap:6px 16px;flex-wrap:wrap;color:var(--muted);font-size:14px;margin-top:4px}
+.qcard .facts em{font-style:normal;color:var(--ink);font-weight:600}
+.wait{font-weight:600;color:var(--pending);font-size:13px}
+.qcard .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--done-soft);padding:8px;border-radius:8px;margin-top:10px}
+.confirm input{width:auto;background:var(--surface)}
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.kpi span{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font:700 30px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.kpi small{color:var(--muted)}
+.kpi.hot b{color:var(--pending)}
+/* tables */
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:600;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap;position:sticky;top:0}
+td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+td.wrapc{white-space:normal;min-width:150px}
+tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--surface-2)}
+tr.dim td{color:var(--muted)}
+tr.tot td{font-weight:700;background:var(--surface-2)}
+td.num,th.num{text-align:right}
+td.red{color:var(--pending);font-weight:700}
+.items{display:grid;gap:8px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) 110px 76px;gap:8px;align-items:center}
+.it-req{font-size:12px;color:var(--muted);text-align:center}
+.items-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.combo{position:relative}
+.combo-list{position:absolute;left:0;right:0;top:100%;margin-top:4px;max-height:232px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;z-index:8;box-shadow:0 10px 28px rgba(0,0,0,.14)}
+.opt{padding:9px 12px;cursor:pointer}
+.opt:hover,.opt.on{background:var(--accent-soft)}
+.opt.none{color:var(--muted);cursor:default;font-size:13px}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+/* sheet (modal) */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(10,14,17,.45);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet .card{background:var(--surface);border-radius:14px;max-width:640px;width:100%;max-height:100%;overflow:auto;padding:20px;display:grid;gap:14px;border:1px solid var(--line)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
+.banner{background:var(--pending-soft);color:var(--pending);border-radius:8px;padding:10px 14px;font-weight:500}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.roles div{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface-2)}
+.roles b{display:block;margin-bottom:4px}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .18s ease-out}@keyframes up{from{opacity:0;transform:translate(-50%,8px)}}}
+.gate{min-height:100vh;display:grid;place-items:center;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.gate .card{max-width:440px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;gap:16px}
+.gate .brand{margin:0}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.who .btn{margin-left:4px}
+</style>
+</head>
+<body>
+<div class="gate" id="gate"><div class="card" id="gateCard"></div></div>
+<div id="app" hidden>
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#1b1400" stroke-width="2"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.8" fill="#e9a514"/><circle cx="17" cy="17.5" r="1.8" fill="#e9a514"/></svg></div>
+        <div><h1>DHS Logistics Order Dashboard</h1><small>Dehradun dispatch · FIFO tokens</small></div>
+      </div>
+      <div class="who" id="who"></div>
+      <span class="conn" id="conn">Connecting…</span>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-v="new" aria-selected="true">New Order</button>
+      <button class="tab" role="tab" data-v="queue" aria-selected="false">Queue <span class="n" id="qn"></span></button>
+      <button class="tab" role="tab" data-v="orders" aria-selected="false">All Orders</button>
+      <button class="tab" role="tab" data-v="summary" aria-selected="false">Summary</button>
+      <button class="tab" role="tab" data-v="dealers" aria-selected="false">Dealers</button>
+      <button class="tab" role="tab" data-v="team" aria-selected="false" hidden>Team</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner" class="banner" hidden></div>
+
+  <!-- NEW ORDER -->
+  <section class="view" id="v-new">
+    <div class="cols">
+      <div class="panel" style="display:grid;gap:16px">
+        <div><h2>New order</h2><p class="sub">Token is given by order time: the earliest order of the day is token 1.</p></div>
+        <div id="lastTicket" hidden></div>
+        <form class="grid" id="orderForm" autocomplete="off">
+          <div class="fld"><label for="f-orderAt">Order date &amp; time <span class="req">*</span></label><input type="datetime-local" id="f-orderAt" required></div>
+          <div class="fld combo"><label for="f-dealer">Dealer <span class="req">*</span></label><input id="f-dealer" required autocomplete="off" role="combobox" aria-expanded="false" aria-controls="f-dealer-list" placeholder="Type or pick a dealer"><div class="combo-list" id="f-dealer-list" role="listbox" hidden></div></div>
+          <div class="fld"><label for="f-party">Party / customer <span class="req">*</span></label><input id="f-party" required placeholder="e.g. Sharma Builders"></div>
+          <div class="fld"><label for="f-phone">Phone</label><input id="f-phone" inputmode="tel" placeholder="98xxxxxxxx"></div>
+          <div class="fld wide"><label for="f-location">Delivery location</label><input id="f-location" placeholder="e.g. Rajpur Road, near Jakhan"></div>
+          <div class="fld wide"><label>Products &amp; bags (50 kg) <span class="req">*</span></label><div class="items" id="f-items"></div></div>
+          <div class="fld"><label for="f-vehicle">Vehicle no.</label><input id="f-vehicle" placeholder="UK07 CA 1234" style="text-transform:uppercase"></div>
+          <div class="fld"><label for="f-driver">Driver</label><input id="f-driver"></div>
+          <div class="fld wide"><label for="f-remarks">Remarks</label><textarea id="f-remarks" rows="1"></textarea></div>
+          <div class="actions wide fld"><button class="btn primary" type="submit" id="saveBtn">Add order &amp; get token</button><span class="hint" id="formHint"></span></div>
+        </form>
+      </div>
+      <div class="panel" style="display:grid;gap:12px">
+        <div class="head"><h3 id="todayTitle">Today</h3><span class="hint" id="todayCount"></span></div>
+        <div class="list" id="todayList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUEUE -->
+  <section class="view" id="v-queue" hidden>
+    <div class="head"><div><h2>Dispatch queue</h2><p class="sub">Pending orders, oldest first. Number 1 goes next. Tapping <b>Mark dispatched</b> records the dispatch time and takes the order out of the queue.</p></div></div>
+    <div id="queueNote" class="hint"></div>
+    <div class="list" id="queueList"></div>
+  </section>
+
+  <!-- ALL ORDERS -->
+  <section class="view" id="v-orders" hidden>
+    <div class="head"><div><h2>All orders</h2><p class="sub">Every order across days. Filter by date, dealer, status or party. Tap a row to edit.</p></div>
+      <button class="btn" id="exportBtn" type="button">Download Excel</button></div>
+    <div class="panel filters">
+      <div class="fld"><label for="o-from">From</label><input type="date" id="o-from"></div>
+      <div class="fld"><label for="o-to">To</label><input type="date" id="o-to"></div>
+      <div class="fld"><label for="o-dealer">Dealer</label><select id="o-dealer"></select></div>
+      <div class="fld"><label for="o-status">Status</label><select id="o-status"><option value="">All</option><option>Pending</option><option>Dispatched</option><option>Cancelled</option></select></div>
+      <div class="fld"><label for="o-q">Search party / location</label><input id="o-q" type="search" placeholder="Type a name"></div>
+    </div>
+    <div class="hint" id="ordersCount"></div>
+    <div class="tscroll"><table><thead><tr><th>Token</th><th>Order time</th><th>Dealer</th><th>Party</th><th>Location</th><th>Products</th><th class="num">Total bags</th><th>Vehicle</th><th>Driver</th><th>Status</th><th>Dispatched at</th><th class="num">Time taken</th><th>Entered by</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="view" id="v-summary" hidden>
+    <div class="head"><div><h2>Summary</h2><p class="sub">Day-wise and dealer-wise for the month you pick. Time taken is order time to dispatch time, for dispatched orders.</p></div>
+      <div class="fld" style="min-width:170px"><label for="s-month">Month</label><input type="month" id="s-month"></div></div>
+    <div class="kpis" id="kpis"></div>
+    <h3>Dealer-wise</h3>
+    <div class="tscroll"><table><thead><tr><th>Dealer</th><th class="num">Orders</th><th class="num">Pending</th><th class="num">Dispatched</th><th class="num">Cancelled</th><th class="num">Bags</th><th class="num">Pending bags</th><th class="num">Avg time</th><th>Last order</th></tr></thead><tbody id="dealerBody"></tbody></table></div>
+    <h3>Day-wise</h3>
+    <div class="tscroll"><table><thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Pending</th><th class="num">Dispatched</th><th class="num">Cancelled</th><th class="num">Bags</th><th class="num">Pending bags</th><th class="num">Avg time</th></tr></thead><tbody id="dayBody"></tbody></table></div>
+  </section>
+
+  <!-- DEALERS -->
+  <section class="view" id="v-dealers" hidden>
+    <div class="head"><div><h2>Authorised dealers</h2><p class="sub">These names fill the Dealer list on every order. Every order needs a dealer; the party is typed freely.</p></div></div>
+    <div class="panel" id="dealerEditor"></div>
+  </section>
+
+  <!-- TEAM (admin only) -->
+  <section class="view" id="v-team" hidden>
+    <div class="head"><div><h2>Team &amp; roles</h2><p class="sub">Only emails listed here can sign in. Change a person's role any time; it applies immediately.</p></div></div>
+    <div class="panel" id="teamBox"></div>
+    <div class="panel" style="display:grid;gap:12px">
+      <h3>Who can do what</h3>
+      <div class="roles">
+        <div><b>Admin</b>Everything: orders, dispatch, dealer list and this Team page.</div>
+        <div><b>Dispatch</b>Add, edit and cancel orders, and mark orders Dispatched (records the dispatch time).</div>
+        <div><b>Order desk</b>Add, edit and cancel orders. Cannot mark Dispatched.</div>
+        <div><b>Viewer</b>Sees the queue, orders and summaries. Cannot change anything.</div>
+      </div>
+      <p class="hint">These limits are enforced by the database security rules, not just hidden on screen.</p>
+    </div>
+  </section>
+</main>
+
+<div class="sheet" id="sheet" hidden><div class="card" id="sheetCard"></div></div>
+<div class="toast" id="toast" hidden></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

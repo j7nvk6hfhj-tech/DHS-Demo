@@ -1,0 +1,52 @@
+rules_version = '2';
+// DHS Logistics Order Dashboard — who can read and change what.
+// Roles live in the "members" collection: document ID = the person's email in lower case, field "role".
+//   admin    : everything, including the team list and the dealer list
+//   dispatch : add/edit/cancel orders + mark orders dispatched
+//   desk     : add/edit/cancel orders
+//   viewer   : read only
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null
+        && request.auth.token.email_verified == true;
+    }
+    function memberPath() {
+      return /databases/$(database)/documents/members/$(request.auth.token.email.lower());
+    }
+    function role() {
+      return signedIn() && exists(memberPath()) ? get(memberPath()).data.role : 'none';
+    }
+    function isMember()    { return role() in ['admin', 'dispatch', 'desk', 'viewer']; }
+    function canOrder()    { return role() in ['admin', 'dispatch', 'desk']; }
+    function canDispatch() { return role() in ['admin', 'dispatch']; }
+    function isAdmin()     { return role() == 'admin'; }
+
+    // Team list: everyone on the team can see it (for names); only Admin changes it.
+    // A signed-in person may read their own entry so the app can tell them if they're not authorised.
+    match /members/{email} {
+      allow read: if isMember() || (signedIn() && email == request.auth.token.email.lower());
+      allow write: if isAdmin();
+    }
+
+    // Dealer list
+    match /config/{docId} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow read: if isMember();
+      allow create: if canOrder() && request.resource.data.createdBy == request.auth.token.email.lower();
+      allow update, delete: if canOrder();
+    }
+
+    // Dispatch records (one per dispatched order, same ID as the order)
+    match /deliveries/{orderId} {
+      allow read: if isMember();
+      allow write: if canDispatch();
+    }
+  }
+}
