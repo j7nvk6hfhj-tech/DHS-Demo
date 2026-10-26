@@ -1,12 +1,16 @@
 rules_version = '2';
-// DHS Logistics Order Dashboard: who can read and change what.
+// DHS Logistics - Orders Dashboard (Alpha): who can read and change what.
 // Designations live in the "members" collection: document ID = the person's email in lower case, field "role".
 // The stored role keys are unchanged from earlier versions; only the names shown in the app changed:
 //   admin    = Admin       : everything
-//   dispatch = Supervisor  : add/change/cancel any order not yet dispatched; mark dispatched, correct dispatch time,
+//   dispatch = Supervisor  : add/change any order not yet dispatched; mark dispatched, correct dispatch time,
 //                            undo dispatch; add dealers; add vehicles and tracking links
-//   desk     = Dispatch    : add orders; change/cancel only their own orders from today (not dispatched);
+//   desk     = Dispatch    : add orders; change details only of their own orders entered today (not dispatched);
 //                            mark dispatched and undo dispatch; add vehicles and tracking links
+//   Admin, Supervisor and Dispatch can all: cancel any undispatched order (who cancelled is recorded and can't be faked),
+//   put it on hold and release it, change its delivery date or send it to today.
+//   An order on hold can't be dispatched; an advance order can't be dispatched before its day; dispatching needs the
+//   customer's phone number, a vehicle number and a dispatch depot.
 //   viewer   = Viewer      : read only (no vehicles / tracking links)
 // Only Admin: change order times, change dispatched orders, delete orders, remove dealers or vehicles, the team, emails.
 // Every change to an order records who made it (updatedBy) and when (updatedAt).
@@ -36,7 +40,11 @@ service cloud.firestore {
     // because the dashboard's queue and daily lists are built from those two fields.
     function consistent(d) {
       return d.day is string && d.day.size() == 10
-        && d.open == (d.get('mark', '') != 'Cancelled' && d.get('dispatchedAt', null) == null);
+        && d.open == (d.get('mark', '') != 'Cancelled' && d.get('dispatchedAt', null) == null)
+        // an order on hold can't be dispatched
+        && !(d.get('hold', false) == true && d.get('dispatchedAt', null) != null)
+        // dispatch depot: empty, or one of the depots
+        && d.get('depot', '') in ['', 'Transport Nagar', 'Harrawala', 'Doiwala'];
     }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
     // Each change must be signed by the person making it. The one exception is the Admin's one-time upgrade of old orders.
@@ -56,10 +64,60 @@ service cloud.firestore {
         || resource.data.get('dispatchedAt', null) == null
         || request.resource.data.get('dispatchedAt', null) == null;
     }
+    // Marking an order dispatched needs the customer's phone number, a vehicle number and a dispatch depot (the one-time upgrade of old records is exempt).
+    function newlyDispatched() {
+      return resource.data.get('dispatchedAt', null) == null && request.resource.data.get('dispatchedAt', null) != null;
+    }
+    function hasPhone() {
+      return request.resource.data.get('phone', '') is string && request.resource.data.get('phone', '').matches('^[^0-9]*([0-9][^0-9]*){10,}$');
+    }
+    function hasDepot() {
+      return request.resource.data.get('depot', '') in ['Transport Nagar', 'Harrawala', 'Doiwala'];
+    }
+    function hasVehicle() {
+      return request.resource.data.get('vehicle', '') is string && request.resource.data.get('vehicle', '').matches('.*[A-Za-z0-9].*');
+    }
+    // Dispatching may fill in the vehicle, driver and depot at the same time (anyone who can mark dispatched).
+    function dispatchWithVehicle() {
+      return newlyDispatched() && changed().hasOnly(['dispatchedAt', 'dispatchedBy', 'open', 'vehicle', 'driver', 'driverPhone', 'depot', 'phone', 'updatedBy', 'updatedAt']);
+    }
+    // Put on hold / release: Admin, Supervisor and Dispatch, on any order not yet dispatched.
+    function holdOk() {
+      return changed().hasOnly(['hold', 'holdAt', 'holdBy', 'holdNote', 'updatedBy', 'updatedAt'])
+        && request.resource.data.get('hold', false) is bool
+        && resource.data.get('dispatchedAt', null) == null;
+    }
+    // Cancelling: Admin, Supervisor and Dispatch, on any order not yet dispatched.
+    function cancelOk() {
+      return changed().hasOnly(['mark', 'open', 'hold', 'cancelNote', 'cancelledBy', 'cancelledAt', 'updatedBy', 'updatedAt'])
+        && request.resource.data.get('mark', '') == 'Cancelled'
+        && resource.data.get('dispatchedAt', null) == null;
+    }
+    // Whoever cancels an order is recorded, with the time; nobody can write someone else's name there.
+    function newlyCancelled() {
+      return resource.data.get('mark', '') != 'Cancelled' && request.resource.data.get('mark', '') == 'Cancelled';
+    }
+    function cancelRecordOk() {
+      return (!newlyCancelled() || (request.resource.data.get('cancelledBy', '') == myEmail() && nowish(request.resource.data.get('cancelledAt', 0))))
+        && (!changed().hasAny(['cancelledBy', 'cancelledAt']) || request.resource.data.get('cancelledBy', '') == myEmail());
+    }
     // Changing details or cancelling: not after dispatch, order time unchanged;
     // Dispatch only on their own orders from today.
+    // Advance orders: schedAt = start of the day the order is meant to go (a number), never in the past when set.
+    function schedValid(d) { return d.get('schedAt', null) == null || (d.schedAt is number && d.schedAt >= todayStart()); }
+    // Change the delivery date, or send to today: Admin, Supervisor and Dispatch, any order not yet dispatched.
+    function schedOk() {
+      return changed().hasOnly(['schedAt', 'day', 'updatedBy', 'updatedAt'])
+        && request.resource.data.get('schedAt', null) is number
+        && schedValid(request.resource.data)
+        && resource.data.get('dispatchedAt', null) == null;
+    }
+    // Nobody can mark an advance order dispatched before its day (send it to today first).
+    function notBeforeItsDay() {
+      return request.resource.data.get('schedAt', null) == null || request.resource.data.schedAt <= request.time.toMillis();
+    }
     function detailsOk() {
-      return !changed().hasAny(['dispatchedAt', 'dispatchedBy', 'orderAt', 'day'])
+      return !changed().hasAny(['dispatchedAt', 'dispatchedBy', 'orderAt', 'day', 'schedAt'])
         && resource.data.get('dispatchedAt', null) == null
         && (isSup() || (resource.data.get('createdBy', '') == myEmail() && resource.data.orderAt >= todayStart()));
     }
@@ -95,12 +153,15 @@ service cloud.firestore {
         && request.resource.data.createdBy == myEmail()
         && consistent(request.resource.data)
         && request.resource.data.get('dispatchedAt', null) == null
+        && schedValid(request.resource.data)
         && (isAdmin() || nowish(request.resource.data.orderAt));
       allow update: if canOrder()
         && consistent(request.resource.data)
         && !changed().hasAny(['createdBy', 'createdAt'])
         && (stamped() || upgradeOnly())
-        && (isAdmin() || (onlyDispatchFields() && dispatchOk()) || detailsOk());
+        && (upgradeOnly() || !newlyDispatched() || (hasVehicle() && hasDepot() && hasPhone() && notBeforeItsDay()))
+        && (upgradeOnly() || cancelRecordOk())
+        && (isAdmin() || (onlyDispatchFields() && dispatchOk()) || dispatchWithVehicle() || holdOk() || cancelOk() || schedOk() || detailsOk());
       allow delete: if isAdmin();
     }
 

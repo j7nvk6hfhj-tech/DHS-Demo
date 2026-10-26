@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>DHS Logistics Order Dashboard</title>
+<title>DHS Logistics - Orders Dashboard (Alpha)</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,7 +25,7 @@ img{max-width:100%}
 :root{
   --bg:#eceff1; --surface:#ffffff; --surface-2:#f5f7f8; --ink:#1b2227; --muted:#5b6770; --line:#d3d9dd;
   --accent:#e9a514; --accent-ink:#6b4a00; --accent-soft:#fbefd2;
-  --pending:#b8431b; --pending-soft:#fbe6dd; --done:#2b7a4b; --done-soft:#dcefe3;
+  --pending:#b8431b; --pending-soft:#fbe6dd; --done:#2b7a4b; --done-soft:#dcefe3; --sched:#1f4f8a; --sched-soft:#e4ecf7;
   --road:#2560a0; --road-soft:#dde8f5; --void:#7b858c; --void-soft:#e7eaec;
   --plate:#ffffff; --plate-ink:#111;
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
@@ -35,13 +35,13 @@ img{max-width:100%}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#13171a; --surface:#1b2125; --surface-2:#20272c; --ink:#e5e9eb; --muted:#9ba6ad; --line:#2f383e;
   --accent:#f0b429; --accent-ink:#f6cf74; --accent-soft:#3a2f12;
-  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f;
+  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f; --sched:#8fb6ea; --sched-soft:#17263a;
   --road:#7fb0ea; --road-soft:#182a3f; --void:#8d979e; --void-soft:#262d32;
   --plate:#e9ecee; --plate-ink:#111; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#13171a; --surface:#1b2125; --surface-2:#20272c; --ink:#e5e9eb; --muted:#9ba6ad; --line:#2f383e;
   --accent:#f0b429; --accent-ink:#f6cf74; --accent-soft:#3a2f12;
-  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f;
+  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f; --sched:#8fb6ea; --sched-soft:#17263a;
   --road:#7fb0ea; --road-soft:#182a3f; --void:#8d979e; --void-soft:#262d32;
   --plate:#e9ecee; --plate-ink:#111; color-scheme:dark}
 *{box-sizing:border-box}
@@ -108,10 +108,16 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .btn.danger{color:var(--pending);border-color:var(--pending)}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 /* ticket */
-.ticket{display:flex;align-items:stretch;border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);overflow:hidden}
+.ticket{display:flex;flex-wrap:wrap;align-items:stretch;border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);overflow:hidden}
+.ticket .stub.q{background:var(--ink);color:var(--bg)}
+.ticket .stub.h{background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent)}
+.ticket .body{flex:1 1 200px}
+@media (max-width:520px){.ticket .stub{flex:1}}
+.ord{font-size:.5em;vertical-align:super;line-height:0;margin-left:1px}
+.row .meta .inl{color:var(--pending);font-weight:600}
 .ticket .stub{background:var(--accent);color:#1b1400;padding:10px 16px;display:grid;place-items:center;text-align:center;min-width:92px}
 .ticket .stub b{font:700 40px/1 var(--f-display)}
-.ticket .stub span{font:600 11px var(--f-body);letter-spacing:.1em;text-transform:uppercase}
+.ticket .stub span{font:600 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;max-width:110px}
 .ticket .body{padding:12px 16px;display:grid;gap:2px;align-content:center;min-width:0}
 .ticket .body strong{font-size:16px}
 .btn.wa{color:var(--done);border-color:var(--done);text-decoration:none;justify-self:start}
@@ -121,12 +127,26 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .dispnote span{flex:1;min-width:180px}
 .qcard .by b{font-weight:600;color:var(--ink)}
 /* token chip */
-.tok{font:700 20px/1 var(--f-display);font-variant-numeric:tabular-nums;display:inline-grid;place-items:center;min-width:42px;padding:6px 6px 5px;border-radius:6px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent)}
-.tok small{display:block;font:600 10px var(--f-body);letter-spacing:.05em;color:var(--muted);margin-top:2px}
+.tok{font:700 20px/1 var(--f-display);font-variant-numeric:tabular-nums;display:inline-grid;place-items:center;gap:3px;min-width:60px;padding:7px 10px 6px;border-radius:6px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent);flex:none}
+.tok .tn{white-space:nowrap}
+.tok small{display:block;font:600 11px var(--f-body);letter-spacing:.03em;color:var(--muted);white-space:nowrap}
 .plate{font:600 12px/1 ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;background:var(--plate);color:var(--plate-ink);border:1.5px solid #222;border-radius:4px;padding:3px 6px;letter-spacing:.06em;white-space:nowrap}
 .pill{font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap;display:inline-block}
 .pill.Pending{background:var(--pending-soft);color:var(--pending)}
 .pill.Dispatched{background:var(--done-soft);color:var(--done)}
+h1 .alpha{font-size:.62em;font-weight:600;color:var(--accent-ink);white-space:nowrap}
+.pill.Scheduled{background:var(--sched-soft);color:var(--sched)}
+.qcard.sched{border-left-color:var(--sched)}
+.qcard.sched .qpos b{font-size:26px}
+.schinfo{color:var(--sched);font-weight:600}
+.kpi.sch b{color:var(--sched)}
+.dayhead{margin:14px 0 2px;font-size:15px}
+.ticket .stub.s{background:var(--sched-soft);color:var(--sched);border:1px solid var(--sched)}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent-ink);text-decoration:underline;cursor:pointer}
+.pill.Onhold{background:var(--accent-soft);color:var(--accent-ink)}
+.qcard.held{border-left-color:var(--accent)}
+.qcard.held .qpos{color:var(--accent-ink)}
+.holdinfo{color:var(--accent-ink)}
 .pill.Cancelled{background:var(--void-soft);color:var(--void);text-decoration:line-through}
 /* list rows */
 .list{display:grid;gap:8px}
@@ -157,6 +177,21 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .kpi b{display:block;font:700 30px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
 .kpi small{color:var(--muted)}
 .kpi.hot b{color:var(--pending)}
+button.kpi{font:inherit;color:inherit;text-align:left;width:100%;cursor:pointer;display:block}
+button.kpi:hover,button.kpi:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:none}
+button.kpi > span::after{content:" ›";color:var(--muted)}
+.kpi.on{border-color:var(--accent);background:var(--accent-soft)}
+.kpis.compact .kpi{padding:9px 12px}.kpis.compact .kpi b{font-size:22px}
+@media (max-width:600px){.kpis.compact{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:4px}.kpis.compact .kpi{flex:0 0 136px;scroll-snap-align:start}}
+.eta{color:var(--done);font-weight:600}
+.etabox{display:grid;gap:6px;margin:4px 0 14px}
+.nowrap{white-space:nowrap}
+.kpi.held b,td.held{color:var(--accent-ink);font-weight:700}
+.kpi.cxl b{color:var(--muted)}
+#dp-vehicle::placeholder,#e-vehicle::placeholder,#f-vehicle::placeholder{text-transform:none}
+.fld select.bad{border-color:var(--pending);box-shadow:0 0 0 3px var(--pending-soft)}
+.depot b{font-weight:600}
+.fld input.bad{border-color:var(--pending);box-shadow:0 0 0 3px var(--pending-soft)}
 /* tables */
 .tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
@@ -172,7 +207,6 @@ td.num,th.num{text-align:right}
 td.red{color:var(--pending);font-weight:700}
 .items{display:grid;gap:8px}
 .item{display:grid;grid-template-columns:minmax(0,1fr) 110px 76px;gap:8px;align-items:center}
-.it-req{font-size:12px;color:var(--muted);text-align:center}
 .items-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .combo{position:relative}
 .combo-list{position:absolute;left:0;right:0;top:100%;margin-top:4px;max-height:232px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;z-index:8;box-shadow:0 10px 28px rgba(0,0,0,.14)}
@@ -207,6 +241,7 @@ td.red{color:var(--pending);font-weight:700}
 .topview{display:grid;gap:18px}
 .seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--surface);justify-self:start;max-width:100%;overflow-x:auto;scrollbar-width:none}
 .seg::-webkit-scrollbar{display:none}
+@media (max-width:440px){.seg.seg4{display:grid;grid-template-columns:1fr 1fr;width:100%}.seg.seg4 .segb{justify-content:center}}
 .segb{appearance:none;border:0;background:none;color:var(--muted);font:600 14px var(--f-body);padding:8px 14px;border-radius:7px;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center}
 .segb[aria-selected="true"]{background:var(--ink);color:var(--bg)}
 .segb .n{font:600 12px var(--f-body);background:var(--pending-soft);color:var(--pending);border-radius:99px;padding:1px 7px}
@@ -220,7 +255,89 @@ td.red{color:var(--pending);font-weight:700}
 .helpbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-bottom:1px solid var(--line)}
 .helpbar b{font-family:var(--f-display);font-size:18px;letter-spacing:.02em}
 .helppanel iframe{flex:1;width:100%;border:0;background:var(--bg)}
-.vstat.ok{color:var(--done)} .vstat.soon{color:var(--accent-ink)} .vstat.gone{color:var(--pending)}
+.vstat.ok{color:var(--done)} .vstat.soon{color:var(--accent-ink)} .vstat.gone{color:var(--pending)} .vstat.none{color:var(--muted)}
+/* ---------- visual pass (26 Oct): one height for every box, tighter spacing, nothing left alone in a row ---------- */
+main{padding-block:16px 48px}
+section.view,.topview{gap:14px}
+h2{font-size:24px}
+.sub{font-size:14px}
+.panel{padding:16px}
+.cols{gap:16px}
+input:not([type=checkbox]):not([type=radio]),select{height:42px}
+textarea{min-height:42px}
+.fld{gap:6px;align-content:start}
+label{font-size:11.5px;letter-spacing:.07em}
+.lblrow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;min-height:18px}
+.lblnote{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.quick{display:inline-flex;gap:4px}
+.qbtn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 11.5px/1.5 var(--f-body);padding:0 9px;border-radius:99px;cursor:pointer}
+.qbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.ro{height:42px;display:flex;align-items:center;padding:0 11px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+/* New Order: required fields first, optional details under a divider */
+.oform{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px 14px}
+.oform .s2{grid-column:span 2}.oform .s3{grid-column:span 3}.oform .s4{grid-column:span 4}.oform .s6{grid-column:1/-1}
+.fsec{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line)}
+.fsec span{font:600 12px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.fsec small{font-size:12px;color:var(--muted)}
+.formfoot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:2px}
+.formfoot .btn{min-width:150px;justify-content:center}
+@media (max-width:520px){
+  .oform{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+  .oform .s2,.oform .s3,.oform .s4{grid-column:1/-1}
+  .oform .h{grid-column:span 1}
+  .formfoot .btn{flex:1 1 100%}
+}
+/* product lines */
+.item{grid-template-columns:minmax(0,232px) 92px 36px;justify-content:start}
+.xbtn{width:36px;height:42px;padding:0!important;justify-content:center;font-size:20px;line-height:1;color:var(--muted)}
+.items-foot{min-height:30px}
+/* queue, on-hold and scheduled cards: details left, buttons in a column on the right */
+.qcard{grid-template-columns:58px minmax(0,1fr);gap:12px;padding:12px 14px}
+.qbody{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:20px;align-items:start;min-width:0}
+.qbody > *{grid-column:1}
+.qbody > .acts{grid-column:2;grid-row:1 / span 6;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:min-content;gap:6px;margin:0;align-self:center;width:290px}
+.qbody > .acts .btn{width:100%;justify-content:center}
+.qbody > .confirm{grid-column:1 / -1}
+.qcard .top{gap:8px}
+.qcard .facts{gap:3px 14px;align-items:center;margin-top:5px}
+.qpos b{font-size:34px}
+.plate{padding:2px 6px;font-size:11.5px}
+.btn.sm.track{padding:1px 9px;font-size:12px;margin-left:4px}
+.dayhead{margin:6px 0 0}
+@media (max-width:640px){
+  .qcard{grid-template-columns:42px minmax(0,1fr);padding:12px}
+  .qpos b{font-size:28px}
+  .qpos span{font-size:10px}
+  .qbody{grid-template-columns:minmax(0,1fr)}
+  .qbody > .acts{grid-column:1;grid-row:auto;grid-template-columns:1fr 1fr;width:auto;margin-top:10px}
+}
+/* count cards: one even row of 8 on a computer, 4 x 2 on a tablet, 2 per row on a phone */
+.kpis{grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:600px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis .kpi{display:flex;flex-direction:column;gap:2px;padding:10px 12px;min-width:0}
+.kpi span{font-size:11px;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi b{font-size:28px}
+.kpi small{font-size:12px;line-height:1.3}
+.kpis.compact .kpi b{font-size:22px}
+.etabox{margin:0}
+/* All orders filters: one row on a computer, two columns on a phone */
+.filters{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px 12px;padding:12px 16px}
+@media (max-width:760px){.filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Vehicles form */
+.vform{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:12px 14px;align-items:end}
+.vform .vlink{grid-column:1 / -1}
+@media (max-width:640px){.vform{grid-template-columns:repeat(2,minmax(0,1fr))}.vform .vsave{grid-column:1 / -1}.vform .vsave .btn{width:100%;justify-content:center}}
+/* lists and windows */
+.row{padding:9px 12px}
+.list{gap:6px}
+form.grid{gap:12px 14px}
+.sheet .card{padding:18px;gap:12px}
+.roles{gap:10px}
+.sub .req{color:var(--pending)}
+.eta.small{font-size:12px;white-space:nowrap}
+.vform .btn{height:42px}
+@media (max-width:520px){form#editForm{grid-template-columns:repeat(2,minmax(0,1fr))}#editForm > *{grid-column:1 / -1}#editForm > .fld.h{grid-column:span 1}}
 </style>
 </head>
 <body>
@@ -231,7 +348,7 @@ td.red{color:var(--pending);font-weight:700}
     <div class="bar">
       <div class="brand">
         <img class="logo" src="icons/logo.svg" alt="DHS Logistics logo" width="46" height="46">
-        <div><h1>DHS Logistics Order Dashboard</h1><small>Dehradun dispatch · FIFO tokens</small></div>
+        <div><h1>DHS Logistics - Orders Dashboard <span class="alpha">(Alpha)</span></h1><small>Dehradun and Harrawala orders. All rights are reserved to Niket Sharma.</small></div>
       </div>
       <button class="btn sm" id="installBtn" type="button" hidden>Install app</button>
       <span class="conn" id="conn">Connecting…</span>
@@ -261,19 +378,23 @@ td.red{color:var(--pending);font-weight:700}
   <section class="view" id="v-new">
     <div class="cols">
       <div class="panel" style="display:grid;gap:16px">
-        <div><h2 data-t>New order</h2><p class="sub">Token is given by order time: the earliest order of the day is token 1.</p></div>
+        <div><h2 data-t>New order</h2><p class="sub">Fields marked <span class="req">*</span> are required. The rest can be added later.</p></div>
         <div id="lastTicket" hidden></div>
-        <form class="grid" id="orderForm" autocomplete="off">
-          <div class="fld"><label for="f-orderAt"><span data-t>Order date &amp; time</span> <span class="req">*</span></label><input type="datetime-local" id="f-orderAt" required><span class="hint" id="f-orderAt-hint" hidden>Set to the time you save. Only the Admin can change it.</span></div>
-          <div class="fld combo"><label for="f-dealer"><span data-t>Dealer</span> <span class="req">*</span></label><input id="f-dealer" required autocomplete="off" role="combobox" aria-expanded="false" aria-controls="f-dealer-list" placeholder="Type or pick a dealer"><div class="combo-list" id="f-dealer-list" role="listbox" hidden></div></div>
-          <div class="fld"><label for="f-party"><span data-t>Party / customer</span> <span class="req">*</span></label><input id="f-party" required placeholder="e.g. Sharma Builders"></div>
-          <div class="fld"><label for="f-phone"><span data-t>Phone</span></label><input id="f-phone" inputmode="tel" placeholder="98xxxxxxxx"></div>
-          <div class="fld wide"><label for="f-location"><span data-t>Delivery location</span></label><input id="f-location" placeholder="e.g. Rajpur Road, near Jakhan"></div>
-          <div class="fld wide"><label><span data-t>Products &amp; bags (50 kg)</span> <span class="req">*</span></label><div class="items" id="f-items"></div></div>
-          <div class="fld"><label for="f-vehicle"><span data-t>Vehicle no.</span></label><input id="f-vehicle" list="vehicleList" placeholder="UK07 CA 1234" style="text-transform:uppercase"><datalist id="vehicleList"></datalist></div>
-          <div class="fld"><label for="f-driver"><span data-t>Driver</span></label><input id="f-driver"></div>
-          <div class="fld wide"><label for="f-remarks"><span data-t>Remarks</span></label><textarea id="f-remarks" rows="1"></textarea></div>
-          <div class="actions wide fld"><button class="btn primary" type="submit" id="saveBtn">Add order &amp; get token</button><span class="hint" id="formHint"></span></div>
+        <form class="oform" id="orderForm" autocomplete="off">
+          <div class="fld combo s3"><label for="f-dealer"><span data-t>Dealer</span> <span class="req">*</span></label><input id="f-dealer" required autocomplete="off" role="combobox" aria-expanded="false" aria-controls="f-dealer-list" placeholder="Type or pick a dealer"><div class="combo-list" id="f-dealer-list" role="listbox" hidden></div></div>
+          <div class="fld s3"><label for="f-party"><span data-t>Party / customer</span> <span class="req">*</span></label><input id="f-party" required placeholder="e.g. Sharma Builders"></div>
+          <div class="fld s2"><div class="lblrow"><label for="f-phone"><span data-t>Phone</span></label><span class="lblnote">needed before dispatch</span></div><input id="f-phone" inputmode="tel" placeholder="98xxxxxxxx"></div>
+          <div class="fld s4"><label for="f-location"><span data-t>Delivery location</span></label><input id="f-location" placeholder="e.g. Rajpur Road, near Jakhan"></div>
+          <div class="fld s6"><label><span data-t>Products &amp; bags (50 kg)</span> <span class="req">*</span></label><div class="items" id="f-items"></div></div>
+          <div class="fld s3"><div class="lblrow"><label for="f-orderAt"><span data-t>Order date &amp; time</span> <span class="req">*</span></label><span class="lblnote" id="f-orderAt-hint" hidden>Set when you save</span></div><input type="datetime-local" id="f-orderAt" required></div>
+          <div class="fld s3"><div class="lblrow"><label for="f-deliver"><span data-t>Deliver on</span></label><span class="quick"><button class="qbtn" type="button" data-act="deliver-today">Today</button><button class="qbtn" type="button" data-act="deliver-tomorrow">Tomorrow</button></span></div><input type="date" id="f-deliver"></div>
+          <div class="fsec s6"><span>Dispatch &amp; delivery</span><small>optional now · depot and vehicle are needed before dispatch</small></div>
+          <div class="fld s2 h"><label for="f-depot"><span data-t>Dispatch depot</span></label><select id="f-depot"><option value="">Select depot</option><option>Transport Nagar</option><option>Harrawala</option><option>Doiwala</option></select></div>
+          <div class="fld s2 h"><label for="f-vehicle"><span data-t>Vehicle no.</span></label><input id="f-vehicle" list="vehicleList" placeholder="UK07 CA 1234" style="text-transform:uppercase"><datalist id="vehicleList"></datalist></div>
+          <div class="fld s2 h"><label for="f-driver"><span data-t>Driver</span></label><input id="f-driver" placeholder="Name"></div>
+          <div class="fld s2 h"><label for="f-driverPhone"><span data-t>Driver's phone</span></label><input id="f-driverPhone" inputmode="tel" placeholder="98xxxxxxxx"></div>
+          <div class="fld s4"><label for="f-remarks"><span data-t>Remarks</span></label><input id="f-remarks" placeholder="Anything the driver or office should know"></div>
+          <div class="formfoot s6"><button class="btn primary" type="submit" id="saveBtn">Add order</button><span class="hint" id="formHint"></span></div>
         </form>
       </div>
       <div class="panel" style="display:grid;gap:12px">
@@ -285,47 +406,66 @@ td.red{color:var(--pending);font-weight:700}
 
   <!-- ORDERS: Queue | All orders -->
   <div class="topview" id="t-orders" hidden>
-  <div class="seg" role="tablist" aria-label="Orders view">
+  <div class="seg seg4" role="tablist" aria-label="Orders view">
     <button class="segb" type="button" role="tab" data-top="orders" data-sub="queue" aria-selected="true"><span data-t>Queue</span> <span class="n" id="qn2"></span></button>
+    <button class="segb" type="button" role="tab" data-top="orders" data-sub="hold" aria-selected="false"><span data-t>On hold</span> <span class="n" id="hn"></span></button>
+    <button class="segb" type="button" role="tab" data-top="orders" data-sub="sched" aria-selected="false"><span data-t>Scheduled</span> <span class="n" id="schn"></span></button>
     <button class="segb" type="button" role="tab" data-top="orders" data-sub="orders" aria-selected="false"><span data-t>All orders</span></button>
   </div>
   <!-- QUEUE -->
   <section class="view" id="v-queue">
-    <div class="head"><div><h2 data-t>Dispatch queue</h2><p class="sub">Pending orders, oldest first. Number 1 goes next. Tapping <b>Mark dispatched</b> records the dispatch time and takes the order out of the queue.</p></div></div>
+    <div class="head"><div><h2 data-t>Dispatch queue</h2><p class="sub">Pending orders, oldest first. Number 1 goes next.</p></div></div>
     <div id="queueNote" class="hint"></div>
     <div class="dispnote" id="dispNote" role="status" hidden></div>
     <div class="list" id="queueList"></div>
   </section>
 
+  <!-- SCHEDULED (advance orders) -->
+  <section class="view" id="v-sched" hidden>
+    <div class="head"><div><h2 data-t>Scheduled</h2><p class="sub">Advance orders. Each joins the queue by itself at the start of its day.</p></div></div>
+    <div class="list" id="schedList"></div>
+  </section>
+
+  <!-- ON HOLD -->
+  <section class="view" id="v-hold" hidden>
+    <div class="head"><div><h2 data-t>On hold</h2><p class="sub">Out of the queue and can't be dispatched until released.</p></div></div>
+    <div class="list" id="holdList"></div>
+  </section>
+
   <!-- ALL ORDERS -->
   <section class="view" id="v-orders" hidden>
-    <div class="head"><div><h2 data-t>All orders</h2><p class="sub">Today and every day that still has pending orders show live. For older dates, pick the dates and tap Load. Tap a row to edit.</p></div>
+    <div class="head"><div><h2 data-t>All orders</h2><p class="sub">Today and days with pending orders are live; older dates load when you ask. Tap a row to open it.</p></div>
       <button class="btn" id="exportBtn" type="button">Download Excel</button></div>
     <div class="panel filters">
       <div class="fld"><label for="o-from"><span data-t>From</span></label><input type="date" id="o-from"></div>
       <div class="fld"><label for="o-to"><span data-t>To</span></label><input type="date" id="o-to"></div>
       <div class="fld"><label for="o-dealer"><span data-t>Dealer</span></label><select id="o-dealer"></select></div>
-      <div class="fld"><label for="o-status"><span data-t>Status</span></label><select id="o-status"><option value="">All</option><option>Pending</option><option>Dispatched</option><option>Cancelled</option></select></div>
-      <div class="fld"><label for="o-q"><span data-t>Search party, location or phone</span></label><input id="o-q" type="search" placeholder="Name or phone"></div>
+      <div class="fld"><label for="o-depot"><span data-t>Depot</span></label><select id="o-depot"><option value="*">All depots</option><option>Transport Nagar</option><option>Harrawala</option><option>Doiwala</option><option value="-">No depot yet</option></select></div>
+      <div class="fld"><label for="o-status"><span data-t>Status</span></label><select id="o-status"><option value="">All</option><option>Pending</option><option>On hold</option><option>Scheduled</option><option>Dispatched</option><option>Cancelled</option></select></div>
+      <div class="fld"><label for="o-q"><span data-t>Search</span></label><input id="o-q" type="search" placeholder="Party, location or phone"></div>
     </div>
+    <div class="kpis compact" id="okpis"></div>
     <div class="loadbar" id="ordersLoad" hidden></div>
     <div class="hint" id="ordersCount"></div>
-    <div class="tscroll"><table><thead><tr><th data-t>Token</th><th data-t>Order time</th><th data-t>Entered by</th><th data-t>Dealer</th><th data-t>Party</th><th data-t>Location</th><th data-t>Products</th><th class="num" data-t>Total bags</th><th data-t>Vehicle</th><th data-t>Driver</th><th data-t>Status</th><th data-t>Dispatched at</th><th class="num" data-t>Time taken</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+    <div class="tscroll"><table><thead><tr><th data-t>Order of the day</th><th class="num" data-t>In line</th><th data-t>Order time</th><th data-t>Entered by</th><th data-t>Dealer</th><th data-t>Party</th><th data-t>Location</th><th data-t>Products</th><th class="num" data-t>Total bags</th><th data-t>Vehicle</th><th data-t>Driver</th><th data-t>Depot</th><th data-t>Status</th><th data-t>Dispatched at</th><th class="num" data-t>Time taken</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
   </section>
   </div>
 
   <!-- SUMMARY -->
   <section class="view" id="v-summary" hidden>
-    <div class="head"><div><h2 data-t>Summary</h2><p class="sub">Day-wise and dealer-wise for the month you pick. Time taken is order time to dispatch time, for dispatched orders.</p></div>
+    <div class="head"><div><h2 data-t>Summary</h2><p class="sub">The month you pick, by dealer and by day. Time taken is order time to dispatch time.</p></div>
       <div class="actions" style="align-items:flex-end"><div class="fld" style="min-width:170px"><label for="s-month"><span data-t>Month</span></label><input type="month" id="s-month"></div>
       <button class="btn sm" id="sumRefresh" type="button">Refresh</button><button class="btn sm" id="sumMaster" type="button" hidden>Download master file</button><button class="btn sm" id="sumRecalc" type="button" hidden>Recalculate month</button></div></div>
     <div class="hint" id="sumNote"></div>
     <div class="kpis" id="kpis"></div>
-    <p class="hint">Tap a dealer or a day to download its orders and totals as Excel.</p>
+    <p class="hint">Tap a card to see those orders. Tap a dealer, a depot or a day to download its orders and totals as Excel.</p>
+    <div class="panel etabox" id="etaBox"></div>
     <h3 data-t>Dealer-wise</h3>
-    <div class="tscroll"><table><thead><tr><th data-t>Dealer</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th><th data-t>Last order</th></tr></thead><tbody id="dealerBody"></tbody></table></div>
+    <div class="tscroll"><table><thead><tr><th data-t>Dealer</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th><th data-t>Last order</th></tr></thead><tbody id="dealerBody"></tbody></table></div>
+    <h3 data-t>Depot-wise</h3>
+    <div class="tscroll"><table><thead><tr><th data-t>Depot</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="depotBody"></tbody></table></div>
     <h3 data-t>Day-wise</h3>
-    <div class="tscroll"><table><thead><tr><th data-t>Date</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="dayBody"></tbody></table></div>
+    <div class="tscroll"><table><thead><tr><th data-t>Date</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="dayBody"></tbody></table></div>
   </section>
 
   <!-- SETTINGS: Dealers | Vehicles | Team -->
@@ -337,20 +477,20 @@ td.red{color:var(--pending);font-weight:700}
   </div>
   <!-- DEALERS -->
   <section class="view" id="v-dealers" hidden>
-    <div class="head"><div><h2 data-t>Authorised dealers</h2><p class="sub">These names fill the Dealer list on every order. Every order needs a dealer; the party is typed freely.</p></div></div>
+    <div class="head"><div><h2 data-t>Authorised dealers</h2><p class="sub">These names fill the Dealer list on every order.</p></div></div>
     <div class="panel" id="dealerEditor"></div>
   </section>
 
   <!-- VEHICLES -->
   <section class="view" id="v-vehicles" hidden>
-    <div class="head"><div><h2 data-t>Vehicles &amp; GPS tracking</h2><p class="sub">Paste each truck's WheelsEye tracking link here. Orders with that vehicle number then show a Track button. WheelsEye links appear to expire after 7 days, so paste a fresh one when a link shows as expired.</p></div></div>
+    <div class="head"><div><h2 data-t>Vehicles &amp; GPS tracking</h2><p class="sub">Paste a truck&#39;s WheelsEye link; orders with that vehicle number then show Track.</p></div></div>
     <div class="panel" id="vehicleBox"></div>
     <div class="panel" style="display:grid;gap:8px">
       <h3 data-t>How to get a tracking link</h3>
       <ol class="sub" style="margin:0;padding-left:20px">
         <li>Open the WheelsEye app and select the truck.</li>
         <li>Tap Share location and copy the link (it starts with https://wheelseye.com/ui/track).</li>
-        <li>Paste it below with the truck number and tap Save.</li>
+        <li>Paste it in the form above; the truck number fills in. Tap Save vehicle.</li>
       </ol>
       <p class="hint">Anyone who has a tracking link can see that truck's location, so only share it inside the team.</p>
     </div>
@@ -358,15 +498,15 @@ td.red{color:var(--pending);font-weight:700}
 
   <!-- TEAM (admin only) -->
   <section class="view" id="v-team" hidden>
-    <div class="head"><div><h2 data-t>Team &amp; roles</h2><p class="sub">Only emails listed here can sign in. Change a person's role any time; it applies immediately.</p></div></div>
+    <div class="head"><div><h2 data-t>Team &amp; roles</h2><p class="sub">Only emails listed here can sign in. Role changes apply immediately.</p></div></div>
     <div class="panel" id="teamBox"></div>
     <div class="panel" id="reportBox"></div>
     <div class="panel" style="display:grid;gap:12px">
       <h3 data-t>Who can do what</h3>
       <div class="roles">
         <div><b>Admin</b>Everything, including this Team &amp; emails page, changing order times, changing dispatched orders, deleting orders, removing dealers and vehicles, and the master file.</div>
-        <div><b>Supervisor</b>Add, change and cancel any order that isn't dispatched yet; mark dispatched, correct dispatch times and undo; add dealers; add vehicles and tracking links.</div>
-        <div><b>Dispatch</b>Add orders; change or cancel only their own orders from today; mark dispatched and undo; add vehicles and tracking links.</div>
+        <div><b>Supervisor</b>Add, change and cancel any order that isn't dispatched; hold, reschedule, mark dispatched, correct dispatch times and undo; add dealers; add vehicles and tracking links.</div>
+        <div><b>Dispatch</b>Add orders; change only their own orders from today; cancel, hold or reschedule any order that isn't dispatched; mark dispatched and undo; add vehicles and tracking links.</div>
         <div><b>Viewer</b>Sees the queue, orders and summaries and can download Excel. Can't open order details, see vehicles, or change anything.</div>
       </div>
       <p class="hint">These limits are enforced by the database security rules, not just hidden on screen.</p>

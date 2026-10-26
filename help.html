@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Help guide · DHS Logistics Order Dashboard</title>
+<title>Help guide · DHS Logistics - Orders Dashboard (Alpha)</title>
 <link rel="icon" type="image/svg+xml" href="icons/logo.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
@@ -79,7 +79,7 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
     <div class="bar">
       <div class="brand">
         <img class="logo" src="icons/logo.svg" alt="DHS Logistics logo" width="42" height="42">
-        <div><h1>Help guide</h1><small>DHS Logistics Order Dashboard</small></div>
+        <div><h1>Help guide</h1><small>DHS Logistics - Orders Dashboard (Alpha)</small></div>
       </div>
       <a class="btn" id="openDash" href="./" hidden>Open the dashboard</a>
     </div>
@@ -90,8 +90,10 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
       <button class="chip" data-go="signing-in">Signing in</button>
       <button class="chip" data-go="layout">Finding your way</button>
       <button class="chip" data-go="new-order">New order</button>
-      <button class="chip" data-go="token">Token</button>
+      <button class="chip" data-go="token">Order no. &amp; line</button>
       <button class="chip" data-go="queue">Dispatch</button>
+      <button class="chip" data-go="hold">On hold</button>
+      <button class="chip" data-go="advance">Advance orders</button>
       <button class="chip" data-go="edit">Edit or cancel</button>
       <button class="chip" data-go="all-orders">All orders</button>
       <button class="chip" data-go="summary">Summary &amp; Excel</button>
@@ -107,7 +109,7 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
 
   <section class="card" id="start" data-s data-k="start new user first day roles नया">
     <h2>New here? Start with this</h2>
-    <p>The dashboard keeps every cement order in one place, gives each order a token, and lines orders up for dispatch, oldest first. Your designation decides what you can do (see <a href="#roles" data-go="roles">Who can do what</a>):</p>
+    <p>The dashboard keeps every cement order in one place, numbers each order within its day, and lines orders up for dispatch, oldest first. Your designation decides what you can do (see <a href="#roles" data-go="roles">Who can do what</a>):</p>
     <ul>
       <li><b>Dispatch:</b> read <a href="#signing-in" data-go="signing-in">Signing in</a>, <a href="#new-order" data-go="new-order">Taking a new order</a>, <a href="#queue" data-go="queue">Dispatching an order</a>, <a href="#edit" data-go="edit">Changing or cancelling</a> and <a href="#vehicles" data-go="vehicles">Vehicles and tracking</a>.</li>
       <li><b>Supervisor:</b> the same, plus <a href="#dealers" data-go="dealers">Dealer list</a>.</li>
@@ -146,8 +148,10 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
     <div class="tscroll"><table>
       <thead><tr><th>Tab</th><th>What it's for</th></tr></thead>
       <tbody>
-        <tr><td class="tabname"><b>New Order</b><br><span lang="hi">नया ऑर्डर</span></td><td>Take an order and get its token. Today's orders are listed beside the form (below it on a phone).</td></tr>
+        <tr><td class="tabname"><b>New Order</b><br><span lang="hi">नया ऑर्डर</span></td><td>Take an order; the ticket shows its order of the day and place in line. Today's orders are listed beside the form (below it on a phone).</td></tr>
         <tr><td class="tabname"><b>Orders → Queue</b><br><span lang="hi">ऑर्डर → कतार</span></td><td>Orders waiting for dispatch, oldest first. Number 1 goes next.</td></tr>
+        <tr><td class="tabname"><b>Orders → Scheduled</b><br><span lang="hi">ऑर्डर → आगे के ऑर्डर</span></td><td>Advance orders booked for a later day. Each joins the queue by itself on its day.</td></tr>
+        <tr><td class="tabname"><b>Orders → On hold</b><br><span lang="hi">ऑर्डर → होल्ड पर</span></td><td>Orders put on hold: out of the queue until someone releases them.</td></tr>
         <tr><td class="tabname"><b>Orders → All orders</b><br><span lang="hi">ऑर्डर → सभी ऑर्डर</span></td><td>Every order: search, pick dates, download Excel.</td></tr>
         <tr><td class="tabname"><b>Summary</b><br><span lang="hi">सारांश</span></td><td>Month totals by dealer and by day, and Excel downloads.</td></tr>
         <tr><td class="tabname"><b>Settings</b><br><span lang="hi">सेटिंग्स</span></td><td><b>Dealers</b> (<span lang="hi">डीलर</span>), <b>Vehicles</b> (<span lang="hi">गाड़ियाँ</span>) and, for the Admin, <b>Team &amp; emails</b> (<span lang="hi">टीम और ईमेल</span>).</td></tr>
@@ -169,22 +173,24 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
       <li><b>Order date &amp; time</b> is set to the moment you save, which keeps the queue fair. Only the <b>Admin</b> can enter a different time, for example a call at 10:15 that's entered at 10:40; ask the Admin if that's needed.</li>
       <li><b>Dealer:</b> type a few letters and pick from the list. Every order needs a dealer. Not in the list? Ask the Admin or a Supervisor to add it under <b>Settings → Dealers</b>.</li>
       <li><b>Party / customer:</b> who the cement is for. Any name.</li>
-      <li><b>Phone</b> and <b>Delivery location</b> are optional, but they help the driver.</li>
+      <li><b>Phone</b> and <b>Delivery location</b> sit right under the party. The phone number can be added later, but it is <b>needed before the order can be dispatched</b>; the location helps the driver.</li>
       <li><b>Products &amp; bags:</b> pick the product and type the number of 50 kg bags. For a mixed order, tap <span class="ui">+ Add product</span> (up to 5). The total shows underneath.</li>
-      <li><b>Vehicle no.</b> and <b>Driver</b> are optional. You can add them later with Edit.</li>
-      <li>Tap <span class="ui">Add order &amp; get token</span>. A ticket shows the <b>token</b> and the order's place in the dispatch queue. The form clears for the next order.</li>
-      <li>To let the customer know, tap <span class="ui">Send token on WhatsApp</span> on the ticket. WhatsApp opens with the message ready; check it and tap Send. With no phone number on the order, WhatsApp asks you to pick the contact.</li>
+      <li><b>Dispatch depot</b> (Transport Nagar, Harrawala or Doiwala), <b>Vehicle no.</b> and <b>Driver</b> are optional now; add them later with Edit. The depot and the vehicle number are needed before the order can be dispatched.</li>
+      <li>Tap <span class="ui">Add order</span>. A ticket shows the <b>order of the day</b> (for example <b>3rd</b>) and, right next to it, its place <b>in line</b> for dispatch (for example <b>4th</b>, with "3 orders ahead of it"). Tell the customer both. The form clears for the next order.</li>
+      <li>To let the customer know, tap <span class="ui">Send on WhatsApp</span> on the ticket. WhatsApp opens with the message ready; check it and tap Send. With no phone number on the order, WhatsApp asks you to pick the contact.</li>
     </ol>
-    <p class="note">If the same dealer already has an order for the same party (or the same phone number) in the last 12 hours, the dashboard shows <b>"Looks like a repeat of token …"</b>. Check it's really a new order, then tap <span class="ui">Save anyway</span>. Changing any field clears the warning.</p>
+    <p class="note">If the same dealer already has an order for the same party (or the same phone number) in the last 12 hours, the dashboard shows <b>"Looks like a repeat of the … order of …"</b>. Check it's really a new order, then tap <span class="ui">Save anyway</span>. Changing any field clears the warning.</p>
   </section>
 
-  <section class="card" id="token" data-s data-k="token number fifo in line position queue number changed टोकन नंबर">
-    <h2>Token and "in line"</h2>
+  <section class="card" id="token" data-s data-k="token order of the day number fifo in line position queue waiting ahead number changed टोकन नंबर लाइन">
+    <h2>Order of the day and place in line</h2>
     <ul>
-      <li><b>Token</b> is the order's number for its day. The earliest order of the day is token 1. It's on the yellow ticket with the date. Give this number to the customer.</li>
-      <li><b>In line</b> is the order's place in the dispatch queue, counting all days. Number 1 goes next. It goes down as the orders ahead are dispatched.</li>
+      <li><b>Order of the day</b> (for example <b>3rd order of 25 Oct</b>) numbers each order within its day, by order time. The earliest order of the day is the 1st. It's on the yellow part of the ticket, and in the first column of All orders. (It used to be called the token.)</li>
+      <li><b>In line</b> (for example <b>4th in line</b>) is the order's place in the dispatch queue, counting pending orders from all days, oldest first. 1st in line goes next. It's on the dark part of the ticket, in Today's list and in All orders, and it goes down as the orders ahead are dispatched.</li>
+      <li>Tell the customer both: "Your order is the 3rd order of today, and 4th in line for dispatch." The WhatsApp message tells them their place in line ("It is 4th in line for dispatch").</li>
+      <li><b>Expected time</b> (for example <b>Expected ~15:30</b>): the queue cards, the ticket, Today's list and All orders show when the order should go. It's learned from all past orders (recent weeks can count more, so it keeps up when things change): how long each dispatch usually takes when orders are waiting, the usual first and last dispatch times, and days with no dispatching. An order that is 4th in line goes after about 4 dispatches, counting only working hours. The ticket also says how far off it usually is ("give or take 15 min"). It's an estimate: tell customers "around". It starts once there are 5 working days of dispatches; until then no time is shown.</li>
     </ul>
-    <p class="note">A token changes only if someone adds an order with an earlier time on the same day, or deletes an order. To keep numbers steady, cancel an order instead of deleting it.</p>
+    <p class="note">The order of the day changes only if someone adds an order with an earlier time on the same day, or deletes an order. To keep numbers steady, cancel an order instead of deleting it.</p>
   </section>
 
   <section class="card" id="queue" data-s data-k="queue dispatch dispatched mark confirm undo waiting truck left track कतार डिस्पैच भेजा">
@@ -192,32 +198,63 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
     <ol>
       <li>Open <b>Orders → Queue</b>. The oldest pending order is at the top. The red <b>Waiting</b> time shows how long it has waited.</li>
       <li>When the truck leaves, tap <span class="ui">Mark dispatched</span>. The time is filled in as now; change it if the truck left earlier.</li>
+      <li><b>No phone number, dispatch depot or vehicle number on the order?</b> A window asks for what's missing (a 10-digit phone number; pick the depot from the list). Type or pick the vehicle number (the driver fills in if the vehicle is in Settings → Vehicles) and tap <span class="ui">Confirm dispatched</span>. An order can't be dispatched without the customer's phone number, a vehicle number and a depot; <span class="ui">Not now</span> leaves it in the queue.</li>
       <li>Tap <span class="ui">Confirm dispatched</span>. The order leaves the queue, and the time taken is recorded.</li>
     </ol>
-    <p>After dispatching, a green note offers <span class="ui">Send update on WhatsApp</span>: it tells the customer the dispatch time, vehicle and driver. Tap <span class="ui">Hide</span> to close the note.</p>
+    <p>After dispatching, a green note offers <span class="ui">Send update on WhatsApp</span>: it tells the customer the dispatch time, the vehicle number and the driver's name and phone number (from the order, or from the truck's details under Settings → Vehicles). Tap <span class="ui">Hide</span> to close the note.</p>
+    <p><b>Customer called it off?</b> Tap <span class="ui">Cancel order</span> on the card, add a reason if you like, and tap <span class="ui">Cancel order</span> again. It leaves the queue and stays in the records as Cancelled. The Admin, Supervisors and Dispatch can cancel any order that isn't dispatched. The dashboard records <b>who cancelled it and when</b>: the Admin sees it in All orders, Today's list, the order window, Excel and the emails.</p>
     <p><b>Marked the wrong one?</b> Open that order (tap it in All orders or Today's list) and tap <span class="ui">Undo dispatch</span>. It goes back to its place in the queue.</p>
     <p>Each card shows <b>Entered by</b>: who took the order. If there's any confusion about an order, ask that person first.</p>
     <p>Correcting a dispatch time later (in the order window) is for a Supervisor or the Admin. Viewers see the Mark dispatched button greyed out.</p>
     <p><span class="ui">Track</span> on a card opens the truck's live location in WheelsEye. It shows when the order's vehicle number has a link under Settings → Vehicles.</p>
   </section>
 
+  <section class="card" id="advance" data-s data-k="advance order later day tomorrow future date scheduled book in advance deliver on change date send today आगे तारीख़ कल">
+    <h2>Advance orders (for a later day) <span class="who">Admin · Supervisor · Dispatch</span></h2>
+    <ol>
+      <li>On <b>New Order</b>, set <b>Deliver on</b> to the day the order should go (tap <span class="ui">Tomorrow</span> for tomorrow). Leave it on today for a normal order.</li>
+      <li>Tap <span class="ui">Add order</span>. The ticket shows <b>Scheduled</b> and the date. The order waits under <b>Orders → Scheduled</b>, grouped by day; it is <b>not</b> in today's queue.</li>
+      <li>On its day it joins the queue <b>by itself</b> at the start of the day: behind any orders still waiting from earlier days, ahead of orders taken that day. It also becomes that day's order (order of the day, Today's list, Summary and Excel for that date).</li>
+    </ol>
+    <ul>
+      <li><b>Customer changed the day?</b> Tap <span class="ui">Change date</span> (on the Scheduled card or in the order window). This also works for a normal order the customer wants later.</li>
+      <li><b>Customer wants it today?</b> Tap <span class="ui">Send today</span>: it goes into today's queue now.</li>
+      <li>An advance order <b>can't be marked dispatched before its day</b>; send it to today first.</li>
+      <li>The WhatsApp message says "we have received your order for 28 Oct". The real time it was booked stays recorded ("Booked 24 Oct, 11:20"), and in Excel under <b>Order Date &amp; Time</b>, with the day it was for under <b>Scheduled For</b>.</li>
+      <li>Its time taken (and the dispatch estimate) counts from the start of its day, not from when it was booked.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="hold" data-s data-k="hold on hold pause paused wait release payment pending site not ready stop out of queue होल्ड रोक">
+    <h2>Putting an order on hold <span class="who">Admin · Supervisor · Dispatch</span></h2>
+    <p>Use this when an order is taken but mustn't go yet: payment pending, site not ready, customer asked to wait.</p>
+    <ol>
+      <li>Tap <span class="ui">Put on hold</span> on the queue card, on the ticket after saving, or in the order window.</li>
+      <li>Type a reason if you like (it helps whoever picks it up later) and tap <span class="ui">Put on hold</span>.</li>
+      <li>The order leaves the queue and moves to <b>Orders → On hold</b>. The orders behind it move up one place.</li>
+    </ol>
+    <p>An order on hold <b>can't be marked dispatched</b>. When it's ready, open <b>Orders → On hold</b> and tap <span class="ui">Release to queue</span>. It goes back to its place in line by its order time (so an order held for a day comes back near the front).</p>
+    <p>Each held order shows since when, who put it on hold and the reason. The number on <b>On hold</b> shows how many are waiting there. In the Summary, Excel files and emails, held orders have their own <b>On hold</b> count, separate from pending.</p>
+  </section>
+
   <section class="card" id="edit" data-s data-k="edit change correct mistake wrong cancel cancelled delete remove duplicate undo बदलें रद्द गलती डिलीट">
     <h2>Changing, cancelling or deleting an order</h2>
     <ul>
       <li><b>Change:</b> tap <span class="ui">Edit</span> on a queue card, or tap the order in Today's list or All orders. Fix what's wrong and tap <span class="ui">Save changes</span>.</li>
-      <li><b>Cancel</b> (customer called it off): open the order, set <b>Mark as</b> to <b>Cancelled</b>, then <span class="ui">Save changes</span>. It leaves the queue but stays in the records and Excel, with its token. To bring it back, set Mark as to Pending.</li>
-      <li><b>Delete</b> <span class="who">Admin</span> (only for duplicates or test entries): tap <span class="ui">Delete order</span>, then tap again to confirm. It's gone for good, and later tokens that day move up by one. Others don't see this button; they cancel instead.</li>
+      <li><b>Cancel</b> (customer called it off): tap <span class="ui">Cancel order</span> on the queue card or the On hold card (or open the order, set <b>Mark as</b> to <b>Cancelled</b> and save). It leaves the queue but stays in the records and Excel, with its number. To bring it back, set Mark as to Pending.</li>
+      <li><b>Delete</b> <span class="who">Admin</span> (only for duplicates or test entries): tap <span class="ui">Delete order</span>, then tap again to confirm. It's gone for good, and later orders that day move up one number. Others don't see this button; they cancel instead.</li>
       <li><b>Who changed it?</b> Under the order's heading you'll see who entered it and, after any change, <b>Last changed … by …</b>.</li>
-      <li>The order window also has a <span class="ui">WhatsApp</span> button to send the token, or the dispatch update once it's dispatched.</li>
+      <li>The order window also has a <span class="ui">WhatsApp place in line</span> button, or <span class="ui">WhatsApp dispatch update</span> once it's dispatched.</li>
     </ul>
-    <p><b>Who can change what:</b> the <b>Admin</b> can change any order, including its time and orders already dispatched. A <b>Supervisor</b> can change or cancel any order that isn't dispatched yet. <b>Dispatch</b> can change or cancel only the orders they entered themselves, on the same day, before dispatch. <b>Viewers</b> can't open orders. If you can't change an order, the order window tells you why; ask a Supervisor or the Admin.</p>
+    <p><b>Who can change what:</b> the <b>Admin</b> can change any order, including its time and orders already dispatched. A <b>Supervisor</b> can change or cancel any order that isn't dispatched yet. <b>Dispatch</b> can change only the orders they entered themselves, on the same day, before dispatch, but can cancel any order that isn't dispatched (with <span class="ui">Cancel order</span> on the card). <b>Viewers</b> can't open orders. If you can't change an order, the order window tells you why; ask a Supervisor or the Admin.</p>
   </section>
 
   <section class="card" id="all-orders" data-s data-k="all orders find search old past previous last month dates load filter dealer status excel download सभी ऑर्डर पुराने खोज">
     <h2>Finding orders (All orders)</h2>
     <ul>
       <li>Today's orders, and any day that still has pending orders, show straight away. The <b>Entered by</b> column, next to the order time, shows who took each order.</li>
-      <li>Use <b>Dealer</b>, <b>Status</b> and <b>Search</b> to narrow the list. Search finds the party, the location or the phone number (type at least 3 digits).</li>
+      <li><b>The cards at the top</b> count the orders in the dates you picked (<b>Pending now</b> and <b>On hold</b> count all dates). Tap a card to show only those orders; tap <b>Orders</b> to show all again. On a phone, swipe the cards sideways.</li>
+      <li>Use <b>Dealer</b>, <b>Depot</b>, <b>Status</b> and <b>Search</b> to narrow the list. Depot has <b>No depot yet</b> for orders that don't have one. Search finds the party, the location or the phone number (type at least 3 digits).</li>
       <li><b>Older dates:</b> set <b>From</b> and <b>To</b>. A yellow bar says those dates aren't loaded yet; tap <span class="ui">Load these dates</span>. Old orders load only when someone asks, which keeps the dashboard free to run.</li>
       <li><span class="ui">Download Excel</span> saves the orders on screen.</li>
     </ul>
@@ -226,7 +263,11 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
   <section class="card" id="summary" data-s data-k="summary report totals month dealer wise day wise excel download master file recalculate average time सारांश रिपोर्ट एक्सेल">
     <h2>Summary and Excel</h2>
     <ul>
-      <li>Pick a <b>Month</b>. The cards at the top show orders, pending, dispatched, bags and average time from order to dispatch.</li>
+      <li>Pick a <b>Month</b>. The cards at the top show the month's orders, <b>Pending now</b> and <b>On hold</b> (all dates, with their bags), dispatched, <b>Cancelled</b> (with the bags cancelled), bags and average time from order to dispatch.</li>
+      <li><b>Tap a card</b> to see those orders: <b>Pending now</b> or <b>On hold</b> opens All orders showing every such order, from all dates (no loading needed). <b>Orders</b>, <b>Dispatched</b> and <b>Cancelled</b> open that month's orders, loading them if needed.</li>
+      <li><b>Dispatch time estimate</b> (under the cards) shows what the dashboard has learned (minutes per order, dispatching hours) and how close its estimates were on past orders, compared with simply using the average wait.</li>
+      <li><b>Depot-wise</b> shows each depot's orders, dispatched and bags for the month (orders get their depot by dispatch at the latest). Tap a depot to download its orders as Excel.</li>
+      <li>The tables have separate <b>Pending</b>, <b>On hold</b>, <b>Dispatched</b> and <b>Cancelled</b> columns. Pending bags don't include orders on hold.</li>
       <li><b>Dealer-wise</b> and <b>Day-wise</b> tables: tap a row, choose the dates, and tap Download to get that dealer's or day's orders as Excel.</li>
       <li><span class="ui">Refresh</span> updates the totals of older days.</li>
       <li><b>Admin only:</b> <span class="ui">Download master file</span> gives the whole month in one Excel. <span class="ui">Recalculate month</span> fixes the totals if they ever look wrong.</li>
@@ -239,11 +280,14 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
     <h2>Vehicles and tracking <span class="who">Admin · Supervisor · Dispatch</span></h2>
     <ol>
       <li>In the WheelsEye app, select the truck, tap <b>Share location</b> and copy the link.</li>
-      <li>In <b>Settings → Vehicles</b>, type the truck number exactly as you write it on orders, add the driver, paste the link and tap <span class="ui">Save vehicle</span>.</li>
+      <li>In <b>Settings → Vehicles</b>, paste the link. The dashboard reads the truck number from the link and fills it in (check it matches how you write it on orders). Add the driver and the <b>driver's phone</b> (it goes into the dispatch WhatsApp) and tap <span class="ui">Save vehicle</span>. On New Order, typing that vehicle number then fills in the driver and phone by itself.</li>
+      <li>If the link is for a different truck than the number you typed, the dashboard warns you. Check it; tap <span class="ui">Save vehicle</span> again only if you're sure.</li>
       <li>Every order with that vehicle number now shows a <span class="ui">Track</span> button.</li>
     </ol>
-    <p class="note">WheelsEye links stop working after about 7 days. The Link status column shows the days left. When it says <b>Expired</b>, or orders show <b>Track (old link)</b>, tap <span class="ui">New link</span> and paste a fresh one.</p>
-    <p>The Admin, Supervisors and Dispatch can add vehicles and paste new links; only the Admin can remove a vehicle. Viewers don't see this page.</p>
+    <p><b>Longer links:</b> WheelsEye support can give a link that lasts months. When saving one, fill in <b>Link valid until</b> (for example 31 Mar 2027); the status then shows <b>Active till</b> that date. Leave it empty for a normal link.</p>
+    <p class="note">Normal WheelsEye share links stop working after about 7 days. The Link status column shows the days left. When it says <b>Expired</b>, or orders show <b>Track (old link)</b>, tap <span class="ui">New link</span> and paste a fresh one.</p>
+    <p>The <b>tracking link is optional</b>: a truck can be saved with just its number, driver and driver's phone, and the link added later (<span class="ui">Add link</span>). Saving a truck again without a link keeps its current link.</p>
+    <p>The Admin, Supervisors and Dispatch can add vehicles and paste new links. The <b>Admin</b> can also <span class="ui">Edit</span> any saved vehicle (number, driver, driver's phone, link, valid-until date) and remove one. Viewers don't see this page.</p>
     <p>Anyone with a link can see that truck, so keep links inside the team.</p>
   </section>
 
@@ -271,10 +315,13 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
         <tr><td>See orders, queue and summary; download Excel</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
         <tr><td>Open an order's details</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
         <tr><td>Add orders</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
-        <tr><td>Change or cancel orders</td><td class="yes">Any order</td><td class="yes">Any order not yet dispatched</td><td class="yes">Own orders from today, not yet dispatched</td><td class="no">No</td></tr>
+        <tr><td>Change orders</td><td class="yes">Any order</td><td class="yes">Any order not yet dispatched</td><td class="yes">Own orders from today, not yet dispatched</td><td class="no">No</td></tr>
+        <tr><td>Cancel orders (who cancelled is recorded)</td><td class="yes">Any order</td><td class="yes">Any order not yet dispatched</td><td class="yes">Any order not yet dispatched</td><td class="no">No</td></tr>
         <tr><td>Change an order's date and time</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>Change a dispatched order's details</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>Mark dispatched, undo dispatch</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+        <tr><td>Book advance orders; change an order's date; send to today</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+        <tr><td>Put an order on hold, release it</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
         <tr><td>Correct a dispatch time</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>Delete an order</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>See vehicles; add vehicles and tracking links</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
@@ -301,17 +348,20 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
   <section class="card" id="faq" data-k="faq questions answers problem help">
     <h2>Quick answers</h2>
     <details data-s data-k="mistake wrong edit correct गलती"><summary>I typed something wrong in an order</summary><div>Open the order (Edit on the queue card, or tap it in a list), fix it and tap <b>Save changes</b>. See <a href="#edit" data-go="edit">Changing an order</a>.</div></details>
-    <details data-s data-k="repeat duplicate twice same order save anyway warning"><summary>It says "Looks like a repeat of token …"</summary><div>The same dealer already has an order for that party (or that phone number) in the last 12 hours. If it's the same order, don't save it again. If the customer really ordered again, tap <b>Save anyway</b>.</div></details>
-    <details data-s data-k="whatsapp message customer send token sms"><summary>How do I send the token to the customer?</summary><div>Tap <b>Send token on WhatsApp</b> on the ticket after saving, or open the order and tap <b>WhatsApp token</b>. After dispatch, use <b>Send update on WhatsApp</b>.</div></details>
+    <details data-s data-k="repeat duplicate twice same order save anyway warning"><summary>It says "Looks like a repeat of the … order of …"</summary><div>The same dealer already has an order for that party (or that phone number) in the last 12 hours. If it's the same order, don't save it again. If the customer really ordered again, tap <b>Save anyway</b>.</div></details>
+    <details data-s data-k="whatsapp message customer send token sms"><summary>How do I tell the customer their place in line?</summary><div>Tap <b>Send on WhatsApp</b> on the ticket after saving, or open the order and tap <b>WhatsApp place in line</b>. The message says where the order is in line at the moment you send it. After dispatch, use <b>Send update on WhatsApp</b>.</div></details>
+    <details data-s data-k="advance order not in queue missing tomorrow scheduled where"><summary>I took an order for tomorrow. Where is it?</summary><div>Under <b>Orders → Scheduled</b>. It joins the queue by itself at the start of its day. To send it today instead, tap <b>Send today</b>. See <a href="#advance" data-go="advance">Advance orders</a>.</div></details>
+    <details data-s data-k="vehicle number required asks mark dispatched window popup can't dispatch no vehicle गाड़ी नंबर"><summary>Mark dispatched asks for a phone number, vehicle number or depot</summary><div>Every dispatched order needs the customer's phone number, its vehicle number and its dispatch depot (Transport Nagar, Harrawala or Doiwala). Fill in what the window asks for and tap <b>Confirm dispatched</b>. If you don't know it yet, tap <b>Not now</b>; the order stays in the queue.</div></details>
+    <details data-s data-k="hold on hold can't dispatch mark dispatched missing gone from queue disappeared होल्ड"><summary>An order disappeared from the queue</summary><div>It was probably put on hold. Look under <b>Orders → On hold</b>. To dispatch it, tap <b>Release to queue</b> first. See <a href="#hold" data-go="hold">Putting an order on hold</a>.</div></details>
     <details data-s data-k="delete remove can't cannot find button डिलीट"><summary>I can't find the Delete button</summary><div>Only the Admin can delete orders. Cancel it instead: open the order, set <b>Mark as</b> to <b>Cancelled</b> and save.</div></details>
     <details data-s data-k="can't change cannot edit locked greyed order"><summary>I can't change an order</summary><div>The order window says why. Usually it's already dispatched (only the Admin can change it then), or, for Dispatch, it was entered by someone else or on an earlier day. Ask a Supervisor or the Admin.</div></details>
     <details data-s data-k="order time change earlier back date"><summary>Why can't I change the order time?</summary><div>The order time is set when you save, so the queue stays fair. Only the Admin can enter or change an order's time.</div></details>
     <details data-s data-k="who changed edited history last changed"><summary>Who changed this order?</summary><div>Open the order. Under its heading you'll see who entered it and who last changed it, with the time. The Excel files show the same.</div></details>
-    <details data-s data-k="customer cancel cancelled रद्द"><summary>The customer cancelled</summary><div>Open the order, set <b>Mark as</b> to <b>Cancelled</b> and save. Don't delete it; cancelled orders stay in the records.</div></details>
+    <details data-s data-k="customer cancel cancelled रद्द"><summary>The customer cancelled</summary><div>Tap <b>Cancel order</b> on the queue card (or open the order, set <b>Mark as</b> to <b>Cancelled</b> and save). Don't delete it; cancelled orders stay in the records.</div></details>
     <details data-s data-k="dispatched by mistake undo wrong dispatch"><summary>I marked the wrong order as dispatched</summary><div>Open that order and tap <b>Undo dispatch</b>. The Admin, a Supervisor or Dispatch can do this.</div></details>
     <details data-s data-k="mark dispatched grey disabled button not working"><summary>The Mark dispatched button is grey</summary><div>Viewers can't mark orders dispatched. If you should be able to, ask the Admin to change your designation.</div></details>
     <details data-s data-k="dealer missing not in list new dealer"><summary>The dealer isn't in the list</summary><div>Only the Admin can add dealers, under <b>Settings → Dealers</b>. Once added, it appears in the list on every phone straight away.</div></details>
-    <details data-s data-k="token changed number different"><summary>A token number changed</summary><div>Someone added an order with an earlier time on that day, or deleted an order. See <a href="#token" data-go="token">Token and "in line"</a>.</div></details>
+    <details data-s data-k="token changed number different"><summary>An order's number (order of the day) changed</summary><div>Someone added an order with an earlier time on that day, or deleted an order. See <a href="#token" data-go="token">Order of the day and place in line</a>.</div></details>
     <details data-s data-k="old order last month not showing missing find"><summary>I can't find an older order</summary><div>Go to <b>Orders → All orders</b>, set the From and To dates, and tap <b>Load these dates</b>.</div></details>
     <details data-s data-k="track old link expired tracking not working"><summary>Track says "old link", or the map doesn't open</summary><div>The WheelsEye link has expired. The Admin, a Supervisor or Dispatch copies a fresh link from WheelsEye and taps <b>New link</b> under <b>Settings → Vehicles</b>.</div></details>
     <details data-s data-k="team emails missing settings can't see"><summary>I can't see Team &amp; emails</summary><div>That page is only for the Admin.</div></details>

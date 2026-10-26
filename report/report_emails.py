@@ -27,8 +27,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
 IST = ZoneInfo("Asia/Kolkata")
-COLUMNS = ["Order ID", "Date", "Token", "Order Date & Time", "Dealer", "Party", "Phone", "Location", "Products",
-           "Total Bags", "Vehicle", "Driver", "Status", "Dispatched Date & Time", "Time Taken (h:mm)",
+COLUMNS = ["Order ID", "Date", "Order of the Day", "Order Date & Time", "Scheduled For", "Dealer", "Party", "Phone", "Location", "Products",
+           "Total Bags", "Vehicle", "Driver", "Dispatch Depot", "Status", "Hold / Cancel Reason", "Cancelled By", "Cancelled At", "Dispatched Date & Time", "Time Taken (h:mm)",
            "Time Taken (minutes)", "Remarks", "Entered by", "Last Changed By", "Last Changed At"]
 
 
@@ -48,10 +48,22 @@ def hm(ms):
     m = max(0, round(ms / 60000))
     return f"{m // 60}:{m % 60:02d}"
 
+def q_at(o):
+    """When the order joins the queue: an advance order joins at the start of the day it is meant to go."""
+    s = o.get("schedAt")
+    return max(o["orderAt"], s) if isinstance(s, (int, float)) else o["orderAt"]
+
 def status_of(o):
     if o.get("dispatchedAt") is not None:
         return "Dispatched"
-    return "Cancelled" if o.get("mark") == "Cancelled" else "Pending"
+    if o.get("mark") == "Cancelled":
+        return "Cancelled"
+    if o.get("hold") is True:
+        return "On hold"
+    s = o.get("schedAt")
+    if isinstance(s, (int, float)) and day_key(s) > datetime.now(IST).strftime("%Y-%m-%d"):
+        return "Scheduled"
+    return "Pending"
 
 def items_text(o):
     items = o.get("items") or ([{"product": o["brand"], "bags": o.get("bags", 0)}] if o.get("brand") else [])
@@ -59,30 +71,37 @@ def items_text(o):
 
 def with_tokens(orders):
     """Token = order's serial number within its day, by order time (whole days must be passed in)."""
-    orders = sorted([o for o in orders if isinstance(o.get("orderAt"), (int, float))], key=lambda o: (o["orderAt"], o.get("createdAt") or 0, o["id"]))
+    orders = sorted([o for o in orders if isinstance(o.get("orderAt"), (int, float))], key=lambda o: (q_at(o), o.get("createdAt") or 0, o["id"]))
     per = {}
     for o in orders:
         o["day"] = o.get("day") or day_key(o["orderAt"])
         per[o["day"]] = per.get(o["day"], 0) + 1
         o["token"] = per[o["day"]]
         o["status"] = status_of(o)
-        o["taken"] = (o["dispatchedAt"] - o["orderAt"]) if o.get("dispatchedAt") is not None else None
+        o["taken"] = (o["dispatchedAt"] - q_at(o)) if o.get("dispatchedAt") is not None else None
     return orders
 
 def agg(lst):
-    a = dict(n=0, Pending=0, Dispatched=0, Cancelled=0, bags=0, pbags=0, tsum=0, tn=0)
+    a = dict(n=0, Pending=0, Hold=0, Dispatched=0, Cancelled=0, bags=0, pbags=0, hbags=0, cbags=0, tsum=0, tn=0)
     for o in lst:
-        a["n"] += 1; a[o["status"]] += 1
+        st = "Hold" if o["status"] == "On hold" else "Pending" if o["status"] == "Scheduled" else o["status"]     # on hold has its own head, apart from pending
+        a["n"] += 1; a[st] += 1
         b = int(o.get("bags") or 0)
-        if o["status"] != "Cancelled": a["bags"] += b
-        if o["status"] == "Pending": a["pbags"] += b
+        if st == "Cancelled": a["cbags"] += b
+        else: a["bags"] += b
+        if st == "Pending": a["pbags"] += b
+        if st == "Hold": a["hbags"] += b
         if o["taken"] is not None: a["tsum"] += o["taken"]; a["tn"] += 1
     a["avg"] = hm(a["tsum"] / a["tn"]) if a["tn"] else ""
     return a
 
 def row(o, names):
-    return [o["id"], o["day"], o["token"], iso_dt(o["orderAt"]), o.get("dealer", ""), o.get("party", ""), o.get("phone", ""),
-            o.get("location", ""), items_text(o), int(o.get("bags") or 0), o.get("vehicle", ""), o.get("driver", ""), o["status"],
+    sch = o["day"] if isinstance(o.get("schedAt"), (int, float)) and day_key(o["schedAt"]) > day_key(o["orderAt"]) else ""
+    return [o["id"], o["day"], o["token"], iso_dt(o["orderAt"]), sch, o.get("dealer", ""), o.get("party", ""), o.get("phone", ""),
+            o.get("location", ""), items_text(o), int(o.get("bags") or 0), o.get("vehicle", ""), o.get("driver", ""), o.get("depot", "") or "", o["status"],
+            (o.get("holdNote") or "") if o["status"] == "On hold" else (o.get("cancelNote") or "") if o["status"] == "Cancelled" else "",
+            names.get(o.get("cancelledBy"), o.get("cancelledBy") or "") if o["status"] == "Cancelled" and o.get("cancelledBy") else "",
+            iso_dt(o.get("cancelledAt")) if o["status"] == "Cancelled" else "",
             iso_dt(o.get("dispatchedAt")), hm(o["taken"]), round(o["taken"] / 60000) if o["taken"] is not None else "",
             o.get("remarks", ""), names.get(o.get("createdBy"), o.get("createdBy") or ""),
             names.get(o.get("updatedBy"), o.get("updatedBy") or "") if o.get("updatedBy") else "", iso_dt(o.get("updatedAt"))]
@@ -108,7 +127,7 @@ def workbook(title, start_label, end_label, orders, names, with_time=True):
         c.fill, c.font, c.alignment = HEAD_FILL, HEAD_FONT, Alignment(horizontal="center", vertical="center", wrap_text=True)
     for r in ws.iter_rows(min_row=2):
         for c in r: c.font = BODY_FONT
-    widths = [24, 11, 7, 17, 22, 22, 13, 22, 30, 10, 13, 13, 11, 19, 11, 11, 22, 18, 18, 17]
+    widths = [24, 11, 7, 17, 12, 22, 22, 13, 22, 30, 10, 13, 13, 15, 11, 24, 18, 17, 19, 11, 11, 22, 18, 18, 17]
     for n, i in enumerate(keep, 1): ws.column_dimensions[get_column_letter(n)].width = widths[i]
     ws.freeze_panes = "A2"; ws.auto_filter.ref = ws.dimensions
 
@@ -116,8 +135,8 @@ def workbook(title, start_label, end_label, orders, names, with_time=True):
     s.append([f"DHS Logistics: {title}"]); s["A1"].font = Font(name="Arial", bold=True, size=13)
     s.append(["From", start_label, "To", end_label])
     s.append(["Prepared", datetime.now(IST).strftime("%Y-%m-%d %H:%M")])
-    head = lambda first: [first, "Orders", "Pending", "Dispatched", "Cancelled", "Bags", "Pending bags"] + (["Avg time (h:mm)"] if with_time else [])
-    line = lambda label, a: [label, a["n"], a["Pending"], a["Dispatched"], a["Cancelled"], a["bags"], a["pbags"]] + ([a["avg"]] if with_time else [])
+    head = lambda first: [first, "Orders", "Pending", "On hold", "Dispatched", "Cancelled", "Bags", "Pending bags", "Cancelled bags"] + (["Avg time (h:mm)"] if with_time else [])
+    line = lambda label, a: [label, a["n"], a["Pending"], a["Hold"], a["Dispatched"], a["Cancelled"], a["bags"], a["pbags"], a["cbags"]] + ([a["avg"]] if with_time else [])
     total = agg(orders)
     for heading, key, first in (("By dealer", lambda o: o.get("dealer") or "(no dealer)", "Dealer"), ("By day", lambda o: o["day"], "Date")):
         s.append([]); s.append([heading]); s.cell(s.max_row, 1).font = Font(name="Arial", bold=True)
@@ -129,7 +148,7 @@ def workbook(title, start_label, end_label, orders, names, with_time=True):
         s.append(line("Total", total))
         for c in s[s.max_row]: c.font = Font(name="Arial", bold=True)
     s.column_dimensions["A"].width = 26
-    for col in "BCDEFGH": s.column_dimensions[col].width = 13
+    for col in "BCDEFGHIJ": s.column_dimensions[col].width = 13
     buf = io.BytesIO(); wb.save(buf)
     return buf.getvalue(), total
 
@@ -206,7 +225,19 @@ def make_email(subject, body, recipients, attachments):
         msg.add_attachment(content, maintype=XLSX[0], subtype=XLSX[1], filename=fname)
     return msg
 
-FOOTER = "Sent automatically by the DHS Logistics Order Dashboard. An Admin can change who gets this email, and when, on the dashboard under Settings -> Team & emails."
+FOOTER = "Sent automatically by the DHS Logistics - Orders Dashboard (Alpha). An Admin can change who gets this email, and when, on the dashboard under Settings -> Team & emails."
+
+def cancelled_lines(lst, names):
+    """One line per cancelled order: what it was, who cancelled it and when, and why."""
+    out = []
+    for o in lst:
+        if o.get("dispatchedAt") is not None or o.get("mark") != "Cancelled":
+            continue
+        who = f"cancelled by {names.get(o.get('cancelledBy'), o.get('cancelledBy'))}" if o.get("cancelledBy") else "cancelled (who cancelled wasn't recorded)"
+        when = f" at {dt(o['cancelledAt']).strftime('%d %b, %I:%M %p')}" if isinstance(o.get("cancelledAt"), (int, float)) else ""
+        why = f". Reason: {o['cancelNote']}" if o.get("cancelNote") else ""
+        out.append(f"  {dt(o['orderAt']).strftime('%d %b')}: {o.get('party') or '?'} ({o.get('dealer') or 'no dealer'}, {int(o.get('bags') or 0)} bags), {who}{when}{why}")
+    return "\n".join(out)
 
 def weekly_email(data, w, start, end, test, names):
     s_ms, e_ms = ms(start), ms(end)
@@ -222,12 +253,16 @@ def weekly_email(data, w, start, end, test, names):
 
 Orders received: {t['n']}
 Dispatched: {t['Dispatched']}
-Cancelled: {t['Cancelled']}
 Still pending: {t['Pending']} ({t['pbags']:,} bags)
+On hold: {t['Hold']} ({t['hbags']:,} bags)
+Cancelled: {t['Cancelled']} ({t['cbags']:,} bags)
 Bags (not counting cancelled): {t['bags']:,} (about {t['bags'] * 50 / 1000:,.1f} t)
 
 By dealer:
 {dealers or '  No orders in this period.'}
+
+Cancelled orders and who cancelled them:
+{cancelled_lines(week, names) or '  None.'}
 
 The attached Excel has every order of the period (Orders sheet) and the totals (Summary sheet).
 
@@ -247,7 +282,8 @@ def monthly_email(data, m, month, test, names):
     name = datetime(y, mo, 1).strftime("%B %Y")
     body = f"""DHS Logistics master file for {name}
 
-Orders: {t['n']} (dispatched {t['Dispatched']}, cancelled {t['Cancelled']}, still pending {t['Pending']})
+Orders: {t['n']} (dispatched {t['Dispatched']}, still pending {t['Pending']}, on hold {t['Hold']}, cancelled {t['Cancelled']})
+Cancelled bags: {t['cbags']:,}
 Bags (not counting cancelled): {t['bags']:,} (about {t['bags'] * 50 / 1000:,.1f} t)
 Average time to dispatch: {t['avg'] or '–'}
 
@@ -277,7 +313,7 @@ def contacts_workbook(orders):
     buf = io.BytesIO(); wb.save(buf)
     return buf.getvalue()
 
-def daily_email(data, d, now, test):
+def daily_email(data, d, now, test, names=None):
     """Every order from the 1st of this month up to now: dealer, party, phone, location (oldest first)."""
     first = now.replace(day=1)
     lst = data.orders_between_days(first.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d"))
@@ -285,9 +321,18 @@ def daily_email(data, d, now, test):
                  key=lambda o: (o["orderAt"], o.get("createdAt") or 0, o["id"]))
     month = now.strftime("%Y-%m")
     label = f"1 to {now.day} {now.strftime('%b %Y')}" if now.day > 1 else f"1 {now.strftime('%b %Y')}"
+    def counts(l):
+        c = {"Dispatched": 0, "Pending": 0, "On hold": 0, "Scheduled": 0, "Cancelled": 0}
+        for o in l: c[status_of(o)] += 1
+        return f"{len(l)} (dispatched {c['Dispatched']}, pending {c['Pending']}, on hold {c['On hold']}, cancelled {c['Cancelled']}" + (f", for later days {c['Scheduled']}" if c["Scheduled"] else "") + ")"
+    today = now.strftime("%Y-%m-%d")
+    todays = [o for o in lst if (o.get("day") or day_key(o["orderAt"])) == today]
     body = f"""DHS Logistics daily contact list, {label}
 
-Orders so far this month: {len(lst)}
+Orders so far this month: {counts(lst)}
+Orders today, {now.strftime('%d %b')}: {counts(todays)}
+Cancelled today:
+{cancelled_lines(todays, names or {}) or '  None.'}
 
 Attached: DHS_Contacts_{month}.xlsx with the dealer, party, phone number and location of every order
 from the 1st of the month until {now.strftime('%I:%M %p').lstrip('0').lower()} today. Each day's file has
@@ -352,7 +397,8 @@ def run(data, now=None, test=False, send=None):
     today = now.strftime("%Y-%m-%d")
     due_daily = now.replace(hour=d["hh"], minute=d["mm"], second=0, microsecond=0)
     if d["on"] and d["recipients"] and (test or (now >= due_daily and cfg.get("lastDailyDate") != today)):
-        msg, n = daily_email(data, d, now, test)
+        names = names or data.names()
+        msg, n = daily_email(data, d, now, test, names)
         send(msg); done.append(("daily", n, list(d["recipients"])))
         fields["lastDailySentAt"] = ms(datetime.now(IST))
         fields["lastDailyResult"] = ("Test sent" if test else "Sent") + f" to {len(d['recipients'])}, {n} orders this month"
