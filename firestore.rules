@@ -1,10 +1,17 @@
 rules_version = '2';
-// DHS Logistics Order Dashboard — who can read and change what.
-// Roles live in the "members" collection: document ID = the person's email in lower case, field "role".
-//   admin    : everything, including the team list and the dealer list
-//   dispatch : add/edit/cancel orders + mark orders dispatched
-//   desk     : add/edit/cancel orders
-//   viewer   : read only
+// DHS Logistics Order Dashboard: who can read and change what.
+// Designations live in the "members" collection: document ID = the person's email in lower case, field "role".
+// The stored role keys are unchanged from earlier versions; only the names shown in the app changed:
+//   admin    = Admin       : everything
+//   dispatch = Supervisor  : add/change/cancel any order not yet dispatched; mark dispatched, correct dispatch time,
+//                            undo dispatch; add dealers; add vehicles and tracking links
+//   desk     = Dispatch    : add orders; change/cancel only their own orders from today (not dispatched);
+//                            mark dispatched and undo dispatch; add vehicles and tracking links
+//   viewer   = Viewer      : read only (no vehicles / tracking links)
+// Only Admin: change order times, change dispatched orders, delete orders, remove dealers or vehicles, the team, emails.
+// Every change to an order records who made it (updatedBy) and when (updatedAt).
+// One device per account: each member record keeps the time of the newest sign-in ("sess", seconds);
+// a device whose sign-in is older gets no access.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -12,41 +19,101 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email != null
         && request.auth.token.email_verified == true;
     }
-    function memberPath() {
-      return /databases/$(database)/documents/members/$(request.auth.token.email.lower());
-    }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function memberPath() { return /databases/$(database)/documents/members/$(myEmail()); }
+    function me() { return get(memberPath()).data; }
+    function current() { return me().get('sess', 0) <= request.auth.token.auth_time; }
     function role() {
-      return signedIn() && exists(memberPath()) ? get(memberPath()).data.role : 'none';
+      return signedIn() && exists(memberPath()) && current() ? me().role : 'none';
     }
-    function isMember()    { return role() in ['admin', 'dispatch', 'desk', 'viewer']; }
-    function canOrder()    { return role() in ['admin', 'dispatch', 'desk']; }
-    function canDispatch() { return role() in ['admin', 'dispatch']; }
-    function isAdmin()     { return role() == 'admin'; }
+    function isMember()  { return role() in ['admin', 'dispatch', 'desk', 'viewer']; }
+    function canOrder()  { return role() in ['admin', 'dispatch', 'desk']; }
+    function isAdmin()   { return role() == 'admin'; }
+    function isSup()     { return role() == 'dispatch'; }
+    function isViewer()  { return role() == 'viewer'; }
 
-    // Team list: everyone on the team can see it (for names); only Admin changes it.
-    // A signed-in person may read their own entry so the app can tell them if they're not authorised.
+    // An order must carry its day (YYYY-MM-DD) and an "open" flag that matches its status,
+    // because the dashboard's queue and daily lists are built from those two fields.
+    function consistent(d) {
+      return d.day is string && d.day.size() == 10
+        && d.open == (d.get('mark', '') != 'Cancelled' && d.get('dispatchedAt', null) == null);
+    }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    // Each change must be signed by the person making it. The one exception is the Admin's one-time upgrade of old orders.
+    function stamped() { return request.resource.data.get('updatedBy', '') == myEmail() && request.resource.data.get('updatedAt', 0) is number; }
+    function upgradeOnly() { return isAdmin() && changed().hasOnly(['day', 'open', 'dispatchedAt', 'dispatchedBy']); }
+
+    // Order time must be "now" for everyone except the Admin (30 minutes' leeway for a slow connection or phone clock).
+    function nowish(t) { return t is number && t > request.time.toMillis() - 1800000 && t < request.time.toMillis() + 300000; }
+    // Start of today in India (UTC+5:30), in milliseconds.
+    function todayStart() { return math.floor((request.time.toMillis() + 19800000) / 86400000.0) * 86400000 - 19800000; }
+
+    // Dispatch actions: mark dispatched, undo dispatch, correct the dispatch time.
+    function onlyDispatchFields() { return changed().hasOnly(['dispatchedAt', 'dispatchedBy', 'open', 'updatedBy', 'updatedAt']); }
+    function dispatchOk() {
+      return isSup()
+        // Dispatch may mark dispatched or undo, but not move an existing dispatch time
+        || resource.data.get('dispatchedAt', null) == null
+        || request.resource.data.get('dispatchedAt', null) == null;
+    }
+    // Changing details or cancelling: not after dispatch, order time unchanged;
+    // Dispatch only on their own orders from today.
+    function detailsOk() {
+      return !changed().hasAny(['dispatchedAt', 'dispatchedBy', 'orderAt', 'day'])
+        && resource.data.get('dispatchedAt', null) == null
+        && (isSup() || (resource.data.get('createdBy', '') == myEmail() && resource.data.orderAt >= todayStart()));
+    }
+
+    // Team list: everyone on the team can see it (for names); only Admin adds, removes or changes designations.
+    // Each person may only record their own sign-in on their own record, and only a newer one.
     match /members/{email} {
-      allow read: if isMember() || (signedIn() && email == request.auth.token.email.lower());
-      allow write: if isAdmin();
+      allow read: if isMember() || (signedIn() && email == myEmail());
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (signedIn() && email == myEmail()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sess', 'sessAt', 'device'])
+        && request.resource.data.sess == request.auth.token.auth_time
+        && request.resource.data.sess > resource.data.get('sess', 0));
     }
 
-    // Dealer list
+    // Settings. "report" (email lists) is Admin-only; "vehicles" is hidden from Viewers.
+    // Dealers: Admin changes freely; a Supervisor may only add one at the end of the list.
+    // Vehicles: Admin changes freely; Supervisor and Dispatch may add or update, but the list can't get shorter.
     match /config/{docId} {
-      allow read: if isMember();
-      allow write: if isAdmin();
+      allow read: if isMember() && (docId != 'report' || isAdmin()) && (docId != 'vehicles' || !isViewer());
+      allow write: if isAdmin()
+        || (docId == 'dealers' && isSup() && resource != null
+            && request.resource.data.list.size() == resource.data.list.size() + 1
+            && request.resource.data.list[0:resource.data.list.size()] == resource.data.list)
+        || (docId == 'vehicles' && canOrder()
+            && (resource == null || request.resource.data.list.size() >= resource.data.list.size()));
     }
 
     // Orders
     match /orders/{orderId} {
       allow read: if isMember();
-      allow create: if canOrder() && request.resource.data.createdBy == request.auth.token.email.lower();
-      allow update, delete: if canOrder();
+      allow create: if canOrder()
+        && request.resource.data.createdBy == myEmail()
+        && consistent(request.resource.data)
+        && request.resource.data.get('dispatchedAt', null) == null
+        && (isAdmin() || nowish(request.resource.data.orderAt));
+      allow update: if canOrder()
+        && consistent(request.resource.data)
+        && !changed().hasAny(['createdBy', 'createdAt'])
+        && (stamped() || upgradeOnly())
+        && (isAdmin() || (onlyDispatchFields() && dispatchOk()) || detailsOk());
+      allow delete: if isAdmin();
     }
 
-    // Dispatch records (one per dispatched order, same ID as the order)
+    // Daily totals used by the Summary tab (recalculated by the app after each change)
+    match /daysum/{day} {
+      allow read: if isMember();
+      allow write: if canOrder();
+    }
+
+    // Old dispatch records from version 1. Read once by the Admin during the upgrade; kept as a backup.
     match /deliveries/{orderId} {
       allow read: if isMember();
-      allow write: if canDispatch();
+      allow write: if isAdmin();
     }
   }
 }

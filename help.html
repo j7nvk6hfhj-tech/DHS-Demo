@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Help guide · DHS Logistics Order Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="icons/logo.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+:root{
+  --bg:#eceff1; --surface:#ffffff; --surface-2:#f5f7f8; --ink:#1b2227; --muted:#5b6770; --line:#d3d9dd;
+  --accent:#e9a514; --accent-ink:#6b4a00; --accent-soft:#fbefd2;
+  --pending:#b8431b; --pending-soft:#fbe6dd; --done:#2b7a4b; --done-soft:#dcefe3; --road:#2560a0;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13171a; --surface:#1b2125; --surface-2:#20272c; --ink:#e5e9eb; --muted:#9ba6ad; --line:#2f383e;
+  --accent:#f0b429; --accent-ink:#f6cf74; --accent-soft:#3a2f12;
+  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f; --road:#7fb0ea; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13171a; --surface:#1b2125; --surface-2:#20272c; --ink:#e5e9eb; --muted:#9ba6ad; --line:#2f383e;
+  --accent:#f0b429; --accent-ink:#f6cf74; --accent-soft:#3a2f12;
+  --pending:#f08a62; --pending-soft:#3d2219; --done:#6cc590; --done-soft:#17321f; --road:#7fb0ea; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+[lang="hi"]{font-family:system-ui,-apple-system,"Noto Sans Devanagari","Nirmala UI","Kohinoor Devanagari",sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar{display:flex;align-items:center;gap:10px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.logo{width:42px;height:42px;flex:none;display:block}
+h1{font:700 21px/1.05 var(--f-display);letter-spacing:.02em;margin:0}
+.brand small{display:block;color:var(--muted);font-size:12px}
+.btn{appearance:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 14px var(--f-body);padding:7px 12px;border-radius:8px;cursor:pointer;text-decoration:none;min-height:36px}
+.btn.primary{background:var(--done);border-color:var(--done);color:#fff}
+.search{display:flex;gap:8px;padding-bottom:10px}
+.embedded .bar{display:none}
+.embedded .search{padding-top:10px}
+.embedded .card{scroll-margin-top:110px}
+.search input{flex:1;min-width:0;font:16px var(--f-body);padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink)}
+.search input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px}
+.chips::-webkit-scrollbar{display:none}
+@media (min-width:700px){.chips{flex-wrap:wrap}}
+a{color:var(--road);text-underline-offset:2px}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:600 13px var(--f-body);padding:5px 10px;border-radius:99px;cursor:pointer;white-space:nowrap}
+main{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding-block:16px 40px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;scroll-margin-top:150px}
+.card.flash{box-shadow:0 0 0 3px var(--accent)}
+h2{font:700 22px/1.15 var(--f-display);letter-spacing:.01em;margin:0 0 8px}
+h3{font-size:16px;margin:14px 0 6px}
+p{margin:0 0 8px} p:last-child{margin-bottom:0}
+ol,ul{margin:0 0 8px;padding-left:22px} li{margin:4px 0}
+.note{background:var(--accent-soft);border-left:4px solid var(--accent);padding:8px 12px;border-radius:6px;font-size:15px}
+.who{display:inline-block;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:2px}
+.tabname{white-space:nowrap}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.tscroll{overflow-x:auto}
+.yes{color:var(--done);font-weight:600} .no{color:var(--muted)}
+details{border-top:1px solid var(--line);padding:4px 0}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;font-weight:600;padding:8px 0}
+details>div{padding:0 0 10px}
+.count{color:var(--muted);font-size:14px;padding-bottom:8px}
+.admins{display:grid;gap:4px;margin-top:6px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere}
+kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:0 5px;white-space:nowrap}
+@media print{header .search,header .chips,#openDash{display:none}body{background:#fff}.card{break-inside:avoid;border-color:#bbb}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">
+        <img class="logo" src="icons/logo.svg" alt="DHS Logistics logo" width="42" height="42">
+        <div><h1>Help guide</h1><small>DHS Logistics Order Dashboard</small></div>
+      </div>
+      <a class="btn" id="openDash" href="./" hidden>Open the dashboard</a>
+    </div>
+    <div class="search" role="search">
+      <input id="q" type="search" placeholder="Stuck? Type a word, e.g. cancel" aria-label="Search the help guide" autocomplete="off">
+    </div>
+    <nav class="chips" aria-label="Jump to">
+      <button class="chip" data-go="signing-in">Signing in</button>
+      <button class="chip" data-go="layout">Finding your way</button>
+      <button class="chip" data-go="new-order">New order</button>
+      <button class="chip" data-go="token">Token</button>
+      <button class="chip" data-go="queue">Dispatch</button>
+      <button class="chip" data-go="edit">Edit or cancel</button>
+      <button class="chip" data-go="all-orders">All orders</button>
+      <button class="chip" data-go="summary">Summary &amp; Excel</button>
+      <button class="chip" data-go="vehicles">Tracking</button>
+      <button class="chip" data-go="faq">Quick answers</button>
+      <button class="chip" data-go="contact">Still stuck?</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="guide">
+  <div class="count" id="count" hidden></div>
+
+  <section class="card" id="start" data-s data-k="start new user first day roles नया">
+    <h2>New here? Start with this</h2>
+    <p>The dashboard keeps every cement order in one place, gives each order a token, and lines orders up for dispatch, oldest first. Your designation decides what you can do (see <a href="#roles" data-go="roles">Who can do what</a>):</p>
+    <ul>
+      <li><b>Dispatch:</b> read <a href="#signing-in" data-go="signing-in">Signing in</a>, <a href="#new-order" data-go="new-order">Taking a new order</a>, <a href="#queue" data-go="queue">Dispatching an order</a>, <a href="#edit" data-go="edit">Changing or cancelling</a> and <a href="#vehicles" data-go="vehicles">Vehicles and tracking</a>.</li>
+      <li><b>Supervisor:</b> the same, plus <a href="#dealers" data-go="dealers">Dealer list</a>.</li>
+      <li><b>Admin:</b> everything, plus <a href="#team" data-go="team">Team and emails</a> and <a href="#summary" data-go="summary">Summary and Excel</a>.</li>
+      <li><b>Viewer:</b> <a href="#layout" data-go="layout">Finding your way</a> and <a href="#all-orders" data-go="all-orders">Finding orders</a>.</li>
+    </ul>
+    <p>Stuck on something? Type a word in the search box at the top.</p>
+  </section>
+
+  <section class="card" id="signing-in" data-s data-k="login log in sign in password google gmail verify verification email account forgot reset authorised authorized one device signed out phone लॉगिन पासवर्ड">
+    <h2>Signing in</h2>
+    <ol>
+      <li>Your Admin must first add your email to the dashboard. Until then, you can't get in.</li>
+      <li><b>Gmail:</b> tap <span class="ui">Sign in with Google</span> and pick your account.</li>
+      <li><b>Any other email, first time:</b> type your email and a new password (at least 6 characters), then tap <span class="ui">Create account</span>. Open the link we email you, come back and tap <span class="ui">I've verified</span>. From then on, use <span class="ui">Sign in</span>.</li>
+      <li><b>Forgot your password?</b> Type your email, then tap <span class="ui">Forgot password?</span> to get a reset link.</li>
+    </ol>
+    <p class="note">If you see "not on the authorised list", the Admin has to add the exact email you signed in with. Check the spelling, and check you didn't pick a different Gmail account.</p>
+    <h3>One device per account</h3>
+    <p>Each person's account works on <b>one phone or computer at a time</b>. Signing in on a new device signs the old one out, with a message saying so. Keep your password to yourself; sharing it means you keep signing each other out, and the Admin can see which device each account is on.</p>
+    <p>On an iPhone, the installed app and Safari count as two devices, so use the installed app.</p>
+  </section>
+
+  <section class="card" id="install" data-s data-k="install app phone home screen icon iphone android computer इंस्टॉल">
+    <h2>Put it on your phone</h2>
+    <ul>
+      <li><b>Android (Chrome):</b> tap <span class="ui">Install app</span> at the top of the dashboard. If nothing happens, open the browser menu <kbd>⋮</kbd> and choose <b>Install app</b> or <b>Add to Home screen</b>.</li>
+      <li><b>iPhone:</b> open the dashboard in <b>Safari</b>, tap the Share button, then <b>Add to Home Screen</b>.</li>
+      <li><b>Computer:</b> in Chrome or Edge, tap <span class="ui">Install app</span>.</li>
+    </ul>
+    <p>It then opens from its own icon, like any app. You still sign in the same way.</p>
+  </section>
+
+  <section class="card" id="layout" data-s data-k="tabs navigate find layout menu sign out logout hindi english language live reconnect red number हिंदी टैब भाषा">
+    <h2>Finding your way</h2>
+    <div class="tscroll"><table>
+      <thead><tr><th>Tab</th><th>What it's for</th></tr></thead>
+      <tbody>
+        <tr><td class="tabname"><b>New Order</b><br><span lang="hi">नया ऑर्डर</span></td><td>Take an order and get its token. Today's orders are listed beside the form (below it on a phone).</td></tr>
+        <tr><td class="tabname"><b>Orders → Queue</b><br><span lang="hi">ऑर्डर → कतार</span></td><td>Orders waiting for dispatch, oldest first. Number 1 goes next.</td></tr>
+        <tr><td class="tabname"><b>Orders → All orders</b><br><span lang="hi">ऑर्डर → सभी ऑर्डर</span></td><td>Every order: search, pick dates, download Excel.</td></tr>
+        <tr><td class="tabname"><b>Summary</b><br><span lang="hi">सारांश</span></td><td>Month totals by dealer and by day, and Excel downloads.</td></tr>
+        <tr><td class="tabname"><b>Settings</b><br><span lang="hi">सेटिंग्स</span></td><td><b>Dealers</b> (<span lang="hi">डीलर</span>), <b>Vehicles</b> (<span lang="hi">गाड़ियाँ</span>) and, for the Admin, <b>Team &amp; emails</b> (<span lang="hi">टीम और ईमेल</span>).</td></tr>
+      </tbody>
+    </table></div>
+    <h3>At the top</h3>
+    <ul>
+      <li>The <b>red number</b> on Orders is how many orders are waiting.</li>
+      <li><b>Your name</b> (top right) opens a menu with <span class="ui">Help</span>, the language switch and <span class="ui">Sign out</span>.</li>
+      <li><span class="ui">Help</span> opens this guide at the part about the page you're on.</li>
+      <li><span class="ui" lang="hi">हिंदी</span> switches tab names, headings, column names and field labels to Hindi; <span class="ui">English</span> switches back. Orders, names, products and buttons stay as typed, in English. Each phone or computer remembers its own choice.</li>
+      <li><b>Live</b> (green) means everything is up to date. <b>Reconnect</b> means the connection dropped: reload the page.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="new-order" data-s data-k="new order add take enter book form dealer party customer product bags vehicle driver save whatsapp repeat duplicate नया ऑर्डर बुक">
+    <h2>Taking a new order</h2>
+    <ol>
+      <li><b>Order date &amp; time</b> is set to the moment you save, which keeps the queue fair. Only the <b>Admin</b> can enter a different time, for example a call at 10:15 that's entered at 10:40; ask the Admin if that's needed.</li>
+      <li><b>Dealer:</b> type a few letters and pick from the list. Every order needs a dealer. Not in the list? Ask the Admin or a Supervisor to add it under <b>Settings → Dealers</b>.</li>
+      <li><b>Party / customer:</b> who the cement is for. Any name.</li>
+      <li><b>Phone</b> and <b>Delivery location</b> are optional, but they help the driver.</li>
+      <li><b>Products &amp; bags:</b> pick the product and type the number of 50 kg bags. For a mixed order, tap <span class="ui">+ Add product</span> (up to 5). The total shows underneath.</li>
+      <li><b>Vehicle no.</b> and <b>Driver</b> are optional. You can add them later with Edit.</li>
+      <li>Tap <span class="ui">Add order &amp; get token</span>. A ticket shows the <b>token</b> and the order's place in the dispatch queue. The form clears for the next order.</li>
+      <li>To let the customer know, tap <span class="ui">Send token on WhatsApp</span> on the ticket. WhatsApp opens with the message ready; check it and tap Send. With no phone number on the order, WhatsApp asks you to pick the contact.</li>
+    </ol>
+    <p class="note">If the same dealer already has an order for the same party (or the same phone number) in the last 12 hours, the dashboard shows <b>"Looks like a repeat of token …"</b>. Check it's really a new order, then tap <span class="ui">Save anyway</span>. Changing any field clears the warning.</p>
+  </section>
+
+  <section class="card" id="token" data-s data-k="token number fifo in line position queue number changed टोकन नंबर">
+    <h2>Token and "in line"</h2>
+    <ul>
+      <li><b>Token</b> is the order's number for its day. The earliest order of the day is token 1. It's on the yellow ticket with the date. Give this number to the customer.</li>
+      <li><b>In line</b> is the order's place in the dispatch queue, counting all days. Number 1 goes next. It goes down as the orders ahead are dispatched.</li>
+    </ul>
+    <p class="note">A token changes only if someone adds an order with an earlier time on the same day, or deletes an order. To keep numbers steady, cancel an order instead of deleting it.</p>
+  </section>
+
+  <section class="card" id="queue" data-s data-k="queue dispatch dispatched mark confirm undo waiting truck left track कतार डिस्पैच भेजा">
+    <h2>Dispatching an order <span class="who">Admin · Supervisor · Dispatch</span></h2>
+    <ol>
+      <li>Open <b>Orders → Queue</b>. The oldest pending order is at the top. The red <b>Waiting</b> time shows how long it has waited.</li>
+      <li>When the truck leaves, tap <span class="ui">Mark dispatched</span>. The time is filled in as now; change it if the truck left earlier.</li>
+      <li>Tap <span class="ui">Confirm dispatched</span>. The order leaves the queue, and the time taken is recorded.</li>
+    </ol>
+    <p>After dispatching, a green note offers <span class="ui">Send update on WhatsApp</span>: it tells the customer the dispatch time, vehicle and driver. Tap <span class="ui">Hide</span> to close the note.</p>
+    <p><b>Marked the wrong one?</b> Open that order (tap it in All orders or Today's list) and tap <span class="ui">Undo dispatch</span>. It goes back to its place in the queue.</p>
+    <p>Each card shows <b>Entered by</b>: who took the order. If there's any confusion about an order, ask that person first.</p>
+    <p>Correcting a dispatch time later (in the order window) is for a Supervisor or the Admin. Viewers see the Mark dispatched button greyed out.</p>
+    <p><span class="ui">Track</span> on a card opens the truck's live location in WheelsEye. It shows when the order's vehicle number has a link under Settings → Vehicles.</p>
+  </section>
+
+  <section class="card" id="edit" data-s data-k="edit change correct mistake wrong cancel cancelled delete remove duplicate undo बदलें रद्द गलती डिलीट">
+    <h2>Changing, cancelling or deleting an order</h2>
+    <ul>
+      <li><b>Change:</b> tap <span class="ui">Edit</span> on a queue card, or tap the order in Today's list or All orders. Fix what's wrong and tap <span class="ui">Save changes</span>.</li>
+      <li><b>Cancel</b> (customer called it off): open the order, set <b>Mark as</b> to <b>Cancelled</b>, then <span class="ui">Save changes</span>. It leaves the queue but stays in the records and Excel, with its token. To bring it back, set Mark as to Pending.</li>
+      <li><b>Delete</b> <span class="who">Admin</span> (only for duplicates or test entries): tap <span class="ui">Delete order</span>, then tap again to confirm. It's gone for good, and later tokens that day move up by one. Others don't see this button; they cancel instead.</li>
+      <li><b>Who changed it?</b> Under the order's heading you'll see who entered it and, after any change, <b>Last changed … by …</b>.</li>
+      <li>The order window also has a <span class="ui">WhatsApp</span> button to send the token, or the dispatch update once it's dispatched.</li>
+    </ul>
+    <p><b>Who can change what:</b> the <b>Admin</b> can change any order, including its time and orders already dispatched. A <b>Supervisor</b> can change or cancel any order that isn't dispatched yet. <b>Dispatch</b> can change or cancel only the orders they entered themselves, on the same day, before dispatch. <b>Viewers</b> can't open orders. If you can't change an order, the order window tells you why; ask a Supervisor or the Admin.</p>
+  </section>
+
+  <section class="card" id="all-orders" data-s data-k="all orders find search old past previous last month dates load filter dealer status excel download सभी ऑर्डर पुराने खोज">
+    <h2>Finding orders (All orders)</h2>
+    <ul>
+      <li>Today's orders, and any day that still has pending orders, show straight away. The <b>Entered by</b> column, next to the order time, shows who took each order.</li>
+      <li>Use <b>Dealer</b>, <b>Status</b> and <b>Search</b> to narrow the list. Search finds the party, the location or the phone number (type at least 3 digits).</li>
+      <li><b>Older dates:</b> set <b>From</b> and <b>To</b>. A yellow bar says those dates aren't loaded yet; tap <span class="ui">Load these dates</span>. Old orders load only when someone asks, which keeps the dashboard free to run.</li>
+      <li><span class="ui">Download Excel</span> saves the orders on screen.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="summary" data-s data-k="summary report totals month dealer wise day wise excel download master file recalculate average time सारांश रिपोर्ट एक्सेल">
+    <h2>Summary and Excel</h2>
+    <ul>
+      <li>Pick a <b>Month</b>. The cards at the top show orders, pending, dispatched, bags and average time from order to dispatch.</li>
+      <li><b>Dealer-wise</b> and <b>Day-wise</b> tables: tap a row, choose the dates, and tap Download to get that dealer's or day's orders as Excel.</li>
+      <li><span class="ui">Refresh</span> updates the totals of older days.</li>
+      <li><b>Admin only:</b> <span class="ui">Download master file</span> gives the whole month in one Excel. <span class="ui">Recalculate month</span> fixes the totals if they ever look wrong.</li>
+    </ul>
+    <p>Only the Admin's Excel files (and the monthly master file email) include the <b>time taken</b> columns, per order and the average. Everyone else's files, and the weekly report, leave them out.</p>
+    <p>On Android, Excel files go to <b>Downloads</b>. On iPhone, look in the <b>Files</b> app under Downloads.</p>
+  </section>
+
+  <section class="card" id="vehicles" data-s data-k="vehicles vehicle truck gps track tracking wheelseye link expired old location driver गाड़ी ट्रैक लोकेशन">
+    <h2>Vehicles and tracking <span class="who">Admin · Supervisor · Dispatch</span></h2>
+    <ol>
+      <li>In the WheelsEye app, select the truck, tap <b>Share location</b> and copy the link.</li>
+      <li>In <b>Settings → Vehicles</b>, type the truck number exactly as you write it on orders, add the driver, paste the link and tap <span class="ui">Save vehicle</span>.</li>
+      <li>Every order with that vehicle number now shows a <span class="ui">Track</span> button.</li>
+    </ol>
+    <p class="note">WheelsEye links stop working after about 7 days. The Link status column shows the days left. When it says <b>Expired</b>, or orders show <b>Track (old link)</b>, tap <span class="ui">New link</span> and paste a fresh one.</p>
+    <p>The Admin, Supervisors and Dispatch can add vehicles and paste new links; only the Admin can remove a vehicle. Viewers don't see this page.</p>
+    <p>Anyone with a link can see that truck, so keep links inside the team.</p>
+  </section>
+
+  <section class="card" id="dealers" data-s data-k="dealers dealer list add new dealer remove डीलर">
+    <h2>Dealer list</h2>
+    <p><b>Settings → Dealers</b> shows the authorised dealers. These names fill the Dealer list on every order.</p>
+    <p>The <b>Admin</b> or a <b>Supervisor</b> can add a dealer; only the <b>Admin</b> can remove one. Removing a dealer doesn't change old orders.</p>
+  </section>
+
+  <section class="card" id="team" data-s data-k="team staff add person user remove leaver role access emails weekly monthly report recipients schedule टीम ईमेल">
+    <h2>Team and emails <span class="who">Admin</span></h2>
+    <ul>
+      <li><b>Add a person:</b> in <b>Settings → Team &amp; emails</b>, type their name and email, pick a role and tap <span class="ui">Add person</span>. They can sign in straight away.</li>
+      <li><b>Change a role</b> any time. It applies immediately. <b>Remove</b> people who leave on their last day.</li>
+      <li><b>Device</b> shows which phone or computer each person is signed in on, and since when. If a phone is lost, or an account seems to be shared, tap <span class="ui">Sign out device</span> (tap twice). They can then sign in again on one device.</li>
+      <li><b>Report emails:</b> the <b>Daily contact list</b> (dealer, party, phone and location of every order since the 1st of the month; starts afresh each month), the <b>Weekly report</b> and the <b>Monthly master file</b> each have an on/off switch, a time and their own list of recipients. Emails usually arrive 5 to 10 minutes after the set time.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="roles" data-s data-k="roles designation who can do what permission admin supervisor dispatch viewer access rights">
+    <h2>Who can do what</h2>
+    <div class="tscroll"><table>
+      <thead><tr><th></th><th>Admin</th><th>Supervisor</th><th>Dispatch</th><th>Viewer</th></tr></thead>
+      <tbody>
+        <tr><td>See orders, queue and summary; download Excel</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Open an order's details</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+        <tr><td>Add orders</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+        <tr><td>Change or cancel orders</td><td class="yes">Any order</td><td class="yes">Any order not yet dispatched</td><td class="yes">Own orders from today, not yet dispatched</td><td class="no">No</td></tr>
+        <tr><td>Change an order's date and time</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Change a dispatched order's details</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Mark dispatched, undo dispatch</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+        <tr><td>Correct a dispatch time</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Delete an order</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>See vehicles; add vehicles and tracking links</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+        <tr><td>Remove a vehicle</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Add a dealer</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Remove a dealer</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Refresh Summary totals</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Master file, recalculate month</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Team, designations, report emails</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="internet" data-s data-k="internet offline network slow no connection reconnect lost saved not saving इंटरनेट नेटवर्क">
+    <h2>When the internet is slow or off</h2>
+    <ul>
+      <li>The dashboard keeps showing what it already loaded.</li>
+      <li>Orders and changes you make while offline are kept on this phone or computer and saved once the internet is back. Keep the dashboard open until then.</li>
+      <li>If the top shows <b>Reconnect</b> or a message about the connection, reload the page.</li>
+      <li>Loading older dates, and Excel files from the Summary, need the internet. This guide works without it.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="faq" data-k="faq questions answers problem help">
+    <h2>Quick answers</h2>
+    <details data-s data-k="mistake wrong edit correct गलती"><summary>I typed something wrong in an order</summary><div>Open the order (Edit on the queue card, or tap it in a list), fix it and tap <b>Save changes</b>. See <a href="#edit" data-go="edit">Changing an order</a>.</div></details>
+    <details data-s data-k="repeat duplicate twice same order save anyway warning"><summary>It says "Looks like a repeat of token …"</summary><div>The same dealer already has an order for that party (or that phone number) in the last 12 hours. If it's the same order, don't save it again. If the customer really ordered again, tap <b>Save anyway</b>.</div></details>
+    <details data-s data-k="whatsapp message customer send token sms"><summary>How do I send the token to the customer?</summary><div>Tap <b>Send token on WhatsApp</b> on the ticket after saving, or open the order and tap <b>WhatsApp token</b>. After dispatch, use <b>Send update on WhatsApp</b>.</div></details>
+    <details data-s data-k="delete remove can't cannot find button डिलीट"><summary>I can't find the Delete button</summary><div>Only the Admin can delete orders. Cancel it instead: open the order, set <b>Mark as</b> to <b>Cancelled</b> and save.</div></details>
+    <details data-s data-k="can't change cannot edit locked greyed order"><summary>I can't change an order</summary><div>The order window says why. Usually it's already dispatched (only the Admin can change it then), or, for Dispatch, it was entered by someone else or on an earlier day. Ask a Supervisor or the Admin.</div></details>
+    <details data-s data-k="order time change earlier back date"><summary>Why can't I change the order time?</summary><div>The order time is set when you save, so the queue stays fair. Only the Admin can enter or change an order's time.</div></details>
+    <details data-s data-k="who changed edited history last changed"><summary>Who changed this order?</summary><div>Open the order. Under its heading you'll see who entered it and who last changed it, with the time. The Excel files show the same.</div></details>
+    <details data-s data-k="customer cancel cancelled रद्द"><summary>The customer cancelled</summary><div>Open the order, set <b>Mark as</b> to <b>Cancelled</b> and save. Don't delete it; cancelled orders stay in the records.</div></details>
+    <details data-s data-k="dispatched by mistake undo wrong dispatch"><summary>I marked the wrong order as dispatched</summary><div>Open that order and tap <b>Undo dispatch</b>. The Admin, a Supervisor or Dispatch can do this.</div></details>
+    <details data-s data-k="mark dispatched grey disabled button not working"><summary>The Mark dispatched button is grey</summary><div>Viewers can't mark orders dispatched. If you should be able to, ask the Admin to change your designation.</div></details>
+    <details data-s data-k="dealer missing not in list new dealer"><summary>The dealer isn't in the list</summary><div>Only the Admin can add dealers, under <b>Settings → Dealers</b>. Once added, it appears in the list on every phone straight away.</div></details>
+    <details data-s data-k="token changed number different"><summary>A token number changed</summary><div>Someone added an order with an earlier time on that day, or deleted an order. See <a href="#token" data-go="token">Token and "in line"</a>.</div></details>
+    <details data-s data-k="old order last month not showing missing find"><summary>I can't find an older order</summary><div>Go to <b>Orders → All orders</b>, set the From and To dates, and tap <b>Load these dates</b>.</div></details>
+    <details data-s data-k="track old link expired tracking not working"><summary>Track says "old link", or the map doesn't open</summary><div>The WheelsEye link has expired. The Admin, a Supervisor or Dispatch copies a fresh link from WheelsEye and taps <b>New link</b> under <b>Settings → Vehicles</b>.</div></details>
+    <details data-s data-k="team emails missing settings can't see"><summary>I can't see Team &amp; emails</summary><div>That page is only for the Admin.</div></details>
+    <details data-s data-k="not authorised authorized list sign in denied access"><summary>It says I'm "not on the authorised list"</summary><div>Ask the Admin to add the exact email you signed in with. Then tap <b>Sign out</b> and sign in again.</div></details>
+    <details data-s data-k="verification email not received link spam"><summary>The verification or password email didn't come</summary><div>Check the spam or promotions folder. On the sign-in screen, tap <b>Send link again</b>.</div></details>
+    <details data-s data-k="excel download not working file where"><summary>The Excel file didn't download</summary><div>Check the internet and try again. On Android, look in <b>Downloads</b>; on iPhone, in the <b>Files</b> app.</div></details>
+    <details data-s data-k="weekly monthly email report not arrived"><summary>The weekly or monthly email didn't arrive</summary><div>Check spam first. The Admin can check the recipients, the switch and the last check under <b>Settings → Team &amp; emails</b>.</div></details>
+    <details data-s data-k="install iphone button nothing happens"><summary>Install app does nothing on my iPhone</summary><div>On iPhone, open the dashboard in Safari, tap Share, then <b>Add to Home Screen</b>.</div></details>
+    <details data-s data-k="sign out logout log out menu where"><summary>Where is Sign out?</summary><div>Tap your name at the top right of the dashboard. Sign out is at the bottom of that menu.</div></details>
+    <details data-s data-k="signed out another device logged out kicked one device phone"><summary>I was signed out: "signed in on another device"</summary><div>Your account was just signed in on a different phone or computer, and an account works on one device at a time. If that was you, carry on there, or sign in again here to switch back. If it wasn't you, tell your Admin straight away and change your password.</div></details>
+    <details data-s data-k="who entered took order placed by"><summary>Who took this order?</summary><div>Queue cards show <b>Entered by</b>, and so does the column next to the order time in All orders. Today's list on New Order shows the name too.</div></details>
+    <details data-s data-k="access changed reload message banner"><summary>A message says "Your access changed" or "Lost the live connection"</summary><div>Reload the page. If it keeps happening, tell the Admin.</div></details>
+  </section>
+
+  <section class="card" id="contact" data-k="contact stuck help call whatsapp admin office support reach">
+    <h2>Still stuck? Reach your Admin</h2>
+    <p>Your Admin is the person who added you to the dashboard. Tell them which page you were on, what you tapped, and what you saw. A screenshot helps.</p>
+    <div class="admins" id="admins" hidden></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const embedded = window.parent !== window;
+  if (embedded) document.documentElement.classList.add("embedded"); else $("openDash").hidden = false;
+
+  // The dashboard passes in its Admins (from the team list it already has, so no extra reads)
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+  window.helpAdmins = list => {
+    const box = $("admins");
+    if (!list || !list.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.innerHTML = `<b>Your Admin${list.length > 1 ? "s" : ""}</b>` + list.map(a =>
+      `<div>${esc(a.name || a.email)} · <a href="mailto:${esc(a.email)}">${esc(a.email)}</a></div>`).join("");
+    box.hidden = false;
+  };
+
+  // Jump to a section without changing the address (keeps the phone's Back button simple)
+  function go(id){
+    const el = $(id); if (!el) return;
+    if ($("q").value) { $("q").value = ""; filter(); }
+    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 12);
+    el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 1600);
+  }
+  window.helpGo = go;
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-go]"); if (!t) return;
+    e.preventDefault(); go(t.dataset.go);
+  });
+
+  // Search: show only the parts that contain every word typed
+  const blocks = [...document.querySelectorAll("[data-s]")];
+  const textOf = el => (el.textContent + " " + (el.dataset.k || "") + " " + (el.closest("section") ? el.closest("section").dataset.k || "" : "")).toLowerCase();
+  const index = blocks.map(el => [el, textOf(el)]);
+  function filter(){
+    const words = $("q").value.toLowerCase().split(/\s+/).filter(Boolean);
+    const sections = [...document.querySelectorAll("main > section")];
+    if (!words.length) {
+      for (const s of sections) s.hidden = false;
+      for (const [el] of index) { el.hidden = false; if (el.tagName === "DETAILS") el.open = false; }
+      $("count").hidden = true; return;
+    }
+    window.scrollTo(0, 0);
+    let n = 0;
+    for (const [el, txt] of index) { const hit = words.every(w => txt.includes(w)); el.hidden = !hit; if (hit) n++; if (el.tagName === "DETAILS") el.open = hit; }
+    $("faq").hidden = ![...$("faq").querySelectorAll("details")].some(d => !d.hidden);
+    $("contact").hidden = false;
+    $("count").hidden = false;
+    $("count").textContent = n ? `${n} match${n > 1 ? "es" : ""} for "${$("q").value.trim()}"` : `Nothing found for "${$("q").value.trim()}". Try a shorter word, or reach your Admin (see below).`;
+  }
+  $("q").addEventListener("input", filter);
+
+  // Esc closes the guide when it's open inside the dashboard
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && embedded) { try { parent.document.getElementById("helpClose").click(); } catch(err){} }
+  });
+
+  // Opened directly with a section in the address, e.g. help.html#queue
+  if (location.hash.length > 1) setTimeout(() => go(decodeURIComponent(location.hash.slice(1))), 50);
+})();
+</script>
+</body>
+</html>
