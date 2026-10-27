@@ -39,7 +39,7 @@ const inr = n => Number(n || 0).toLocaleString("en-IN");
 
 const S = {
   me:null, myName:"", role:null, isAdmin:false, canEdit:false, canWrite:false,
-  members:[], vehicles:[], dealers:[], view:"new", confirmId:null, lastId:null,
+  members:[], vehicles:[], dealers:[], dealerList:[], dealerInfo:{}, view:"new", confirmId:null, lastId:null,
   today: dayKey(Date.now()),
   pending: [],                  // raw orders with open == true (live)
   live: new Map(),              // raw orders of the live days (live)
@@ -61,7 +61,7 @@ const HI = {
   "Help": "मदद", "Sign out": "साइन आउट",
   // headings
   "New order": "नया ऑर्डर", "Today": "आज", "Dispatch queue": "डिस्पैच कतार", "Dealer-wise": "डीलर के अनुसार", "Day-wise": "दिन के अनुसार",
-  "Authorised dealers": "अधिकृत डीलर", "Vehicles & GPS tracking": "गाड़ियाँ और GPS ट्रैकिंग", "How to get a tracking link": "ट्रैकिंग लिंक कैसे लें",
+  "Authorised dealers": "अधिकृत डीलर", "Edit dealer": "डीलर बदलें", "Vehicles & GPS tracking": "गाड़ियाँ और GPS ट्रैकिंग", "How to get a tracking link": "ट्रैकिंग लिंक कैसे लें",
   "Team & roles": "टीम और रोल", "Who can do what": "कौन क्या कर सकता है", "Report emails": "रिपोर्ट ईमेल",
   "Weekly report": "साप्ताहिक रिपोर्ट", "Daily contact list": "दैनिक संपर्क सूची", "Monthly master file": "मासिक मास्टर फ़ाइल", "Edit order": "ऑर्डर बदलें", "Download Excel": "Excel डाउनलोड",
   // field labels
@@ -934,10 +934,11 @@ document.addEventListener("click", async e => {
 function renderDealers(){
   const box = $("dealerEditor");
   if (box.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
-  const rows = S.dealers.map((d,i) => `<tr><td><b>${esc(d.name)}</b></td><td>${esc(d.contact)}</td><td>${esc(d.phone)}</td><td>${esc(d.area)}</td>
-    <td>${S.isAdmin?`<button class="btn sm danger" data-act="dl-del" data-i="${i}">Remove</button>`:""}</td></tr>`).join("");
+  // Edit / Remove sit next to the name, so they're visible on phones without scrolling the table sideways.
+  const rows = S.dealers.map((d,i) => `<tr><td><div class="dlrow"><b>${esc(d.name)}</b>${S.canEditDealer ? `<span class="dlacts"><button class="btn sm" data-act="dl-edit" data-i="${i}">Edit</button>${S.isAdmin ? `<button class="btn sm danger" data-act="dl-del" data-i="${i}">Remove</button>` : ""}</span>` : ""}</div></td>
+    <td>${esc(d.contact)}</td><td>${esc(d.phone)}</td><td>${esc(d.area)}</td></tr>`).join("");
   box.innerHTML = `<div style="display:grid;gap:14px">
-    ${S.dealers.length ? `<div class="tscroll"><table><thead><tr><th>${T("Dealer")}</th><th>${T("Contact person")}</th><th>${T("Phone")}</th><th>${T("Area")}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+    ${S.dealers.length ? `<div class="tscroll"><table><thead><tr><th>${T("Dealer")}</th><th>${T("Contact person")}</th><th>${T("Phone")}</th><th>${T("Area")}</th></tr></thead><tbody>${rows}</tbody></table></div>`
       : `<div class="empty"><b>No dealers added yet</b>${S.canAddDealer ? "Add your first authorised dealer below." : "An Admin adds dealers here."}</div>`}
     ${S.canAddDealer ? `<form class="grid" id="dealerForm" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
       <div class="fld"><label for="d-name">${T("Dealer name")} <span class="req">*</span></label><input id="d-name" required></div>
@@ -945,11 +946,46 @@ function renderDealers(){
       <div class="fld"><label for="d-phone">${T("Phone")}</label><input id="d-phone" inputmode="tel"></div>
       <div class="fld"><label for="d-area">${T("Area")}</label><input id="d-area"></div>
       <div class="fld" style="align-self:end"><button class="btn primary" type="submit">Add dealer</button></div></form>`
-      : `<p class="hint">Only the Admin or a Supervisor can add dealers.</p>`}${S.canAddDealer && !S.isAdmin ? `<p class="hint">You can add dealers. Only the Admin can remove them.</p>` : ""}</div>`;
+      : `<p class="hint">${S.canEditDealer ? "You can edit a dealer's contact person, phone and area. Only the Admin or a Supervisor can add dealers, and only the Admin can rename or remove one." : "Only the Admin or a Supervisor can add dealers."}</p>`}${S.canAddDealer && !S.isAdmin ? `<p class="hint">You can add dealers and edit their contact person, phone and area. Only the Admin can rename or remove a dealer.</p>` : ""}</div>`;
 }
-async function saveDealers(list){
-  try { await setDoc(fsDoc(fdb, "config", "dealers"), { list }); toast("Dealer list saved"); } catch(e){ toast(failMsg(e)); }
+// The dealer record holds the names ("list": the Admin changes it; a Supervisor may add to the end) and
+// each dealer's contact person, phone and area ("info", by name: the Admin, Supervisors and Dispatch may change it).
+async function saveDealers(list, info){
+  try { await updateDoc(fsDoc(fdb, "config", "dealers"), info ? { list, info } : { list }); toast("Dealer list saved"); } catch(e){ toast(failMsg(e)); }
 }
+// Edit a dealer: everyone except Viewers changes the contact person, phone and area; only the Admin renames.
+function openDealerEdit(i){
+  const d = S.dealers[i]; if (!d || !S.canEditDealer) return;
+  $("sheetCard").innerHTML = `<div><h3>${T("Edit dealer")}</h3><p class="sub">${S.isAdmin ? "Renaming changes the name for new orders. Orders already saved keep the name they were entered with." : "You can change the contact person, phone and area. Only the Admin can rename a dealer."}</p></div>
+    <form class="grid" id="dealerEditForm" data-name="${esc(d.name)}">
+      <div class="fld wide">${S.isAdmin ? `<label for="dle-name">${T("Dealer name")} <span class="req">*</span></label>` : `<div class="lblrow"><label for="dle-name">${T("Dealer name")}</label><span class="lblnote">only the Admin can change</span></div>`}<input id="dle-name" value="${esc(d.name)}" ${S.isAdmin ? "required" : "disabled"}></div>
+      <div class="fld h"><label for="dle-contact">${T("Contact person")}</label><input id="dle-contact" value="${esc(d.contact || "")}"></div>
+      <div class="fld h"><label for="dle-phone">${T("Phone")}</label><input id="dle-phone" inputmode="tel" value="${esc(d.phone || "")}"></div>
+      <div class="fld wide"><label for="dle-area">${T("Area")}</label><input id="dle-area" value="${esc(d.area || "")}"></div>
+      <div class="actions wide fld"><button class="btn primary" type="submit">Save changes</button><button class="btn" type="button" data-act="close">Close</button></div>
+    </form>`;
+  $("sheet").hidden = false; $("sheet").dataset.id = "";
+}
+document.addEventListener("submit", async e => {
+  if (e.target.id !== "dealerEditForm") return; e.preventDefault();
+  const was = e.target.dataset.name, i = S.dealerList.findIndex(d => d.name === was);
+  if (i < 0) { closeSheet(); return toast("This dealer was changed or removed meanwhile. Open it again."); }
+  const name = S.isAdmin ? $("dle-name").value.trim().replace(/\s+/g, " ") : was;
+  if (!name) return toast("Enter the dealer name.");
+  if (name !== was && S.dealerList.some((d, k) => k !== i && d.name.toLowerCase() === name.toLowerCase())) return toast(name + " is already in the list.");
+  const info = { ...S.dealerInfo }; delete info[was];
+  info[name] = { contact: $("dle-contact").value.trim(), phone: $("dle-phone").value.trim(), area: $("dle-area").value.trim() };
+  try {
+    if (name !== was) {
+      await updateDoc(fsDoc(fdb, "config", "dealers"), { list: S.dealerList.map((d, k) => k === i ? { ...d, name } : d), info });
+      toast(`Renamed to ${name}. Orders already saved keep "${was}".`);
+    } else {
+      await updateDoc(fsDoc(fdb, "config", "dealers"), { info });
+      toast("Dealer details saved");
+    }
+    closeSheet();
+  } catch(ex){ toast(failMsg(ex)); }
+});
 
 /* ---------- edit sheet ---------- */
 // Why this person can't change an order's details or cancel it ("" = they can).
@@ -1246,8 +1282,10 @@ document.addEventListener("click", async e => {
   }
   if (act === "dl-del") {
     if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Tap again"; setTimeout(()=>{ if (b.isConnected){ b.dataset.armed=""; b.textContent="Remove"; } }, 4000); return; }
-    const list = S.dealers.slice(); list.splice(+b.dataset.i, 1); saveDealers(list); return;
+    const i = +b.dataset.i, nm = (S.dealerList[i] || {}).name, list = S.dealerList.slice(); list.splice(i, 1);
+    const info = { ...S.dealerInfo }; delete info[nm]; saveDealers(list, info); return;
   }
+  if (act === "dl-edit") { openDealerEdit(+b.dataset.i); return; }
 });
 
 document.addEventListener("submit", async e => {
@@ -1335,7 +1373,7 @@ document.addEventListener("submit", async e => {
     e.preventDefault();
     const name = $("d-name").value.trim(); if (!name) return;
     if (S.dealers.some(d => d.name.toLowerCase() === name.toLowerCase())) return toast("That dealer is already in the list.");
-    const list = [...S.dealers, { name, contact: $("d-contact").value.trim(), phone: $("d-phone").value.trim(), area: $("d-area").value.trim() }];
+    const list = [...S.dealerList, { name, contact: $("d-contact").value.trim(), phone: $("d-phone").value.trim(), area: $("d-area").value.trim() }];
     document.activeElement && document.activeElement.blur();
     await saveDealers(list);
   }
@@ -1673,7 +1711,8 @@ async function boot(u){
   S.canEdit = !S.isViewer;                  // mark dispatched and undo dispatch
   S.canFixTime = S.isAdmin || S.isSup;      // correct the dispatch time of a dispatched order
   S.canBackdate = S.isAdmin;                // enter or change an order's date and time
-  S.canAddDealer = S.isAdmin || S.isSup;    // add dealers (removing: Admin)
+  S.canAddDealer = S.isAdmin || S.isSup;    // add dealers (renaming and removing: Admin)
+  S.canEditDealer = !S.isViewer;            // change a dealer's contact person, phone and area
   S.canVehicles = !S.isViewer;              // add vehicles, paste tracking links (removing: Admin)
   S.canRefresh = S.isAdmin || S.isSup;      // Summary: refresh older days' totals
   $("who").innerHTML = `<b>${esc(S.myName)}</b><span>${esc(S.me)}</span><span>${ROLE_LABEL[S.role]}</span>`;
@@ -1702,7 +1741,10 @@ async function boot(u){
   unsubs.push(onSnapshot(fsDoc(fdb, "members", email), s => { const d = s.exists() ? s.data() : null; if (d && (d.sess || 0) > S.myAt) kickOut(d, false); }, () => {}));
   unsubs.push(onSnapshot(fsDoc(fdb, "config", "dealers"), async s => {
     if (!s.exists() && S.isAdmin) { try { await setDoc(fsDoc(fdb, "config", "dealers"), { list: STARTER_DEALERS.map(name => ({ name, contact: "", phone: "", area: "" })) }); } catch(e){} return; }
-    S.dealers = s.exists() && Array.isArray(s.data().list) ? s.data().list : []; render();
+    const dd = s.exists() ? s.data() : {};
+    S.dealerList = Array.isArray(dd.list) ? dd.list : [];
+    S.dealerInfo = dd.info && typeof dd.info === "object" ? dd.info : {};
+    S.dealers = S.dealerList.map(d => ({ ...d, ...(S.dealerInfo[d.name] || {}), name: d.name })); render();
   }, onErr));
   if (S.isAdmin) unsubs.push(onSnapshot(fsDoc(fdb, "config", "report"), s => { S.report = s.exists() ? s.data() : null; renderReport(); }, onErr));
   if (S.view === "summary") loadSums($("s-month").value);

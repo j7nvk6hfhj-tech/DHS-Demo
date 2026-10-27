@@ -269,6 +269,9 @@ textarea{min-height:42px}
 label{font-size:11.5px;letter-spacing:.07em}
 .lblrow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;min-height:18px}
 .lblnote{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.dlrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dlacts{display:flex;gap:6px;flex-shrink:0}
+#dle-name:disabled{opacity:.65;cursor:not-allowed}
 .quick{display:inline-flex;gap:4px}
 .qbtn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 11.5px/1.5 var(--f-body);padding:0 9px;border-radius:99px;cursor:pointer}
 .qbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
@@ -504,9 +507,9 @@ form.grid{gap:12px 14px}
     <div class="panel" style="display:grid;gap:12px">
       <h3 data-t>Who can do what</h3>
       <div class="roles">
-        <div><b>Admin</b>Everything, including this Team &amp; emails page, changing order times, changing dispatched orders, deleting orders, removing dealers and vehicles, and the master file.</div>
-        <div><b>Supervisor</b>Add, change and cancel any order that isn't dispatched; hold, reschedule, mark dispatched, correct dispatch times and undo; add dealers; add vehicles and tracking links.</div>
-        <div><b>Dispatch</b>Add orders; change only their own orders from today; cancel, hold or reschedule any order that isn't dispatched; mark dispatched and undo; add vehicles and tracking links.</div>
+        <div><b>Admin</b>Everything, including this Team &amp; emails page, changing order times, changing dispatched orders, deleting orders, renaming and removing dealers, removing vehicles, and the master file.</div>
+        <div><b>Supervisor</b>Add, change and cancel any order that isn't dispatched; hold, reschedule, mark dispatched, correct dispatch times and undo; add dealers and edit their contact details; add vehicles and tracking links.</div>
+        <div><b>Dispatch</b>Add orders; change only their own orders from today; cancel, hold or reschedule any order that isn't dispatched; mark dispatched and undo; edit dealers' contact details; add vehicles and tracking links.</div>
         <div><b>Viewer</b>Sees the queue, orders and summaries and can download Excel. Can't open order details, see vehicles, or change anything.</div>
       </div>
       <p class="hint">These limits are enforced by the database security rules, not just hidden on screen.</p>

@@ -291,10 +291,11 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
     <p>Anyone with a link can see that truck, so keep links inside the team.</p>
   </section>
 
-  <section class="card" id="dealers" data-s data-k="dealers dealer list add new dealer remove डीलर">
+  <section class="card" id="dealers" data-s data-k="dealers dealer list add new dealer remove edit rename contact phone area डीलर">
     <h2>Dealer list</h2>
     <p><b>Settings → Dealers</b> shows the authorised dealers. These names fill the Dealer list on every order.</p>
-    <p>The <b>Admin</b> or a <b>Supervisor</b> can add a dealer; only the <b>Admin</b> can remove one. Removing a dealer doesn't change old orders.</p>
+    <p>The <b>Admin</b> or a <b>Supervisor</b> can add a dealer. To change a dealer's <b>contact person, phone or area</b>, tap <span class="ui">Edit</span> next to it, change the details and tap <span class="ui">Save changes</span>; the Admin, Supervisors and Dispatch staff can all do this.</p>
+    <p>Only the <b>Admin</b> can <b>rename</b> a dealer (in the same Edit window) or <b>remove</b> one. Orders already saved keep the dealer name they were entered with, so after a rename, Summary shows older orders under the old name, marked "(not in list)". Removing a dealer doesn't change old orders either.</p>
   </section>
 
   <section class="card" id="team" data-s data-k="team staff add person user remove leaver role access emails weekly monthly report recipients schedule टीम ईमेल">
@@ -327,6 +328,8 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
         <tr><td>See vehicles; add vehicles and tracking links</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
         <tr><td>Remove a vehicle</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>Add a dealer</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Edit a dealer's contact person, phone and area</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+        <tr><td>Rename a dealer</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>Remove a dealer</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>Refresh Summary totals</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
         <tr><td>Master file, recalculate month</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
@@ -360,7 +363,7 @@ kbd,.ui{font:600 14px var(--f-body);background:var(--surface-2);border:1px solid
     <details data-s data-k="customer cancel cancelled रद्द"><summary>The customer cancelled</summary><div>Tap <b>Cancel order</b> on the queue card (or open the order, set <b>Mark as</b> to <b>Cancelled</b> and save). Don't delete it; cancelled orders stay in the records.</div></details>
     <details data-s data-k="dispatched by mistake undo wrong dispatch"><summary>I marked the wrong order as dispatched</summary><div>Open that order and tap <b>Undo dispatch</b>. The Admin, a Supervisor or Dispatch can do this.</div></details>
     <details data-s data-k="mark dispatched grey disabled button not working"><summary>The Mark dispatched button is grey</summary><div>Viewers can't mark orders dispatched. If you should be able to, ask the Admin to change your designation.</div></details>
-    <details data-s data-k="dealer missing not in list new dealer"><summary>The dealer isn't in the list</summary><div>Only the Admin can add dealers, under <b>Settings → Dealers</b>. Once added, it appears in the list on every phone straight away.</div></details>
+    <details data-s data-k="dealer missing not in list new dealer"><summary>The dealer isn't in the list</summary><div>The Admin or a Supervisor can add dealers, under <b>Settings → Dealers</b>. Once added, it appears in the list on every phone straight away.</div></details>
     <details data-s data-k="token changed number different"><summary>An order's number (order of the day) changed</summary><div>Someone added an order with an earlier time on that day, or deleted an order. See <a href="#token" data-go="token">Order of the day and place in line</a>.</div></details>
     <details data-s data-k="old order last month not showing missing find"><summary>I can't find an older order</summary><div>Go to <b>Orders → All orders</b>, set the From and To dates, and tap <b>Load these dates</b>.</div></details>
     <details data-s data-k="track old link expired tracking not working"><summary>Track says "old link", or the map doesn't open</summary><div>The WheelsEye link has expired. The Admin, a Supervisor or Dispatch copies a fresh link from WheelsEye and taps <b>New link</b> under <b>Settings → Vehicles</b>.</div></details>

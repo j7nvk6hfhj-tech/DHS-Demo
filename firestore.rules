@@ -134,14 +134,20 @@ service cloud.firestore {
     }
 
     // Settings. "report" (email lists) is Admin-only; "vehicles" is hidden from Viewers.
-    // Dealers: Admin changes freely; a Supervisor may only add one at the end of the list.
+    // Dealers: the record holds the names ("list") and each dealer's contact person, phone and area ("info", by name).
+    //   Admin changes anything, including renaming and removing. A Supervisor may add one dealer at the end of the list.
+    //   Supervisor and Dispatch may change "info" only, so they can't rename, reorder or remove dealers.
     // Vehicles: Admin changes freely; Supervisor and Dispatch may add or update, but the list can't get shorter.
     match /config/{docId} {
       allow read: if isMember() && (docId != 'report' || isAdmin()) && (docId != 'vehicles' || !isViewer());
       allow write: if isAdmin()
         || (docId == 'dealers' && isSup() && resource != null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['list', 'info'])
             && request.resource.data.list.size() == resource.data.list.size() + 1
             && request.resource.data.list[0:resource.data.list.size()] == resource.data.list)
+        || (docId == 'dealers' && canOrder() && resource != null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['info'])
+            && request.resource.data.info is map)
         || (docId == 'vehicles' && canOrder()
             && (resource == null || request.resource.data.list.size() >= resource.data.list.size()));
     }
