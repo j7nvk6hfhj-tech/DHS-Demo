@@ -18,7 +18,7 @@ Secrets it needs (GitHub: Settings -> Secrets and variables -> Actions):
   GMAIL_APP_PASSWORD        a Gmail app password for that address
 """
 import io, json, os, smtplib, sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo
 
@@ -48,10 +48,34 @@ def hm(ms):
     m = max(0, round(ms / 60000))
     return f"{m // 60}:{m % 60:02d}"
 
+SCHED_START_MS = 6 * 3600 * 1000   # advance orders join the queue at 6 am on their day (schedAt = midnight IST)
+
 def q_at(o):
-    """When the order joins the queue: an advance order joins at the start of the day it is meant to go."""
+    """When the order joins the queue: an advance order joins at 6 am on the day it is meant to go
+    (never later than its dispatch). Same rule as the dashboard."""
     s = o.get("schedAt")
-    return max(o["orderAt"], s) if isinstance(s, (int, float)) else o["orderAt"]
+    if not isinstance(s, (int, float)):
+        return o["orderAt"]
+    q = max(o["orderAt"], s + SCHED_START_MS)
+    d = o.get("dispatchedAt")
+    return min(q, max(o["orderAt"], d)) if isinstance(d, (int, float)) else q
+
+HOUR_MS = 3600 * 1000
+
+def work_ms(a, b):
+    """Working time between a and b, for "time taken": Monday to Saturday 6 am to 6 pm, Sunday 6 am to 4 pm (IST).
+    Time outside those hours isn't counted. Same rule as the dashboard."""
+    if a is None or b is None or not b > a:
+        return 0
+    t, day = 0, dt(a).replace(hour=0, minute=0, second=0, microsecond=0)
+    for _ in range(400):
+        d0 = ms(day)
+        if d0 >= b:
+            break
+        end = d0 + (16 if day.weekday() == 6 else 18) * HOUR_MS
+        t += max(0, min(b, end) - max(a, d0 + 6 * HOUR_MS))
+        day = (day + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return t
 
 def status_of(o):
     if o.get("dispatchedAt") is not None:
@@ -61,7 +85,8 @@ def status_of(o):
     if o.get("hold") is True:
         return "On hold"
     s = o.get("schedAt")
-    if isinstance(s, (int, float)) and day_key(s) > datetime.now(IST).strftime("%Y-%m-%d"):
+    now = datetime.now(IST)
+    if isinstance(s, (int, float)) and (day_key(s) > now.strftime("%Y-%m-%d") or now.timestamp() * 1000 < s + SCHED_START_MS):
         return "Scheduled"
     return "Pending"
 
@@ -78,8 +103,12 @@ def with_tokens(orders):
         per[o["day"]] = per.get(o["day"], 0) + 1
         o["token"] = per[o["day"]]
         o["status"] = status_of(o)
-        o["taken"] = (o["dispatchedAt"] - q_at(o)) if o.get("dispatchedAt") is not None else None
+        o["taken"] = work_ms(q_at(o), o["dispatchedAt"]) if o.get("dispatchedAt") is not None else None   # working hours only
     return orders
+
+def is_self(v):
+    """'Self': the customer sent their own vehicle. Left out of average time taken."""
+    return "".join(ch for ch in str(v or "").upper() if ch.isalnum()) == "SELF"
 
 def agg(lst):
     a = dict(n=0, Pending=0, Hold=0, Dispatched=0, Cancelled=0, bags=0, pbags=0, hbags=0, cbags=0, tsum=0, tn=0)
@@ -91,7 +120,7 @@ def agg(lst):
         else: a["bags"] += b
         if st == "Pending": a["pbags"] += b
         if st == "Hold": a["hbags"] += b
-        if o["taken"] is not None: a["tsum"] += o["taken"]; a["tn"] += 1
+        if o["taken"] is not None and not is_self(o.get("vehicle")): a["tsum"] += o["taken"]; a["tn"] += 1   # Self dispatches aren't counted
     a["avg"] = hm(a["tsum"] / a["tn"]) if a["tn"] else ""
     return a
 
@@ -161,6 +190,7 @@ class FirestoreData:
         info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
         firebase_admin.initialize_app(credentials.Certificate(info))
         self.db = firestore.client()
+        self.info = info
 
     def orders_between_days(self, d_from, d_to):
         q = self.db.collection("orders").where("day", ">=", d_from).where("day", "<=", d_to)
@@ -175,6 +205,25 @@ class FirestoreData:
 
     def save_report_settings(self, fields):
         self.db.collection("config").document("report").set(fields, merge=True)
+
+    def save_usage(self, fields):
+        self.db.collection("config").document("usage").set(fields, merge=True)
+
+    def reads_since(self, start, now):
+        """Database reads by everyone between start and now, from Google Cloud Monitoring.
+        Needs the 'Monitoring Viewer' role for the service account."""
+        from google.oauth2 import service_account
+        from google.auth.transport.requests import AuthorizedSession
+        creds = service_account.Credentials.from_service_account_info(self.info, scopes=["https://www.googleapis.com/auth/monitoring.read"])
+        z = lambda t: t.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        params = {"filter": 'metric.type="firestore.googleapis.com/document/read_count"',
+                  "interval.startTime": z(start), "interval.endTime": z(now),
+                  "aggregation.alignmentPeriod": f"{max(60, int((now - start).total_seconds()))}s",
+                  "aggregation.perSeriesAligner": "ALIGN_SUM", "aggregation.crossSeriesReducer": "REDUCE_SUM"}
+        r = AuthorizedSession(creds).get(f"https://monitoring.googleapis.com/v3/projects/{self.info['project_id']}/timeSeries", params=params, timeout=30)
+        if r.status_code == 403: raise RuntimeError("Google refused the reads count: give the service account the 'Monitoring Viewer' role (Google Cloud → IAM).")
+        r.raise_for_status()
+        return sum(int(p["value"].get("int64Value", 0)) for ts in r.json().get("timeSeries", []) for p in ts.get("points", []))
 
 
 # ---------- settings ----------
@@ -352,7 +401,7 @@ def run(data, now=None, test=False, send=None):
     cfg = data.report_settings()
     w, m, d = settings(cfg)
     names = None
-    done, fields = [], {"lastCheckedAt": ms(now)}
+    done, fields = [], {"lastCheckedAt": ms(now), "lastError": None}   # a run that gets this far clears an earlier failure
 
     # Weekly report
     moment = now if test else last_weekly_moment(now, w)
@@ -411,6 +460,21 @@ def run(data, now=None, test=False, send=None):
     print("Sent:" if done else "Nothing due.", done)
     return done
 
+# ---------- reads box on the dashboard (Admin) ----------
+PACIFIC = ZoneInfo("America/Los_Angeles")
+def update_usage(data, now=None):
+    """Writes config/usage: database reads since Google's daily reset of the free allowance (midnight US Pacific time)."""
+    now = now or datetime.now(IST)
+    start = now.astimezone(PACIFIC).replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        n = data.reads_since(start, now)
+        data.save_usage({"reads": int(n), "since": ms(start), "at": ms(now), "error": None})
+        print("Reads since the daily reset:", n)
+    except Exception as e:
+        print("Reads count not updated:", e)
+        try: data.save_usage({"at": ms(now), "error": str(e)[:200]})
+        except Exception: pass
+
 def send_gmail(msg):
     user, pw = os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"].replace(" ", "")
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=60) as s:
@@ -420,6 +484,7 @@ def send_gmail(msg):
 if __name__ == "__main__":
     test = os.environ.get("TEST_RUN") == "1"
     data = FirestoreData()
+    update_usage(data)          # never stops the emails, whatever happens
     try:
         done = run(data, test=test)
         if done and os.environ.get("GITHUB_OUTPUT"):

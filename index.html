@@ -66,9 +66,38 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .mi:hover,.mi:focus-visible{background:var(--surface-2)}
 .mi:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .mi.danger{color:var(--pending)}
+.mi.sdot{justify-self:end;min-height:0;padding:0 7px;margin-top:2px;font:500 11px/1.5 var(--f-body);color:var(--muted);opacity:.45;border-radius:4px}
+.mi.sdot:hover,.mi.sdot:focus-visible{opacity:1}
 .mi svg{width:18px;height:18px;flex:none}
 .conn{font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--void-soft);color:var(--void)}
 .conn.ok{background:var(--done-soft);color:var(--done)}
+.refbtn{padding:4px 7px;line-height:0}
+.reads{display:inline-block;margin-left:4px;padding:0 7px;border-radius:99px;font-weight:600;letter-spacing:0;white-space:nowrap;background:var(--done-soft);color:var(--done)}
+.reads.amber{background:var(--accent-soft);color:var(--accent-ink)}
+.reads.red{background:var(--pending-soft);color:var(--pending)}
+.reads.off{background:var(--void-soft);color:var(--void)}
+#permBox{display:grid;gap:14px}
+#maintBox{display:grid;gap:12px}
+#maintBar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-top:10px}
+#maintBar .btn{min-height:34px;padding:4px 14px}
+/* the "under maintenance" screen staff see while the Admin has paused the dashboard */
+.maint{position:fixed;inset:0;z-index:25;background:var(--bg);display:grid;place-items:center;padding:24px 16px;overflow:auto}
+.maintcard{max-width:30rem;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 22px;text-align:center;display:grid;gap:12px;justify-items:center}
+.maintcard img{width:64px;height:64px}
+.maintcard h2{margin:0}
+.maintcard p{margin:0}
+.maintcard .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+body.paused{overflow:hidden}
+.permgrp{display:grid;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+.permgrp>b{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+label.perm{display:flex;gap:10px;align-items:flex-start;text-transform:none;letter-spacing:0;font-size:15px;font-weight:500;color:var(--ink);cursor:pointer}
+label.perm input{width:18px;height:18px;flex:none;margin:2px 0 0;padding:0;accent-color:var(--accent)}
+label.perm small{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:2px;line-height:1.35}
+label.perm small b{font-weight:600}
+.hcount{font-weight:500;color:var(--muted)}
+label.perm small b.yes{color:var(--done)}
+label.perm small b.no{color:var(--pending)}
+@media (prefers-reduced-motion:no-preference){.refbtn.spin svg{animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}}
 nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
 nav.tabs::-webkit-scrollbar{display:none}
 .tab{appearance:none;border:0;background:none;color:var(--muted);font:600 15px var(--f-body);padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center}
@@ -78,6 +107,8 @@ nav.tabs::-webkit-scrollbar{display:none}
 [lang="hi"]{font-family:system-ui,-apple-system,"Noto Sans Devanagari","Nirmala UI","Kohinoor Devanagari",sans-serif}
 label [lang="hi"],th[lang="hi"],th [lang="hi"],.kpi span[lang="hi"],.ticket .stub [lang="hi"],.qpos [lang="hi"]{font-size:14px;letter-spacing:0;text-transform:none}
 @media (max-width:520px){nav.tabs{gap:0}.tab{padding:10px 7px;font-size:14px}}
+@media (max-width:430px){.tab{padding:10px 5px;font-size:13.5px;gap:4px}.tab .n{padding:1px 5px}}
+@media (max-width:370px){.tab{padding:10px 4px;font-size:13px}}
 main{padding-block:20px 60px}
 section.view{display:grid;gap:18px}
 h2{font-family:var(--f-display);font-weight:600;font-size:26px;margin:0;text-wrap:balance;letter-spacing:.01em}
@@ -183,6 +214,12 @@ button.kpi > span::after{content:" ›";color:var(--muted)}
 .kpi.on{border-color:var(--accent);background:var(--accent-soft)}
 .kpis.compact .kpi{padding:9px 12px}.kpis.compact .kpi b{font-size:22px}
 @media (max-width:600px){.kpis.compact{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:4px}.kpis.compact .kpi{flex:0 0 136px;scroll-snap-align:start}}
+.kpi .brow{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 5px;margin-top:2px;line-height:1}
+.kpi .brow b{display:inline;font-size:19px;line-height:1.05}
+.kpis.compact .kpi .brow b{font-size:16px}
+.kpi .brow small{font-size:12px;font-weight:600;line-height:1}
+#jobWarn{margin-top:10px}
+#jobWarn b{font-weight:700}
 .eta{color:var(--done);font-weight:600}
 .etabox{display:grid;gap:6px;margin:4px 0 14px}
 .nowrap{white-space:nowrap}
@@ -203,6 +240,14 @@ tbody tr.click{cursor:pointer}
 tbody tr.click:hover td{background:var(--surface-2)}
 tr.dim td{color:var(--muted)}
 tr.tot td{font-weight:700;background:var(--surface-2)}
+/* Summary and All orders tables: the box scrolls inside itself (at most 70% of the screen high), so the column
+   headings stay pinned at the top; in the Summary tables the first column (dealer, depot, date) stays pinned on the left */
+.tscroll.pin{max-height:min(70vh,640px);overflow:auto}
+.tscroll.pin th{z-index:2;box-shadow:inset 0 -1px 0 var(--line)}
+.tscroll.pinfirst td:first-child,.tscroll.pinfirst th:first-child{position:sticky;left:0;box-shadow:inset -1px 0 0 var(--line)}
+.tscroll.pinfirst td:first-child{z-index:1;background:var(--surface)}
+.tscroll.pinfirst th:first-child{z-index:3;box-shadow:inset -1px -1px 0 var(--line)}
+.tscroll.pinfirst tr.tot td:first-child,.tscroll.pinfirst tbody tr.click:hover td:first-child{background:var(--surface-2)}
 td.num,th.num{text-align:right}
 td.red{color:var(--pending);font-weight:700}
 .items{display:grid;gap:8px}
@@ -213,6 +258,9 @@ td.red{color:var(--pending);font-weight:700}
 .opt{padding:9px 12px;cursor:pointer}
 .opt:hover,.opt.on{background:var(--accent-soft)}
 .opt.none{color:var(--muted);cursor:default;font-size:13px}
+.opt.self{border-top:1px solid var(--line);font-weight:600}
+.opt .hint{font-weight:400;margin-left:6px}
+.plate.self{background:transparent;color:var(--ink);border-style:dashed;font-family:var(--f-body);letter-spacing:.02em}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
 /* sheet (modal) */
 .sheet{position:fixed;inset:0;z-index:20;background:rgba(10,14,17,.45);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -351,10 +399,11 @@ form.grid{gap:12px 14px}
     <div class="bar">
       <div class="brand">
         <img class="logo" src="icons/logo.svg" alt="DHS Logistics logo" width="46" height="46">
-        <div><h1>DHS Logistics - Orders Dashboard <span class="alpha">(Alpha)</span></h1><small>Dehradun and Harrawala orders. All rights are reserved to Niket Sharma.</small></div>
+        <div><h1>DHS Logistics - Orders Dashboard <span class="alpha">(Alpha)</span></h1><small>Dehradun and Harrawala orders. All rights are reserved to Niket Sharma. <span class="reads" id="readsBox" hidden></span></small></div>
       </div>
       <button class="btn sm" id="installBtn" type="button" hidden>Install app</button>
       <span class="conn" id="conn">Connecting…</span>
+      <button class="btn sm refbtn" id="refreshBtn" type="button" aria-label="Refresh" title="Refresh: get the latest orders and totals"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
       <div class="menuwrap">
         <button class="btn sm menubtn" id="menuBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menu" aria-label="Menu: Help, language, sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span class="menuname" id="menuName">Menu</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <div class="menu" id="menu" role="menu" aria-labelledby="menuBtn" hidden>
@@ -362,6 +411,7 @@ form.grid{gap:12px 14px}
           <button class="mi" type="button" role="menuitem" id="helpBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><path d="M12 17.5h.01"/></svg><span data-t>Help</span></button>
           <button class="mi" type="button" role="menuitem" id="langBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/></svg><span id="langTxt" lang="hi">हिंदी</span></button>
           <button class="mi danger" type="button" role="menuitem" data-g="signout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span data-t>Sign out</span></button>
+          <button class="mi sdot" type="button" role="menuitem" id="stockBtn" aria-label="s" hidden>s</button>
         </div>
       </div>
     </div>
@@ -369,6 +419,7 @@ form.grid{gap:12px 14px}
       <button class="tab" role="tab" data-v="new" aria-selected="true"><span data-t>New Order</span></button>
       <button class="tab" role="tab" data-v="orders" aria-selected="false"><span data-t>Orders</span> <span class="n" id="qn"></span></button>
       <button class="tab" role="tab" data-v="summary" aria-selected="false"><span data-t>Summary</span></button>
+      <button class="tab" role="tab" data-v="stock" id="stockTab" aria-selected="false" hidden><span data-t>Stock</span></button>
       <button class="tab" role="tab" data-v="settings" aria-selected="false"><span data-t>Settings</span></button>
     </nav>
   </div>
@@ -376,6 +427,8 @@ form.grid{gap:12px 14px}
 
 <main class="wrap">
   <div id="banner" class="banner" hidden></div>
+  <div id="jobWarn" class="banner" role="alert" hidden></div>
+  <div id="maintBar" class="banner" role="status" hidden><span><b data-t>Maintenance is on.</b> <span data-t>Staff see the "under maintenance" screen and can't make changes.</span></span> <button class="btn" type="button" id="maintOff" data-t>Turn off</button></div>
 
   <!-- NEW ORDER -->
   <section class="view" id="v-new">
@@ -393,7 +446,7 @@ form.grid{gap:12px 14px}
           <div class="fld s3"><div class="lblrow"><label for="f-deliver"><span data-t>Deliver on</span></label><span class="quick"><button class="qbtn" type="button" data-act="deliver-today">Today</button><button class="qbtn" type="button" data-act="deliver-tomorrow">Tomorrow</button></span></div><input type="date" id="f-deliver"></div>
           <div class="fsec s6"><span>Dispatch &amp; delivery</span><small>optional now · depot and vehicle are needed before dispatch</small></div>
           <div class="fld s2 h"><label for="f-depot"><span data-t>Dispatch depot</span></label><select id="f-depot"><option value="">Select depot</option><option>Transport Nagar</option><option>Harrawala</option><option>Doiwala</option></select></div>
-          <div class="fld s2 h"><label for="f-vehicle"><span data-t>Vehicle no.</span></label><input id="f-vehicle" list="vehicleList" placeholder="UK07 CA 1234" style="text-transform:uppercase"><datalist id="vehicleList"></datalist></div>
+          <div class="fld s2 h combo"><label for="f-vehicle"><span data-t>Vehicle no.</span></label><input id="f-vehicle" data-kind="vehicle" role="combobox" aria-expanded="false" aria-controls="f-vehicle-list" autocomplete="off" placeholder="UK07 CA 1234" style="text-transform:uppercase"><div class="combo-list" id="f-vehicle-list" role="listbox" hidden></div></div>
           <div class="fld s2 h"><label for="f-driver"><span data-t>Driver</span></label><input id="f-driver" placeholder="Name"></div>
           <div class="fld s2 h"><label for="f-driverPhone"><span data-t>Driver's phone</span></label><input id="f-driverPhone" inputmode="tel" placeholder="98xxxxxxxx"></div>
           <div class="fld s4"><label for="f-remarks"><span data-t>Remarks</span></label><input id="f-remarks" placeholder="Anything the driver or office should know"></div>
@@ -425,7 +478,7 @@ form.grid{gap:12px 14px}
 
   <!-- SCHEDULED (advance orders) -->
   <section class="view" id="v-sched" hidden>
-    <div class="head"><div><h2 data-t>Scheduled</h2><p class="sub">Advance orders. Each joins the queue by itself at the start of its day.</p></div></div>
+    <div class="head"><div><h2 data-t>Scheduled</h2><p class="sub">Advance orders. Each joins the queue by itself at 6 am on its day.</p></div></div>
     <div class="list" id="schedList"></div>
   </section>
 
@@ -450,13 +503,13 @@ form.grid{gap:12px 14px}
     <div class="kpis compact" id="okpis"></div>
     <div class="loadbar" id="ordersLoad" hidden></div>
     <div class="hint" id="ordersCount"></div>
-    <div class="tscroll"><table><thead><tr><th data-t>Order of the day</th><th class="num" data-t>In line</th><th data-t>Order time</th><th data-t>Entered by</th><th data-t>Dealer</th><th data-t>Party</th><th data-t>Location</th><th data-t>Products</th><th class="num" data-t>Total bags</th><th data-t>Vehicle</th><th data-t>Driver</th><th data-t>Depot</th><th data-t>Status</th><th data-t>Dispatched at</th><th class="num" data-t>Time taken</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+    <div class="tscroll pin"><table><thead><tr><th data-t>Order of the day</th><th class="num" data-t>In line</th><th data-t>Order time</th><th data-t>Entered by</th><th data-t>Dealer</th><th data-t>Party</th><th data-t>Location</th><th data-t>Products</th><th class="num" data-t>Total bags</th><th data-t>Vehicle</th><th data-t>Driver</th><th data-t>Depot</th><th data-t>Status</th><th data-t>Dispatched at</th><th class="num" data-t>Time taken</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
   </section>
   </div>
 
   <!-- SUMMARY -->
   <section class="view" id="v-summary" hidden>
-    <div class="head"><div><h2 data-t>Summary</h2><p class="sub">The month you pick, by dealer and by day. Time taken is order time to dispatch time.</p></div>
+    <div class="head"><div><h2 data-t>Summary</h2><p class="sub">The month you pick, by dealer and by day. Time taken is order time to dispatch time; averages leave out Self vehicles.</p></div>
       <div class="actions" style="align-items:flex-end"><div class="fld" style="min-width:170px"><label for="s-month"><span data-t>Month</span></label><input type="month" id="s-month"></div>
       <button class="btn sm" id="sumRefresh" type="button">Refresh</button><button class="btn sm" id="sumMaster" type="button" hidden>Download master file</button><button class="btn sm" id="sumRecalc" type="button" hidden>Recalculate month</button></div></div>
     <div class="hint" id="sumNote"></div>
@@ -464,11 +517,11 @@ form.grid{gap:12px 14px}
     <p class="hint">Tap a card to see those orders. Tap a dealer, a depot or a day to download its orders and totals as Excel.</p>
     <div class="panel etabox" id="etaBox"></div>
     <h3 data-t>Dealer-wise</h3>
-    <div class="tscroll"><table><thead><tr><th data-t>Dealer</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th><th data-t>Last order</th></tr></thead><tbody id="dealerBody"></tbody></table></div>
+    <div class="tscroll pin pinfirst"><table><thead><tr><th data-t>Dealer</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th><th data-t>Last order</th></tr></thead><tbody id="dealerBody"></tbody></table></div>
     <h3 data-t>Depot-wise</h3>
-    <div class="tscroll"><table><thead><tr><th data-t>Depot</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="depotBody"></tbody></table></div>
+    <div class="tscroll pin pinfirst"><table><thead><tr><th data-t>Depot</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="depotBody"></tbody></table></div>
     <h3 data-t>Day-wise</h3>
-    <div class="tscroll"><table><thead><tr><th data-t>Date</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="dayBody"></tbody></table></div>
+    <div class="tscroll pin pinfirst"><table><thead><tr><th data-t>Date</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="dayBody"></tbody></table></div>
   </section>
 
   <!-- SETTINGS: Dealers | Vehicles | Team -->
@@ -480,7 +533,7 @@ form.grid{gap:12px 14px}
   </div>
   <!-- DEALERS -->
   <section class="view" id="v-dealers" hidden>
-    <div class="head"><div><h2 data-t>Authorised dealers</h2><p class="sub">These names fill the Dealer list on every order.</p></div></div>
+    <div class="head"><div><h2><span data-t>Authorised dealers</span> <span class="hcount" id="dealerCount" hidden></span></h2><p class="sub">These names fill the Dealer list on every order.</p></div></div>
     <div class="panel" id="dealerEditor"></div>
   </section>
 
@@ -503,22 +556,34 @@ form.grid{gap:12px 14px}
   <section class="view" id="v-team" hidden>
     <div class="head"><div><h2 data-t>Team &amp; roles</h2><p class="sub">Only emails listed here can sign in. Role changes apply immediately.</p></div></div>
     <div class="panel" id="teamBox"></div>
+    <div class="panel" id="permBox" hidden></div>
+    <div class="panel" id="maintBox" hidden>
+      <div class="head"><div><h3 data-t>Maintenance</h3><p class="sub">Pause the dashboard for everyone except you, for example while you upload an update. Staff see an "under maintenance" message and can't make changes until you switch it off; their screens come back by themselves.</p></div></div>
+      <label class="perm"><input type="checkbox" id="maintOn"><span><span data-t>Pause the dashboard for staff</span><small id="maintLine"></small></span></label>
+      <div class="field"><label for="maintText" data-t>Message to staff (optional)</label><input id="maintText" type="text" maxlength="200" placeholder="The dashboard is under maintenance. Please check again after some time."></div>
+    </div>
     <div class="panel" id="reportBox"></div>
     <div class="panel" style="display:grid;gap:12px">
       <h3 data-t>Who can do what</h3>
       <div class="roles">
         <div><b>Admin</b>Everything, including this Team &amp; emails page, changing order times, changing dispatched orders, deleting orders, renaming and removing dealers, removing vehicles, and the master file.</div>
         <div><b>Supervisor</b>Add, change and cancel any order that isn't dispatched; hold, reschedule, mark dispatched, correct dispatch times and undo; add dealers and edit their contact details; add vehicles and tracking links.</div>
+        <div><b>DMO</b>The same rights as a Supervisor.</div>
         <div><b>Dispatch</b>Add orders; change only their own orders from today; cancel, hold or reschedule any order that isn't dispatched; mark dispatched and undo; edit dealers' contact details; add vehicles and tracking links.</div>
         <div><b>Viewer</b>Sees the queue, orders and summaries and can download Excel. Can't open order details, see vehicles, or change anything.</div>
       </div>
-      <p class="hint">These limits are enforced by the database security rules, not just hidden on screen.</p>
+      <p class="hint">These are the usual rights. The Admin can switch some of them off (or the Excel time columns on) under Staff permissions above. They are enforced by the database security rules, not just hidden on screen.</p>
     </div>
   </section>
   </div>
 </main>
 
 <div class="sheet" id="sheet" hidden><div class="card" id="sheetCard"></div></div>
+<div class="maint" id="maint" role="alertdialog" aria-modal="true" aria-labelledby="maintT" aria-describedby="maintMsg" hidden>
+  <div class="maintcard"><img src="icons/logo.svg" alt=""><h2 id="maintT" data-t>Under maintenance</h2><p id="maintMsg"></p>
+    <p class="sub" data-t>This page opens again by itself when it's back.</p>
+    <div class="actions"><button class="btn primary" type="button" id="maintRetry" data-t>Check again</button><button class="btn" type="button" id="maintSignout" data-t>Sign out</button></div></div>
+</div>
 <div class="toast" id="toast" hidden></div>
 </div>
 <!-- Help guide: help.html loads only when someone taps Help, in this panel, so the dashboard keeps running underneath -->

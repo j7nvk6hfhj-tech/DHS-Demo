@@ -1,0 +1,2393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>DHS Stock</title>
+<link rel="icon" href="icons/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: the DHS dispatch-desk look. A brand bar, a sticky tab strip, then one view per tab:
+   a heading with one line of help, and the work grouped into white cards on a grey desk.
+   Spacing on a 4px grid; Barlow Condensed for headings and figures, Barlow for everything else. */
+:root {
+  --bg: #eceff1; --panel: #ffffff; --head: #f5f7f8; --ink: #1b2227; --muted: #5b6770; --line: #d3d9dd;
+  --accent: #e9a514; --on-accent: #1b1400; --accent-ink: #6b4a00; --accent-soft: #fbefd2;
+  --bad: #b8431b; --bad-soft: #fbe6dd; --ok: #2b7a4b; --ok-soft: #dcefe3; --warn: #6b4a00; --warn-soft: #fbefd2;
+  --blue: #1f4f8a; --blue-soft: #e4ecf7; --void: #7b858c; --void-soft: #e7eaec;
+  --sec: #e4ecf7;
+  --f-display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  --t-xs: .75rem; --t-sm: .86rem; --t-md: .95rem; --t-lg: 1.2rem; --t-xl: 1.75rem;
+  --r: 8px; --r-lg: 10px; --ctl-h: 42px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #13171a; --panel: #1b2125; --head: #20272c; --ink: #e5e9eb; --muted: #9ba6ad; --line: #2f383e;
+    --accent: #f0b429; --accent-ink: #f6cf74; --accent-soft: #3a2f12;
+    --bad: #f08a62; --bad-soft: #3d2219; --ok: #6cc590; --ok-soft: #17321f; --warn: #f6cf74; --warn-soft: #3a2f12;
+    --blue: #8fb6ea; --blue-soft: #17263a; --void: #8d979e; --void-soft: #262d32; --sec: #17263a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #13171a; --panel: #1b2125; --head: #20272c; --ink: #e5e9eb; --muted: #9ba6ad; --line: #2f383e;
+  --accent: #f0b429; --accent-ink: #f6cf74; --accent-soft: #3a2f12;
+  --bad: #f08a62; --bad-soft: #3d2219; --ok: #6cc590; --ok-soft: #17321f; --warn: #f6cf74; --warn-soft: #3a2f12;
+  --blue: #8fb6ea; --blue-soft: #17263a; --void: #8d979e; --void-soft: #262d32; --sec: #17263a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+.wrap { max-width: 74rem; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+h1 { font-size: 22px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+h2 { font-size: 26px; font-weight: 600; letter-spacing: .01em; line-height: 1.1; }
+h3 { font-size: 19px; font-weight: 600; letter-spacing: .02em; line-height: 1.15; }
+.sub { color: var(--muted); font-size: var(--t-sm); margin: 2px 0 0; max-width: 68ch; }
+.sub b { color: var(--ink); font-weight: 600; }
+.hint { font-size: var(--t-sm); color: var(--muted); margin: 0; }
+.lbl, .field > label { font-family: var(--f-body); font-size: 11.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.neg { color: var(--bad); }
+.pos { color: var(--ok); }
+.zero { color: var(--muted); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* brand bar and tabs */
+header.top { background: var(--panel); }
+.bar { display: flex; align-items: center; gap: var(--s3); padding-block: 10px 6px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo { width: 44px; height: 44px; flex: none; display: block; }
+.brand small { display: block; color: var(--muted); font-size: 12px; letter-spacing: .04em; margin-top: 3px; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; background: var(--panel); border-bottom: 1px solid var(--line); }
+.tabrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s1); }
+.tabs button { appearance: none; border: 0; background: none; color: var(--muted); font: 600 15px/1.15 var(--f-body); padding: 10px var(--s2) 9px; border-bottom: 3px solid transparent; cursor: pointer; text-wrap: balance; min-height: 46px; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+@media (min-width: 760px) { .tabrow { display: flex; gap: var(--s1); } .tabs button { padding-inline: 14px; white-space: nowrap; } }
+
+main.wrap { display: grid; gap: var(--s4); padding-block: var(--s4) 64px; }
+main.wrap > * { min-width: 0; }
+section.view { display: grid; gap: 14px; min-width: 0; }
+section.view > * { min-width: 0; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s3); flex-wrap: wrap; }
+.head > :first-child { flex: 1 1 18rem; min-width: 0; }
+.head .asof { flex: 0 1 12rem; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s4); display: grid; gap: var(--s3); min-width: 0; }
+.panel > * { min-width: 0; }
+.phead { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: flex-end; justify-content: space-between; }
+.phead > :first-child { flex: 1 1 14rem; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: end; }
+.field { display: grid; gap: 6px; min-width: 0; flex: 1 1 12rem; align-content: start; }
+.actions { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
+.check { display: inline-flex; gap: var(--s2); align-items: center; font-size: var(--t-sm); color: var(--muted); justify-self: start; }
+
+/* inputs */
+input, select, textarea { font: inherit; font-size: var(--t-md); color: var(--ink); background: var(--head); border: 1px solid var(--line); border-radius: var(--r); width: 100%; min-width: 0; margin: 0; }
+input, select { height: var(--ctl-h); padding: 0 11px; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[type="number"] { font-variant-numeric: tabular-nums; text-align: right; }
+input[type="checkbox"] { width: 18px; height: 18px; padding: 0; accent-color: var(--accent); }
+input:not([type="checkbox"]), select { -webkit-appearance: none; appearance: none; }
+input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+input:disabled { opacity: .6; cursor: not-allowed; }
+select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
+textarea { padding: var(--s2) 11px; font-size: var(--t-sm); min-height: 8rem; resize: vertical; }
+
+/* date fields: on touch screens the visible box is ours (dd.mm.yyyy, left-aligned like every field);
+   the phone's own date input sits invisibly on top so a tap still opens its picker */
+.datebox { position: relative; height: var(--ctl-h); min-width: 0; }
+.datebox input[type="date"] { width: 100%; height: 100%; }
+.dateshow { display: none; }
+@media (pointer: coarse) {
+  input:not([type="checkbox"]), select, textarea { font-size: 16px; } /* 16px stops iPhone zooming in on tap */
+  .dateshow { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); height: 100%; padding: 0 11px; border: 1px solid var(--line); border-radius: var(--r); background: var(--head); color: var(--ink); font-size: 16px; font-variant-numeric: tabular-nums; pointer-events: none; }
+  .dateshow.is-blank .dv { color: var(--muted); }
+  .dateshow svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
+  .datebox input[type="date"] { position: absolute; inset: 0; opacity: 0; z-index: 1; }
+  .datebox:focus-within .dateshow { outline: 2px solid var(--accent); outline-offset: 1px; }
+}
+
+/* segmented controls: a tray of equal buttons, the chosen one dark */
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--panel); width: 100%; }
+.seg button { appearance: none; border: 0; background: none; color: var(--muted); font: 600 14px/1.15 var(--f-body); min-height: 32px; padding: 4px 10px; border-radius: 7px; cursor: pointer; white-space: normal; text-wrap: balance; overflow-wrap: normal; }
+.seg button:hover { color: var(--ink); background: var(--head); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.seg .sh { display: none; }
+.seg.compact { width: auto; display: inline-grid; }
+.seg.compact button { min-height: 22px; padding: 2px 12px; font-size: 13px; }
+/* each button group adapts to its own width, not the screen's */
+.field:has(> .seg) { container-type: inline-size; }
+@container (max-width: 26rem) { .seg .lg { display: none; } .seg .sh { display: inline; } }
+@container (max-width: 22rem) { .seg button { padding-inline: 4px; font-size: 13px; } }
+@container (max-width: 34rem) { .seg.four { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* entry type: four big choice cards, 2 x 2 on phones */
+.seg.types { padding: 0; border: 0; background: none; gap: var(--s2); grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+@media (max-width: 640px) { .seg.types { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 380px) { .seg.types button { padding: 8px 8px 8px 10px; } .seg.types button b { font-size: 17px; } .seg.types button small { font-size: 12px; } }
+.seg.types button { display: grid; gap: 2px; text-align: left; align-content: center; min-height: 64px; padding: 10px 12px 10px 14px; border: 1px solid var(--line); border-left: 4px solid var(--tc, var(--line)); border-radius: var(--r-lg); background: var(--panel); color: var(--ink); white-space: normal; }
+.seg.types button b { font: 700 19px/1 var(--f-display); letter-spacing: .02em; }
+.seg.types button small { font-size: 12.5px; color: var(--muted); font-weight: 500; line-height: 1.25; }
+.seg.types button:hover { background: var(--head); }
+.seg.types button[data-type="billing"] { --tc: var(--blue); --ts: var(--blue-soft); }
+.seg.types button[data-type="dispatch"] { --tc: var(--accent); --ts: var(--accent-soft); }
+.seg.types button[data-type="arrival"] { --tc: var(--ok); --ts: var(--ok-soft); }
+.seg.types button[data-type="correction"] { --tc: var(--void); --ts: var(--void-soft); }
+.seg.types button[aria-pressed="true"] { background: var(--ts); color: var(--ink); border-color: var(--tc); box-shadow: 0 0 0 1px var(--tc) inset; }
+.seg.types button[aria-pressed="true"] small { color: var(--ink); }
+
+/* quantity grids: product | two figures */
+.qty { display: grid; grid-template-columns: minmax(4.5rem, .8fr) minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.qty > * { border-bottom: 1px solid var(--line); padding: var(--s2); display: flex; align-items: center; min-width: 0; }
+.qty > * + * { border-left: 1px solid var(--line); }
+.qty > :nth-child(3n + 1) { border-left: 0; }
+.qty > .qh { background: var(--head); font: 600 11px var(--f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); justify-content: flex-end; padding-block: 9px; }
+.qty > .qh:first-child { justify-content: flex-start; }
+.qty > .qp { font-weight: 600; font-size: var(--t-sm); background: var(--head); }
+.qty > .qt { font: 700 18px var(--f-display); justify-content: flex-end; font-variant-numeric: tabular-nums; border-bottom: 0; border-top: 2px solid var(--ink); padding-inline: var(--s3); }
+.qty > .qt.first { justify-content: flex-start; background: var(--head); padding-inline: var(--s2); font-size: 15px; letter-spacing: .04em; }
+.qty input { background: var(--panel); padding-inline: var(--s2); }
+#cap-qty { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); }
+#cap-qty > .qp { line-height: 1.2; }
+.capform { container-type: inline-size; }
+@container (max-width: 20rem) {
+  #cap-qty { grid-template-columns: 1fr 1fr; }
+  #cap-qty > .qh:first-child { display: none; }
+  #cap-qty > .qh:nth-child(2) { border-left: 0; }
+  #cap-qty > .qp { grid-column: 1 / -1; border-left: 0; padding-block: var(--s1); }
+  #cap-qty > .qp + div { border-left: 0; }
+}
+.tq { grid-template-columns: minmax(0, .8fr) minmax(0, 1fr) minmax(0, 1fr); }
+.tq > .stack { flex-direction: column; align-items: stretch; gap: 2px; }
+.tq .conv { font-size: var(--t-xs); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; min-height: 1.2em; }
+.tq > .qt { flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; }
+.tq > .qt.first { align-items: flex-start; }
+.tq > .qt small { font-family: var(--f-body); font-weight: 400; font-size: var(--t-xs); color: var(--muted); }
+
+/* buttons: amber is the one thing to press; everything else is plain */
+.btn { appearance: none; font: 600 15px var(--f-body); height: var(--ctl-h); padding: 0 18px; border-radius: var(--r); border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn:hover { filter: brightness(1.05); }
+.btn.ghost { background: var(--panel); color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { background: var(--head); filter: none; }
+.btn.small { height: 32px; font-size: 13.5px; padding: 0 12px; }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.err { color: var(--bad); font-size: var(--t-sm); font-weight: 500; margin: 0; }
+
+/* status boxes */
+.status { display: grid; gap: 3px; padding: var(--s3) var(--s4); border-radius: var(--r-lg); font: 700 20px/1.15 var(--f-display); letter-spacing: .02em; border: 1px solid currentColor; }
+.status.ok { background: var(--ok-soft); color: var(--ok); }
+.status.none { background: var(--panel); color: var(--muted); border-style: dashed; border-color: var(--line); }
+.status.bad { background: var(--bad-soft); color: var(--bad); }
+.status small { font: 400 var(--t-sm)/1.4 var(--f-body); color: var(--ink); letter-spacing: 0; }
+.saved-note { font-size: var(--t-sm); color: var(--ok); font-weight: 500; margin: 0; }
+
+/* count cards (DHS KPI style) */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 10px 12px; display: grid; gap: 1px; align-content: start; min-width: 0; }
+.tile .v { font: 700 28px/1.1 var(--f-display); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.tile .u, .tile .m { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tile .u { font-weight: 600; letter-spacing: .05em; text-transform: uppercase; font-size: 11px; }
+
+/* register-style sheets (kept in the depot's own row and column order) */
+.tbl-wrap { overflow-x: auto; overflow-y: visible; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-lg); overscroll-behavior-x: contain; background: var(--panel); }
+table.sheet { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+table.sheet th, table.sheet td { border: 1px solid var(--line); padding: 6px 10px; text-align: right; white-space: nowrap; vertical-align: top; }
+table.sheet tr > :first-child { border-left: 0; }
+table.sheet tr > :last-child { border-right: 0; }
+table.sheet thead tr:first-child > * { border-top: 0; }
+table.sheet tbody tr:last-child > * { border-bottom: 0; }
+table.sheet thead th { position: sticky; top: 0; z-index: 2; background: var(--head); font: 600 11px var(--f-body); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding-block: 9px; }
+table.sheet th:first-child, table.sheet td:first-child { text-align: left; position: sticky; left: 0; z-index: 1; background: var(--panel); }
+table.sheet thead th:first-child { z-index: 3; background: var(--head); }
+table.sheet td.lab { font-weight: 600; font-size: 12px; letter-spacing: .04em; }
+table.sheet tr.sec th { background: var(--sec); font: 600 12px var(--f-body); letter-spacing: .07em; color: var(--ink); padding-block: 8px; text-transform: uppercase; }
+table.sheet tr.sec th:first-child { background: var(--sec); }
+table.sheet tr.diff td { font-weight: 700; }
+table.sheet tr.comb td, table.sheet tr.comb td:first-child { font-weight: 700; background: var(--head); }
+table.sheet tr.tot td, table.sheet tr.tot td:first-child { font-weight: 700; border-top: 2px solid var(--ink); background: var(--head); }
+table.sheet td.flag { background: var(--bad-soft); color: var(--bad); }
+table.sheet tr.gap td:first-child { background: var(--bad-soft); color: var(--bad); }
+table.sheet tr.spacer td { border-left: 0; border-right: 0; padding: 0; height: var(--s2); background: var(--bg); }
+table.sheet .b { display: block; }
+table.sheet .m { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; }
+table.sheet .sh { display: none; }
+table.dsheet td:nth-child(1), table.dsheet th:nth-child(1) { width: 5.5rem; min-width: 5.5rem; }
+table.dsheet td:nth-child(2), table.dsheet th:nth-child(2) { text-align: left; position: sticky; left: 5.5rem; z-index: 1; background: var(--panel); }
+table.dsheet thead th:nth-child(2) { z-index: 3; background: var(--head); }
+table.dsheet tr.tot td:nth-child(2) { background: var(--head); }
+/* one header that sticks under the tabs and slides sideways with the sheet */
+#d-sheetwrap { display: grid; min-width: 0; }
+.fhead { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--tabs-h, 47px)); z-index: 4; overflow: hidden; border: 1px solid var(--line); border-bottom: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; background: var(--head); min-width: 0; }
+.fhead table { table-layout: fixed; width: auto; }
+.fhead table.sheet thead th { position: static; border-bottom: 0; }
+.fhead table.sheet thead th:first-child, .fhead table.dsheet thead th:nth-child(2) { position: sticky; }
+#d-scroll { border-top: 1px solid var(--line); border-radius: 0 0 var(--r-lg) var(--r-lg); }
+table.ghosthead thead tr { visibility: collapse; }
+/* opening balance history */
+table.hist td, table.hist th { text-align: center; vertical-align: middle; }
+table.hist td:first-child, table.hist th:first-child { text-align: left; }
+table.hist { table-layout: fixed; }
+#t-hist th:first-child, #t-hist td:first-child { width: 8rem; }
+table.hist button { font: 600 12px var(--f-body); border: 0; border-radius: 99px; padding: 3px 10px; min-width: 2.75rem; cursor: pointer; white-space: nowrap; }
+table.hist button.ok { color: var(--ok); background: var(--ok-soft); }
+table.hist button.bad { color: var(--bad); background: var(--bad-soft); }
+table.hist button.none { color: var(--muted); background: var(--void-soft); }
+table.hist .sh { display: none; }
+table.hist tr.sel td, table.hist tr.sel td:first-child { background: var(--accent-soft); }
+
+@media (max-width: 600px) {
+  .field { flex-basis: 100%; }
+  h2 { font-size: 24px; }
+  table.dsheet td:nth-child(1), table.dsheet th:nth-child(1) { display: none; }
+  table.dsheet td:nth-child(2), table.dsheet th:nth-child(2) { left: 0; }
+  table.sheet th, table.sheet td { padding: 5px 6px; }
+  table.sheet { font-size: 13px; }
+  table.sheet .lg { display: none; }
+  table.sheet .sh { display: inline; }
+  /* narrow, wrapping label column so numbers get the screen */
+  table.sheet td:first-child, table.sheet th:first-child,
+  table.dsheet td:nth-child(2), table.dsheet th:nth-child(2) {
+    white-space: normal; width: 6.4rem; min-width: 6.4rem; max-width: 6.4rem;
+    overflow-wrap: break-word; hyphens: auto; line-height: 1.2; font-size: 11.5px;
+    box-shadow: 1px 0 0 var(--line);
+  }
+  .tile { padding: var(--s2) 10px; }
+  .tile .v { font-size: 22px; }
+  table.hist .lg { display: none; } table.hist .sh { display: inline; }
+  #t-hist th:first-child, #t-hist td:first-child { width: 4.9rem; min-width: 4.9rem; max-width: 4.9rem; }
+  #t-hist td, #t-hist th { padding-inline: 4px; }
+  .tabs button { font-size: 13.5px; padding-inline: 2px; }
+  .seg.types button { min-height: 58px; }
+}
+@media (max-width: 359px) {
+  .tabrow { gap: 2px; }
+  .tabs button { font-size: 12.5px; padding-inline: 1px; }
+}
+
+/* depots and capacity */
+.caps { display: grid; grid-template-columns: 1fr; gap: var(--s2); }
+@media (min-width: 900px) { .caps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cap { border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s3); display: grid; gap: var(--s2); align-content: start; background: var(--head); min-width: 0; }
+.cap-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+.cap-name { font: 600 18px var(--f-display); letter-spacing: .03em; }
+.pill { font: 600 11.5px var(--f-body); letter-spacing: .02em; padding: 2px 9px; border-radius: 99px; white-space: nowrap; }
+.pill.ok { color: var(--ok); background: var(--ok-soft); }
+.pill.warn { color: var(--accent-ink); background: var(--accent-soft); }
+.pill.bad { color: var(--bad); background: var(--bad-soft); }
+.pill.none { color: var(--muted); background: var(--void-soft); }
+.cap-fig { font: 700 28px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.cap-fig small { font: 400 var(--t-sm) var(--f-body); color: var(--muted); }
+.capbar { position: relative; height: 8px; border-radius: 99px; background: var(--void-soft); overflow: hidden; }
+.capbar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: var(--ok); }
+.capbar .fill.warn { background: var(--accent); }
+.capbar .fill.bad { background: var(--bad); }
+.capbar .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); opacity: .4; }
+.cap-rows { display: grid; grid-template-columns: 1fr auto; gap: 2px var(--s3); font-size: var(--t-sm); font-variant-numeric: tabular-nums; margin: 0; }
+.cap-rows dt { color: var(--muted); margin: 0; }
+.cap-rows dd { margin: 0; text-align: right; font-weight: 500; }
+.cap-rows dd small { display: block; font-size: var(--t-xs); color: var(--muted); font-weight: 400; }
+.cap-rows dt, .cap-rows dd { padding-block: 2px; }
+.capform { border: 1px dashed var(--line); border-radius: var(--r-lg); padding: var(--s3); display: grid; gap: var(--s3); background: var(--head); }
+.capalert { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3); padding: var(--s2) var(--s2) var(--s2) var(--s4); border-radius: var(--r-lg); border: 1px solid currentColor; font-size: var(--t-sm); }
+.capalert-txt { flex: 1 1 14rem; min-width: 0; }
+.capalert strong { font: 700 17px var(--f-display); letter-spacing: .02em; }
+.capalert.bad { color: var(--bad); background: var(--bad-soft); }
+.capalert.warn { color: var(--accent-ink); background: var(--accent-soft); }
+.capalert span { color: var(--ink); }
+.capwarn { display: grid; gap: 2px; padding: var(--s3) var(--s4); border-radius: var(--r-lg); border: 1px solid var(--bad); background: var(--bad-soft); font-size: var(--t-sm); }
+.capwarn strong { color: var(--bad); font: 700 18px var(--f-display); letter-spacing: .02em; }
+
+/* sticky action bar at the foot of a form */
+.savebar { position: sticky; bottom: calc(var(--s2) + env(safe-area-inset-bottom, 0px)); z-index: 4; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3); padding: 10px var(--s3) 10px var(--s4); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: 0 6px 24px rgba(16, 24, 32, .14); }
+.savebar .savebar-msg { font-size: var(--t-sm); font-weight: 600; color: var(--muted); min-width: 0; flex: 1 1 12rem; }
+.savebar .savebar-msg b { color: var(--ink); }
+.savebar.dirty { background: var(--accent-soft); border-color: var(--accent); }
+.savebar.dirty .savebar-msg { color: var(--accent-ink); }
+.savebar .actions { margin-left: auto; }
+@media (prefers-reduced-motion: no-preference) { .savebar.nudge { animation: nudge .45s ease-out; } @keyframes nudge { 0%, 100% { transform: none; } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } } }
+.startbox { border-style: dashed; }
+#t-start-btn { white-space: normal; height: auto; min-height: var(--ctl-h); padding-block: var(--s2); text-align: left; line-height: 1.2; }
+.okbox { display: grid; gap: 2px; padding: var(--s3); border-radius: var(--r-lg); border: 1px solid var(--accent); background: var(--accent-soft); font-size: var(--t-sm); }
+.okbox strong { color: var(--accent-ink); font: 700 18px var(--f-display); letter-spacing: .02em; }
+
+/* opening dealer balances */
+.odealers { display: grid; gap: var(--s2); }
+.ocard { border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s2) var(--s3); display: grid; gap: var(--s2); background: var(--panel); }
+.ocard.open { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.ocard-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s3); align-items: center; }
+.ocard-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--s1) var(--s3); }
+.ocard-meta .ocard-tot { margin-left: auto; white-space: nowrap; }
+.ocard-name { font: 600 17px var(--f-display); letter-spacing: .03em; overflow-wrap: break-word; min-width: 0; }
+.ocard-name.blank { color: var(--muted); }
+.ocard-sum { font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 0; flex: 1 1 12rem; }
+.ocard-edit { display: grid; gap: var(--s2); padding-top: var(--s2); border-top: 1px solid var(--line); }
+.ocard-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2); align-items: center; }
+.ocard-top input { font-weight: 600; text-transform: uppercase; }
+.ogrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); }
+@media (min-width: 900px) { .ogrid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.ogrid label { display: grid; gap: 2px; min-width: 0; }
+.ogrid .k { font: 600 11px var(--f-body); letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
+.ogrid input { padding-inline: var(--s2); }
+.ogrid small, .ocard-tot { font-size: var(--t-xs); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; min-height: 1.2em; }
+.ocard-tot b { color: var(--ink); font-size: var(--t-sm); }
+details.paste { border: 1px dashed var(--line); border-radius: var(--r-lg); padding: var(--s3); background: var(--head); }
+details.paste summary { cursor: pointer; font: 600 17px var(--f-display); letter-spacing: .02em; }
+details.paste > * + * { margin-top: var(--s2); }
+details.paste textarea { background: var(--panel); }
+
+/* dealer sheet, list view */
+.dlist { display: grid; gap: var(--s2); }
+.dcard { border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s3); display: grid; gap: var(--s2); background: var(--panel); }
+.dcard-top { display: flex; justify-content: space-between; gap: var(--s3); align-items: baseline; }
+.dcard-name { font: 600 17px var(--f-display); letter-spacing: .03em; min-width: 0; overflow-wrap: break-word; }
+.dcard-tot { text-align: right; font: 700 18px var(--f-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dcard-tot small, .dcard-grid small { display: block; font: 400 var(--t-xs) var(--f-body); color: var(--muted); }
+.dcard-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); font-variant-numeric: tabular-nums; font-size: var(--t-sm); }
+.dcard-grid > div { background: var(--head); border-radius: var(--r); padding: var(--s1) var(--s2); }
+.dcard-grid .k { font: 600 11px var(--f-body); letter-spacing: .07em; color: var(--muted); display: block; }
+.dcard.tot { border: 2px solid var(--ink); background: var(--head); }
+.dcard.tot .dcard-grid > div { background: var(--panel); }
+
+/* Get Report: entry cards */
+.log { display: grid; gap: var(--s2); }
+.entry { border: 1px solid var(--line); border-left: 4px solid var(--tc, var(--line)); border-radius: var(--r-lg); padding: var(--s3); display: grid; gap: var(--s2); background: var(--panel); }
+.entry:has(.chip.billing) { --tc: var(--blue); } .entry:has(.chip.dispatch) { --tc: var(--accent); } .entry:has(.chip.arrival) { --tc: var(--ok); } .entry:has(.chip.correction) { --tc: var(--void); }
+.entry-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2); align-items: center; }
+.entry-who { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; min-width: 0; font: 600 17px var(--f-display); letter-spacing: .02em; }
+.chip { font: 600 11.5px var(--f-body); letter-spacing: .03em; padding: 2px 9px; border-radius: 99px; }
+.chip.billing { color: var(--blue); background: var(--blue-soft); } .chip.dispatch { color: var(--accent-ink); background: var(--accent-soft); } .chip.arrival { color: var(--ok); background: var(--ok-soft); } .chip.correction { color: var(--void); background: var(--void-soft); }
+.entry .tbl-wrap { border-radius: var(--r); }
+.entry-meta { font-size: var(--t-xs); color: var(--muted); }
+.confirm { display: flex; gap: var(--s2); align-items: center; font-size: var(--t-sm); flex-wrap: wrap; justify-content: flex-end; grid-column: 1 / -1; }
+
+.empty { border: 1px dashed var(--line); border-radius: var(--r-lg); color: var(--muted); font-size: var(--t-sm); padding: 22px; text-align: center; background: var(--panel); }
+.banner { padding: 10px var(--s4); border-radius: var(--r-lg); background: var(--accent-soft); color: var(--ink); font-size: var(--t-sm); border: 1px solid var(--accent); display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: var(--r); font-weight: 600; font-size: var(--t-sm); z-index: 30; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+pre.wa { white-space: pre-wrap; font-size: var(--t-xs); background: var(--head); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s3); margin: 0; max-height: 18rem; overflow: auto; }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: rise .18s ease-out; } @keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } } }
+
+/* an older date (or last month while it loads) shows a box instead of the sheets */
+section.view.is-older > :not(.head):not(.olderbox):not(.keep) { display: none !important; }
+#view-tally.is-older #t-formcard > :not(:first-child) { display: none !important; }   /* only the date picker */
+.olderbox { border-style: dashed; }
+.olderbox h3 { margin: 0; }
+.olderbox .actions { flex-wrap: wrap; }
+.olderbox .btn { white-space: normal; max-width: 100%; text-align: left; min-width: 0; height: auto; min-height: var(--ctl-h); padding: 8px 18px; line-height: 1.3; }
+
+/* added for the dashboard site: the gate, the header links and the Admin's access list */
+[hidden] { display: none !important; }
+body { margin: 0; }
+.bar .who { margin-left: auto; display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; justify-content: flex-end; font-size: var(--t-sm); color: var(--muted); min-width: 0; }
+.bar .who #whoName { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.bar .who a.btn { text-decoration: none; }
+@media (max-width: 600px) { .bar .who #whoName { display: none; } }
+.gate { min-height: 70vh; display: grid; place-content: center; text-align: center; gap: var(--s2); padding: var(--s5); }
+.gate h2 { font-size: 24px; }
+.gate a { justify-self: center; text-decoration: none; }
+.acclist { display: grid; gap: var(--s2); }
+.accrow { display: flex; gap: var(--s3); align-items: flex-start; padding: var(--s2) var(--s3); border: 1px solid var(--line); border-radius: var(--r); background: var(--head); cursor: pointer; }
+.accrow input { margin-top: 3px; flex: none; }
+.accrow span { display: grid; min-width: 0; }
+.accrow small { color: var(--muted); font-size: var(--t-xs); overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<div class="gate" id="stockGate"><h2 id="gateTitle">Checking access…</h2><p class="hint" id="gateText"></p><a class="btn ghost" id="gateBack" href="./" hidden>Back to the dashboard</a></div>
+<div id="ledgerApp" hidden>
+<header class="top">
+  <div class="wrap bar">
+    <div class="brand">
+      <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjM3IDU5IDMxMCAzMTAiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iREhTIExvZ2lzdGljcyI+PHN0eWxlPi5he2ZpbGw6I2U5YTUxNH0uaXtmaWxsOiMxYjIyMjc7c3Ryb2tlOiMxYjIyMjc7c3Ryb2tlLXdpZHRoOjAuODtzdHJva2UtbGluZWpvaW46cm91bmR9QG1lZGlhIChwcmVmZXJzLWNvbG9yLXNjaGVtZTpkYXJrKXsuYXtmaWxsOiNmMGI0Mjl9Lml7ZmlsbDojZTVlOWViO3N0cm9rZTojZTVlOWVifX08L3N0eWxlPjxwYXRoIGNsYXNzPSJhIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xOTMuMTIgNjEuNzVDMTkwLjEwIDYyLjAwIDE4Ni43OCA2Mi4zNCAxODUuNzUgNjIuNDlDMTgwLjYxIDYzLjI0IDE3OC44NSA2My41MiAxNzguNTQgNjMuNjNDMTc4LjM1IDYzLjcwIDE3Ni44OSA2NC4wMyAxNzUuMjkgNjQuMzZDMTcyLjUxIDY0Ljk0IDE2OC45MyA2NS44NyAxNjUuMTIgNjcuMDBDMTY0LjE2IDY3LjI5IDE2Mi43NiA2Ny42OSAxNjIuMDAgNjcuOTBDMTYxLjI0IDY4LjExIDE2MC4yNyA2OC40NCAxNTkuODQgNjguNjRDMTU5LjQwIDY4Ljg0IDE1OC45NSA2OS4wMCAxNTguODMgNjkuMDBDMTU4LjI3IDY5LjAwIDE1MS4yNiA3MS43MSAxNDcuNDAgNzMuNDFDMTM2LjEyIDc4LjM5IDEyNy4wNyA4My41NCAxMTcuMTIgOTAuNjRDMTE1Ljg5IDkxLjUyIDExNC41OSA5Mi40NCAxMTQuMjUgOTIuNjhDMTEzLjkxIDkyLjkyIDExMi4yMiA5NC4yNCAxMTAuNTAgOTUuNjFDOTMuMDcgMTA5LjUzIDc5LjM0IDEyNS40NSA2OC41NyAxNDQuMjVDNjcuMzUgMTQ2LjM3IDYyLjM3IDE1Ni4zMSA2MS40OSAxNTguMzhDNjAuNjQgMTYwLjM4IDU5LjczIDE2Mi42MCA1OS4yNSAxNjMuODhDNTguOTQgMTY0LjcwIDU4LjU0IDE2NS43NyA1OC4zNSAxNjYuMjVDNTcuNjEgMTY4LjIxIDU1Ljk1IDE3My4yNSA1NS4xNiAxNzUuOTdDNTMuOTIgMTgwLjIxIDUyLjEzIDE4Ny45NyA1MS44NiAxOTAuMjVDNTEuNzcgMTkxLjAxIDUxLjU1IDE5Mi4zMCA1MS4zNyAxOTMuMTJDNTEuMTkgMTkzLjk1IDUwLjk3IDE5NS40MSA1MC44OCAxOTYuMzhDNTAuNzkgMTk3LjM0IDUwLjU0IDE5OS41MyA1MC4zMSAyMDEuMjVDNDkuOTkgMjAzLjY4IDQ5LjkwIDIwNi41NSA0OS44OSAyMTQuMTJDNDkuODcgMjI0LjA4IDUwLjEwIDIyNy43MSA1MS4xNyAyMzUuMDBDNTEuMzggMjM2LjQ0IDUxLjcwIDIzOC42NCA1MS44OCAyMzkuODhDNTIuMzcgMjQzLjMwIDUzLjM0IDI0Ny44MiA1NC43OCAyNTMuMzhDNTUuODQgMjU3LjQ0IDU5LjM1IDI2Ny45OSA2MC42MiAyNzAuODhDNjAuODAgMjcxLjI5IDYxLjAzIDI3MS45MCA2MS4xMyAyNzIuMjRDNjEuMzYgMjcyLjk5IDY0LjM4IDI3OS41MiA2NS45OSAyODIuNzVDNzEuNjUgMjk0LjA4IDc4LjQ5IDMwNC4yNiA4Ny4zNCAzMTQuNTBDOTAuODAgMzE4LjUxIDk4LjY2IDMyNi4yNiAxMDMuMTIgMzMwLjA5QzEwOC42NyAzMzQuODQgMTE1LjEzIDMzOS41OSAxMjEuNzUgMzQzLjgwQzEyNi43MSAzNDYuOTUgMTM3LjMxIDM1Mi40NSAxNDIuNTkgMzU0LjYyQzE0My43MSAzNTUuMDggMTQ1LjQ3IDM1NS44MSAxNDYuNTAgMzU2LjI0QzE1MS42NCAzNTguNDAgMTYxLjU0IDM2MS4zOSAxNzAuMDAgMzYzLjM0QzE3NS4yOCAzNjQuNTUgMTgzLjEyIDM2NS42OCAxOTAuNjIgMzY2LjMwQzE5NS40OSAzNjYuNzAgMjA5LjkyIDM2Ni43MCAyMTQuMTIgMzY2LjI5QzIyMi45MiAzNjUuNDUgMjI4Ljc0IDM2NC41OCAyMzUuMTIgMzYzLjE1QzI0NS43NiAzNjAuNzggMjU1LjE4IDM1Ny42NyAyNjQuNTAgMzUzLjQ0QzI3Ni4yNiAzNDguMTEgMjg3LjgzIDM0MS4xMiAyOTYuNjIgMzM0LjA0QzMwOC45NCAzMjQuMTMgMzE5LjczIDMxMi42MyAzMjcuNjMgMzAwLjk5QzMyOC43MCAyOTkuNDIgMzMwLjA2IDI5Ny40NCAzMzAuNjMgMjk2LjYxQzMzMS4yMSAyOTUuNzcgMzMxLjc3IDI5NC44MiAzMzEuODggMjk0LjQ5QzMzMS45OCAyOTQuMTYgMzMyLjMwIDI5My41NyAzMzIuNTggMjkzLjE5QzMzMi45NiAyOTIuNjkgMzMzLjAyIDI5Mi40MiAzMzIuODIgMjkyLjIyQzMzMi42MiAyOTIuMDIgMzMyLjQ2IDI5Mi4xMSAzMzIuMjQgMjkyLjU0QzMzMi4wNyAyOTIuODYgMzMxLjY2IDI5My40NiAzMzEuMzMgMjkzLjg4QzMzMS4wMSAyOTQuMjkgMzMwLjY2IDI5NC43NCAzMzAuNTUgMjk0Ljg4QzMzMC4zMSAyOTUuMjAgMzI3LjkzIDI5OC4xNiAzMjYuMjQgMzAwLjI1QzMwOS41MyAzMjAuOTEgMjg3LjMyIDMzNi4zNiAyNjIuODggMzQ0LjMzQzI1Ni41NyAzNDYuMzggMjU1LjY4IDM0Ni42NCAyNTEuNzQgMzQ3LjYwQzIzNC4wNCAzNTEuODkgMjE1LjI4IDM1Mi41OCAxOTcuMDAgMzQ5LjYyQzE4MS4xOCAzNDcuMDUgMTY1LjM1IDM0MS40MCAxNTEuMTIgMzMzLjIzQzEzMS45MCAzMjIuMTkgMTE1LjcwIDMwNi42OSAxMDMuNzIgMjg3Ljg4QzEwMi40MSAyODUuODEgMTAwLjc3IDI4My4xMSAxMDAuMDcgMjgxLjg4Qzk3LjcxIDI3Ny42NCA5My42MiAyNjkuMTMgOTIuMTUgMjY1LjM4QzkxLjM1IDI2My4zMSA5MC40OCAyNjEuMTAgOTAuMjIgMjYwLjQ1Qzg5Ljk2IDI1OS44MSA4OS43NSAyNTkuMTQgODkuNzUgMjU4Ljk2Qzg5Ljc1IDI1OC43OCA4OS41MyAyNTguMDcgODkuMjYgMjU3LjM4Qzg4LjgyIDI1Ni4yNSA4OC4wMiAyNTMuNjMgODYuOTMgMjQ5Ljc1Qzg1LjExIDI0My4zMiA4My40MSAyMzMuNzcgODIuOTkgMjI3LjYyQzgyLjg1IDIyNS43MCA4Mi42MyAyMjIuNjAgODIuNTAgMjIwLjc0QzgxLjc5IDIxMS4wMyA4My4wNCAxOTYuNTQgODUuNDMgMTg2Ljg4Qzg1LjY0IDE4Ni4wNSA4NS45NSAxODQuNzAgODYuMTQgMTgzLjg4Qzg2LjQzIDE4Mi41NCA4OS43NiAxNzIuNDIgOTAuOTkgMTY5LjEyQzkzLjE0IDE2My4zNSA5OC40MSAxNTIuODMgMTAxLjk1IDE0Ny4yN0MxMTAuNjkgMTMzLjUwIDExOS44NSAxMjIuODQgMTMyLjE2IDExMi4xMUMxMzUuODggMTA4Ljg3IDE0Mi4wNCAxMDQuMTUgMTQ2LjAwIDEwMS41MEMxNDcuMzEgMTAwLjYzIDE0OC44NSA5OS41OSAxNDkuNDMgOTkuMjBDMTUyLjUyIDk3LjEwIDE1OS4wMSA5My40MSAxNjMuODggOTEuMDFDMTY4LjgyIDg4LjU2IDE3NC40NCA4Ni4wMSAxNzQuOTQgODUuOTlDMTc1LjA0IDg1Ljk5IDE3NS41NyA4NS43NyAxNzYuMTIgODUuNTBDMTc2LjY4IDg1LjIzIDE3Ny4yNyA4NS4wMSAxNzcuNDUgODUuMDFDMTc3LjYzIDg1LjAwIDE3OC4zMSA4NC43OSAxNzguOTUgODQuNTJDMTgzLjI5IDgyLjc2IDE5My41NSA3OS45MyAxOTkuNzUgNzguNzlDMjA3LjUwIDc3LjM3IDIxMC42OSA3Ny4xMiAyMjEuNTAgNzcuMTVDMjI5LjE4IDc3LjE2IDIzMi40MSA3Ny4yNiAyMzQuODggNzcuNTdDMjM2LjY2IDc3Ljc5IDIzOS4yNSA3OC4wNCAyNDAuNjIgNzguMTJDMjQyLjAwIDc4LjIxIDI0My45MSA3OC40MyAyNDQuODggNzguNjJDMjQ1Ljg0IDc4LjgxIDI0Ny4yNCA3OS4wNCAyNDguMDAgNzkuMTNDMjUwLjIxIDc5LjM5IDI1Ni44NSA4MC43MiAyNTkuODYgODEuNTFDMjY2Ljk0IDgzLjM2IDI3Mi4wNiA4NC45MiAyNzMuOTAgODUuNzdDMjc0LjQ3IDg2LjA0IDI3NS4wMiA4Ni4yNSAyNzUuMTIgODYuMjVDMjc2LjAzIDg2LjI1IDI4NS44MyA5MC44MCAyOTAuMzggOTMuMzRDMjkyLjQxIDk0LjQ3IDI5OS43NyA5OS4yOSAzMDIuMDMgMTAwLjk2QzMwNy4zNiAxMDQuOTEgMzEzLjcwIDExMC43NiAzMTguMjggMTE1Ljk3QzMyMC44MiAxMTguODQgMzI0LjE2IDEyMi45MiAzMjUuMDEgMTI0LjE3QzMyNS4yMSAxMjQuNDYgMzI2LjU2IDEyNi4yNiAzMjguMDAgMTI4LjE1QzMzMC41OCAxMzEuNTMgMzMwLjg5IDEzMS45OSAzMzEuODYgMTMzLjgzQzMzMi4xMiAxMzQuMzQgMzMyLjQ5IDEzNC43NSAzMzIuNjcgMTM0Ljc1QzMzMy4yNCAxMzQuNzUgMzMzLjAyIDEzNC4wMCAzMzEuODkgMTMyLjEyQzMzMS41NiAxMzEuNTcgMzMxLjExIDEzMC43OSAzMzAuODkgMTMwLjM4QzMzMC42OCAxMjkuOTYgMzMwLjA2IDEyOC45NSAzMjkuNTIgMTI4LjEyQzMyOC45NyAxMjcuMzAgMzI4LjEyIDEyNS45NSAzMjcuNjMgMTI1LjEyQzMyNi44MSAxMjMuNzUgMzI1LjYwIDEyMS44OSAzMjMuNjIgMTE4Ljk4QzMyMS4xMCAxMTUuMjYgMzE2LjI5IDEwOS4yOCAzMTIuMzAgMTA0LjkxQzMwOC42NSAxMDAuODkgMzAyLjE4IDk0LjcyIDI5OC43NSA5MS45OEMyOTYuMzYgOTAuMDcgMjkwLjA1IDg1LjM4IDI4OS4xMiA4NC44M0MyODguODUgODQuNjcgMjg3LjI3IDgzLjY5IDI4NS42MiA4Mi42N0MyNzcuMzcgNzcuNTQgMjcwLjE3IDc0LjA4IDI2MC41MCA3MC41OEMyNTguNzggNjkuOTYgMjU2Ljc3IDY5LjMwIDI1Ni4wNCA2OS4xMkMyNTUuMzAgNjguOTMgMjU0LjM1IDY4LjYyIDI1My45MSA2OC40MkMyNTMuNDggNjguMjIgMjUyLjYyIDY3Ljk3IDI1Mi4wMCA2Ny44N0MyNTEuMzggNjcuNzcgMjUwLjY4IDY3LjU5IDI1MC40NSA2Ny40N0MyNTAuMjIgNjcuMzUgMjQ5LjMyIDY3LjA5IDI0OC40NSA2Ni45MEMyNDcuNTggNjYuNzEgMjQ1LjE5IDY2LjE1IDI0My4xMiA2NS42OEMyMzguNTUgNjQuNjEgMjMxLjU0IDYzLjM0IDIyOS4wMCA2My4xMkMyMjcuOTcgNjMuMDMgMjI2LjYyIDYyLjg0IDIyNi4wMCA2Mi43MUMyMjQuMjYgNjIuMzMgMjEwLjc3IDYxLjUwIDIwNC4zOCA2MS4zOEMyMDAuMDcgNjEuMzAgMTk3LjI0IDYxLjM5IDE5My4xMiA2MS43NVpNMjE3LjI1IDk0LjQxQzIwOS44NiA5NC45NSAxOTkuMTQgOTYuODMgMTk0LjAwIDk4LjQ5QzE5My4yNCA5OC43MyAxOTEuNzggOTkuMTkgMTkwLjc1IDk5LjUwQzE4OS43MiA5OS44MSAxODguMzcgMTAwLjI3IDE4Ny43NSAxMDAuNTNDMTg3LjEzIDEwMC43OCAxODYuMTggMTAxLjE1IDE4NS42MiAxMDEuMzVDMTg1LjA3IDEwMS41NSAxODQuMTIgMTAxLjg5IDE4My41MCAxMDIuMTJDMTgxLjA0IDEwMy4wMyAxNzIuMTggMTA3LjUyIDE2OS4yMiAxMDkuMzdDMTY5LjAwIDEwOS41MSAxNjguNDMgMTA5Ljg0IDE2Ny45NyAxMTAuMTBDMTY2LjczIDExMC44MCAxNjEuOTMgMTE0LjExIDE1OS42MiAxMTUuODZDMTUyLjcwIDEyMS4xMSAxNDQuMjQgMTI5LjM5IDEzOS4xOCAxMzUuODhDMTM4LjU0IDEzNi43MCAxMzcuNzggMTM3LjY2IDEzNy40OCAxMzguMDBDMTM2LjgxIDEzOC43OSAxMzUuODYgMTQwLjQ0IDEzNS42MyAxNDEuMjFMMTM1LjQ1IDE0MS43OUwxMzYuMTYgMTQxLjMzQzEzNi41NSAxNDEuMDggMTM3Ljg5IDEzOS45MCAxMzkuMTIgMTM4LjcxQzE0OC4zNiAxMjkuODMgMTU5Ljc1IDEyMi4xNCAxNzAuODggMTE3LjI2QzE3NC40NCAxMTUuNzAgMTc2Ljg3IDExNC43NSAxNzcuMzEgMTE0Ljc1QzE3Ny40OSAxMTQuNzUgMTc3Ljc2IDExNC42NSAxNzcuODkgMTE0LjU0QzE3OC4xOCAxMTQuMjcgMTgxLjk0IDExMy4wNSAxODUuNjIgMTEyLjAxQzE4Ny4xNCAxMTEuNTggMTg4Ljk0IDExMS4wOCAxODkuNjIgMTEwLjg4QzE5MC4zMSAxMTAuNjggMTkxLjYzIDExMC40MCAxOTIuNTYgMTEwLjI2QzE5My40OCAxMTAuMTEgMTk0Ljg5IDEwOS44MyAxOTUuNjggMTA5LjY0QzE5Ni40OCAxMDkuNDQgMTk4LjA4IDEwOS4yMSAxOTkuMjUgMTA5LjEyQzIwMC40MiAxMDkuMDQgMjAyLjMzIDEwOC43OSAyMDMuNTAgMTA4LjU3QzIwNS4xMSAxMDguMjcgMjA3LjQ5IDEwOC4xNyAyMTMuMzggMTA4LjE1QzIyMC40MCAxMDguMTMgMjIxLjY0IDEwOC4xOSAyMjYuNjIgMTA4LjgxQzIyOS42NSAxMDkuMTggMjMyLjUyIDEwOS42MCAyMzMuMDAgMTA5Ljc0QzIzMy40OSAxMDkuODggMjM0LjU1IDExMC4wOSAyMzUuMzggMTEwLjIxQzIzOS43MCAxMTAuODUgMjUyLjY2IDExNC45MyAyNTUuNzkgMTE2LjY0QzI1Ni4xNSAxMTYuODQgMjU2LjU5IDExNy4wMCAyNTYuNzcgMTE3LjAwQzI1Ny43MCAxMTcuMDAgMjY3LjY4IDEyMi4zNCAyNzIuNTkgMTI1LjQ3QzI3NC45OCAxMjYuOTkgMjc4Ljk1IDEyOS45MCAyODIuMTIgMTMyLjQ1QzI5Mi45MyAxNDEuMTMgMzAzLjcyIDE1NC4wNSAzMDkuOTMgMTY1Ljc1QzMxMi45NCAxNzEuNDMgMzEzLjUwIDE3Mi41NCAzMTQuNzIgMTc1LjM4QzMxNS40NCAxNzcuMDIgMzE2LjI0IDE3OC44NiAzMTYuNTEgMTc5LjQ0QzMxNi43OCAxODAuMDMgMzE3LjAwIDE4MC42OCAzMTcuMDAgMTgwLjg4QzMxNy4wMCAxODEuMDcgMzE3LjIyIDE4MS43MiAzMTcuNDggMTgyLjMxQzMxNy43NCAxODIuODkgMzE4LjI2IDE4NC4zOSAzMTguNjMgMTg1LjYyQzMxOS4wMCAxODYuODYgMzE5LjQwIDE4OC4xMyAzMTkuNTIgMTg4LjQ0QzMyMC4wMCAxODkuNjggMzIxLjc1IDE5Ni4xMiAzMjEuNzUgMTk2LjY0QzMyMS43NSAxOTYuOTUgMzIxLjk2IDE5Ny45MSAzMjIuMjMgMTk4Ljc5QzMyMi40OSAxOTkuNjYgMzIyLjc3IDIwMS4xMSAzMjIuODYgMjAyLjAwQzMyMi45NiAyMDIuODkgMzIzLjE4IDIwNC4yNCAzMjMuMzcgMjA1LjAwQzMyMy41NiAyMDUuNzYgMzIzLjg0IDIwOC4wNiAzMjQuMDAgMjEwLjEyQzMyNC4xNSAyMTIuMTkgMzI0LjM4IDIxNC42MSAzMjQuNTEgMjE1LjUwQzMyNC44NyAyMTguMDUgMzI0Ljc5IDIyOC4xOSAzMjQuMzggMjMyLjUwQzMyMy41MCAyNDEuNjIgMzIzLjQ5IDI0MS42OCAzMjIuMjEgMjQ3Ljg4QzMyMS4yNyAyNTIuNDggMzE4LjUzIDI2MS45NyAzMTcuNTkgMjYzLjkwQzMxNy4zOSAyNjQuMzIgMzE3LjEyIDI2NS4wNSAzMTcuMDAgMjY1LjUyQzMxNi4xMyAyNjkuMDYgMzA5Ljk0IDI4MS40MSAzMDYuMTggMjg3LjEyQzMwMy4zMSAyOTEuNDkgMjk5LjgzIDI5Ni4yMCAyOTYuODUgMjk5Ljc1QzI5NC45NSAzMDIuMDIgMjg2Ljc3IDMxMC40NiAyODYuMDUgMzEwLjkwQzI4NS4yNiAzMTEuMzggMjg0LjEzIDMxMi43MSAyODQuMzMgMzEyLjkyQzI4NC44NiAzMTMuNDUgMjkyLjA1IDMwNy42NSAyOTcuMjEgMzAyLjU1QzMwMy45MCAyOTUuOTIgMzA5Ljg3IDI4OC4zNiAzMTUuNDggMjc5LjM4QzMxOC43NiAyNzQuMTQgMzI1LjAyIDI2MC42NiAzMjYuMDEgMjU2LjcwQzMyNi4xNCAyNTYuMTkgMzI2LjQxIDI1NS40MCAzMjYuNjEgMjU0Ljk1QzMyOC4xOCAyNTEuNDEgMzMxLjQ5IDIzNy4zNiAzMzIuMDAgMjMyLjEyQzMzMi4xMyAyMzAuNzUgMzMyLjM1IDIyOS4wNiAzMzIuNDkgMjI4LjM4QzMzMy4wMCAyMjUuOTEgMzMzLjI4IDIxNS4wMiAzMzMuMDMgMjA3LjgxQzMzMi44OSAyMDQuMDAgMzMyLjY3IDIwMC41NCAzMzIuNTMgMjAwLjEyQzMzMi4zOSAxOTkuNzEgMzMyLjE2IDE5OC4xNCAzMzIuMDEgMTk2LjY0QzMzMS41MSAxOTEuMzcgMzI5Ljc0IDE4My4xOCAzMjcuNzQgMTc2Ljg4QzMyNi41NSAxNzMuMTAgMzI1LjY5IDE3MC41NiAzMjUuMzYgMTY5Ljg0QzMyNS4xNiAxNjkuNDAgMzI1LjAwIDE2OC45MCAzMjQuOTkgMTY4LjcxQzMyNC45OSAxNjguNTMgMzI0Ljc3IDE2Ny45MyAzMjQuNTAgMTY3LjM4QzMyNC4yMyAxNjYuODIgMzI0LjAxIDE2Ni4yOCAzMjQuMDEgMTY2LjE2QzMyMy45OSAxNjUuNzIgMzIxLjQwIDE2MC4wOSAzMTkuNTIgMTU2LjQ0QzMxNS45NSAxNDkuNDcgMzE0LjkwIDE0Ny43NiAzMDkuNDAgMTM5Ljg4QzMwNi41OCAxMzUuODUgMzAxLjA3IDEyOS41MCAyOTYuNjUgMTI1LjE4QzI5My44MyAxMjIuNDMgMjg3LjM2IDExNi44NiAyODUuNDYgMTE1LjU1QzI4NS4wMCAxMTUuMjMgMjgzLjYxIDExNC4yNSAyODIuMzggMTEzLjM1QzI3NS4xMiAxMDguMTEgMjY0LjAxIDEwMi41MSAyNTUuMjUgOTkuNjdDMjUwLjk1IDk4LjI4IDI0Ny43MCA5Ny40NCAyNDEuMDAgOTYuMDBDMjM1Ljc1IDk0Ljg3IDIyMi43OSA5NC4wMCAyMTcuMjUgOTQuNDFaTTEzOC4xMCAyOTguODlDMTM3Ljg4IDI5OS43NiAxMzguMjEgMzAyLjg4IDEzOC42MiAzMDMuODRDMTM4LjgwIDMwNC4yNyAxMzkuMjQgMzA1LjQyIDEzOS42MSAzMDYuMzlDMTQxLjMwIDMxMC45NyAxNDYuMjQgMzE2LjQxIDE1Mi4yNSAzMjAuMzFDMTU0LjM0IDMyMS42NyAxNjAuMDQgMzI0LjY4IDE2Mi4yNSAzMjUuNTlDMTc5Ljg2IDMzMi44NiAyMDMuMDEgMzM0LjYwIDIyMy44OCAzMzAuMjJDMjM0LjkyIDMyNy45MCAyNDUuMTggMzIzLjQ5IDI1Mi4yNSAzMTguMDJDMjU2LjgwIDMxNC41MCAyNjAuODIgMzA5LjUwIDI2MS45OSAzMDUuOTFDMjYyLjE2IDMwNS4zOCAyNjIuNDYgMzA0LjY1IDI2Mi42NSAzMDQuMjlDMjYzLjA0IDMwMy41NCAyNjMuMTMgMzAwLjM2IDI2Mi43NiAzMDAuMTNDMjYyLjYzIDMwMC4wNSAyNjIuMTQgMzAwLjgxIDI2MS42OCAzMDEuODFDMjU4Ljk3IDMwNy42OCAyNTEuNTYgMzE0LjI1IDI0My4xMiAzMTguMjZDMjMxLjIxIDMyMy45NCAyMTguNzUgMzI2LjYzIDIwMy4wMCAzMjYuOTJDMTk2LjYzIDMyNy4wMyAxOTQuODYgMzI2Ljk4IDE5MC4wMCAzMjYuNTFDMTg2LjkxIDMyNi4yMSAxODMuOTMgMzI1Ljg3IDE4My4zOCAzMjUuNzVDMTgyLjgyIDMyNS42MyAxODEuNTkgMzI1LjQwIDE4MC42MiAzMjUuMjVDMTczLjgxIDMyNC4xOSAxNjIuMTAgMzIwLjMxIDE1Ny4wNCAzMTcuNDRDMTUxLjYwIDMxNC4zNSAxNDguODMgMzEyLjM0IDE0NS43NCAzMDkuMjZDMTQyLjcwIDMwNi4yMyAxMzkuOTkgMzAyLjE3IDEzOS4wMiAyOTkuMTlDMTM4LjY2IDI5OC4xMCAxMzguMzMgMjk3Ljk5IDEzOC4xMCAyOTguODlaIi8+PHBhdGggY2xhc3M9ImkiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTEwNy44MSAxNDcuMjZMMTA3LjI0IDE0Ny40OUwxMDcuMzEgMTcwLjE4QzEwNy4zNSAxODIuNjYgMTA3LjQ4IDE5My4xMiAxMDcuNTkgMTkzLjQyQzEwNy43NiAxOTMuODcgMTA3LjY3IDE5NC4wMyAxMDcuMDEgMTk0LjM3QzEwNi4zNSAxOTQuNzEgMTA1LjY0IDE5NC43NiAxMDIuNTYgMTk0LjY1Qzk5LjU2IDE5NC41NCA5OC43OSAxOTQuNTggOTguMzIgMTk0Ljg5Qzk3LjcxIDE5NS4yOSA5Ny41OSAxOTUuOTkgOTguMDEgMTk2Ljc3Qzk4LjI1IDE5Ny4yMiA5OC41NyAxOTcuMjUgMTAyLjQ2IDE5Ny4yNUMxMDUuMzkgMTk3LjI1IDEwNi43NCAxOTcuMzQgMTA2Ljk1IDE5Ny41NUMxMDcuMTggMTk3Ljc4IDEwNy4yNSAyMDEuNjkgMTA3LjI1IDIxMy42MUMxMDcuMjYgMjIyLjI4IDEwNy4zNCAyMjkuNTEgMTA3LjQ1IDIyOS42N0MxMDcuNTUgMjI5Ljg0IDEwNy45NSAyMzAuMDkgMTA4LjMzIDIzMC4yM0MxMDkuMzEgMjMwLjYxIDEyOC40MCAyMzAuNjAgMTI5LjQ3IDIzMC4yMkMxMzAuNDMgMjI5Ljg5IDEzMC43NSAyMjkuMzUgMTMwLjc1IDIyOC4wNkMxMzAuNzUgMjI2LjIxIDEzMC45NCAyMjYuMjUgMTIxLjIxIDIyNi4yNUMxMTMuMTYgMjI2LjI1IDExMi41NSAyMjYuMjIgMTEyLjE2IDIyNS43OUMxMTEuNzkgMjI1LjM4IDExMS43NSAyMjQuMDMgMTExLjc1IDIxMS41OUMxMTEuNzUgMjAxLjI0IDExMS44MiAxOTcuNzggMTEyLjA1IDE5Ny41NUMxMTIuMjggMTk3LjMyIDExNi42MiAxOTcuMjUgMTMwLjA1IDE5Ny4yNUwxNDcuNzYgMTk3LjI1TDE0OC4yNSAxOTguMDZDMTQ4LjY3IDE5OC43NSAxNDguNzUgMTk5LjMzIDE0OC43NSAyMDEuODlDMTQ4Ljc1IDIwNS45MCAxNDkuMTAgMjA2LjIyIDE1MS43MiAyMDQuNjZDMTUyLjkwIDIwMy45NiAxNTQuODAgMjAyLjkwIDE2MC41NiAxOTkuNzVDMTYwLjk0IDE5OS41NCAxNjIuODUgMTk4LjQ3IDE2NC44MSAxOTcuMzhDMTY2Ljc2IDE5Ni4yOCAxNjkuMDkgMTk0Ljk3IDE2OS45OSAxOTQuNDdDMTcwLjg5IDE5My45OCAxNzIuMDcgMTkzLjMxIDE3Mi42MiAxOTMuMDBDMTczLjE4IDE5Mi42OSAxNzQuMjQgMTkyLjEwIDE3NS4wMCAxOTEuNjlDMTc5Ljg1IDE4OS4wNiAxODEuNDIgMTg3LjkyIDE4MS4wNSAxODcuMzNDMTgwLjk1IDE4Ny4xNyAxNzguNzMgMTg1Ljg0IDE3Ni4xMiAxODQuMzdDMTY4LjE3IDE3OS45MCAxNjAuNjkgMTc1LjcyIDE1OS4zOCAxNzUuMDBDMTU4LjY5IDE3NC42MyAxNTYuNDAgMTczLjM0IDE1NC4yOSAxNzIuMTVDMTUxLjMxIDE3MC40NiAxNTAuMjggMTY5Ljk5IDE0OS42NiAxNzAuMDVMMTQ4Ljg4IDE3MC4xMkwxNDguNzUgMTczLjY4QzE0OC42NSAxNzYuNDcgMTQ4LjU0IDE3Ny4zMiAxNDguMjMgMTc3LjYzQzE0Ny44OCAxNzcuOTggMTQ2LjMyIDE3OC4wMiAxMzQuMzIgMTc4LjAxQzEyNi4yMSAxNzguMDAgMTIwLjU2IDE3OC4wOSAxMjAuMTggMTc4LjIzQzExOS4xOSAxNzguNjEgMTE5LjA1IDE3OS40OCAxMTkuODYgMTgwLjE3TDEyMC41MyAxODAuNzVMMTM0LjcwIDE4MC43NEMxNDguMjEgMTgwLjc0IDE1MC40NiAxODAuNjQgMTUxLjA4IDE4MC4wMkMxNTEuMjUgMTc5Ljg1IDE1MS4zMyAxNzguOTggMTUxLjI5IDE3Ny44NkMxNTEuMTMgMTczLjU5IDE1MS40OCAxNzMuNDIgMTU1LjY4IDE3NS44M0MxNTcuNDQgMTc2Ljg0IDE1OS43MiAxNzguMTIgMTYwLjc1IDE3OC42OEMxNjMuNDkgMTgwLjE1IDE2Ni4yOCAxODEuNzAgMTY5LjI1IDE4My40MEMxNzAuNjkgMTg0LjIzIDE3Mi41MiAxODUuMjQgMTczLjMyIDE4NS42NEMxNzUuMDggMTg2LjU0IDE3Ni4wMyAxODcuMzggMTc1Ljg0IDE4Ny44N0MxNzUuNzYgMTg4LjA4IDE3NC42NyAxODguODUgMTczLjQxIDE4OS41OUMxNzEuMzIgMTkwLjgxIDE3MC4zMCAxOTEuMzkgMTY3LjAwIDE5My4xOUMxNjMuNzEgMTk0Ljk5IDE1OC45OCAxOTcuNjYgMTU3Ljk4IDE5OC4yOUMxNTcuMzUgMTk4LjY4IDE1Ni43NiAxOTkuMDAgMTU2LjY3IDE5OS4wMEMxNTYuNTkgMTk5LjAwIDE1NS42NSAxOTkuNTEgMTU0LjU5IDIwMC4xNEMxNTMuNTQgMjAwLjc2IDE1Mi41MCAyMDEuMjQgMTUyLjI4IDIwMS4yMEMxNTEuNTggMjAxLjA2IDE1MS4yNiAxOTkuOTUgMTUxLjI1IDE5Ny42OUMxNTEuMjUgMTk1LjYyIDE1MS4yMiAxOTUuNDkgMTUwLjYwIDE5NS4wOUMxNTAuMDAgMTk0LjY5IDE0OC40MSAxOTQuNjYgMTMxLjAxIDE5NC42NEMxMTAuNjMgMTk0LjYyIDExMC45MyAxOTQuNjQgMTExLjQxIDE5My4zOUMxMTEuNTIgMTkzLjExIDExMS42NyAxODMuNjggMTExLjc0IDE3Mi40NUMxMTEuODcgMTUzLjI3IDExMS45MCAxNTEuOTkgMTEyLjMyIDE1MS41N0MxMTIuNzUgMTUxLjE1IDExNS4yNyAxNTEuMTIgMTY1LjY1IDE1MS4wNkwyMTguNTMgMTUxLjAwTDIxOS4xOCAxNTEuNjZMMjE5LjgzIDE1Mi4zMUwyMTkuNjYgMTU4Ljg0QzIxOS41NyAxNjIuNDMgMjE5LjUwIDE3OC45MCAyMTkuNTAgMTk1LjQyQzIxOS41MCAyMjIuNDAgMjE5LjQ2IDIyNS41MCAyMTkuMTEgMjI1Ljg2QzIxOC43NSAyMjYuMjEgMjE1Ljc3IDIyNi4yNSAxODkuOTcgMjI2LjI1QzE3MC42MyAyMjYuMjUgMTYxLjA2IDIyNi4zMyAxNjAuNzMgMjI2LjUxQzE2MC4zNSAyMjYuNzEgMTYwLjI1IDIyNy4wNCAxNjAuMjUgMjI4LjA3QzE2MC4yNiAyMjkuNjAgMTYwLjQwIDIyOS44OCAxNjEuMzIgMjMwLjIzQzE2Mi4xMiAyMzAuNTMgMjM1LjI3IDIzMC42MSAyMzYuODcgMjMwLjMxQzIzNy43NiAyMzAuMTQgMjM3LjkxIDIzMC4wMCAyMzguMjkgMjI5LjAwQzIzOC44MCAyMjcuNjggMjM4Ljg4IDIyNS45OCAyMzguNDUgMjI1LjU1QzIzOC4yMyAyMjUuMzMgMjM2LjQyIDIyNS4yNSAyMzEuODUgMjI1LjI1QzIyNi4yMyAyMjUuMjUgMjI1LjUwIDIyNS4yMCAyMjUuMDIgMjI0LjgxTDIyNC40OCAyMjQuMzhMMjI0LjU1IDIxMS4yOUwyMjQuNjIgMTk4LjIxTDIyNS4yMiAxOTcuNzNDMjI1Ljc3IDE5Ny4yOCAyMjYuMjkgMTk3LjI1IDIzMy4xMiAxOTcuMjVDMjM5LjQ2IDE5Ny4yNSAyNDAuNDggMTk3LjIwIDI0MC43NiAxOTYuODZDMjQxLjI0IDE5Ni4yOSAyNDEuMjMgMTkzLjM3IDI0MC43NSAxOTIuODlDMjQwLjQzIDE5Mi41NyAyMzkuMTcgMTkyLjUwIDIzMi45MSAxOTIuNDRMMjI1LjQ2IDE5Mi4zOEwyMjQuOTggMTkxLjc4QzIyNC41MiAxOTEuMjIgMjI0LjUwIDE5MC42MyAyMjQuNTAgMTc4Ljg0TDIyNC41MCAxNjYuNDhMMjI1LjExIDE2NS44NkwyMjUuNzMgMTY1LjI1TDI0MC4xOCAxNjUuMjdDMjQ4LjEyIDE2NS4yOSAyNTQuODYgMTY1LjM3IDI1NS4xNSAxNjUuNDZDMjU1LjY2IDE2NS42MiAyNTcuNTkgMTY3LjgyIDI2MS41MSAxNzIuNzZDMjYyLjU1IDE3NC4wNiAyNjQuMjkgMTc2LjI0IDI2NS4zOSAxNzcuNTlDMjY2LjQ4IDE3OC45NSAyNjcuOTQgMTgwLjc3IDI2OC42MiAxODEuNjRDMjY5LjMxIDE4Mi41MCAyNzIuNDQgMTg2LjQwIDI3NS41OCAxOTAuMjlDMjc4LjcyIDE5NC4xOSAyODEuNDggMTk3LjcxIDI4MS43MSAxOTguMTJDMjgyLjA4IDE5OC44MCAyODIuMTIgMjAwLjIwIDI4Mi4xMiAyMTEuNjhDMjgyLjEyIDIyMS44NCAyODIuMDYgMjI0LjU0IDI4MS44MCAyMjQuODBDMjgxLjU1IDIyNS4wNSAyNzkuODcgMjI1LjE0IDI3NC44NyAyMjUuMjBDMjY3LjIyIDIyNS4yOCAyNjcuNjYgMjI1LjEyIDI2Ny45MiAyMjcuODVDMjY4LjE3IDIzMC41NiAyNjcuNDggMjMwLjM2IDI3Ni45OCAyMzAuNDVMMjg1LjI1IDIzMC41MkwyODUuODggMjI5LjkwTDI4Ni41MCAyMjkuMjdMMjg2LjUwIDIxMy42OEMyODYuNTAgMjAxLjE4IDI4Ni40MyAxOTcuODUgMjg2LjE2IDE5Ni45NEMyODUuNzkgMTk1LjcxIDI4NS4zNyAxOTUuMTMgMjgxLjczIDE5MC43NUMyNzguNzQgMTg3LjE1IDI3Mi4xMyAxNzkuMTAgMjY5LjAzIDE3NS4yN0MyNjcuNzQgMTczLjY4IDI2Ni4xMCAxNzEuNzAgMjY1LjM5IDE3MC44OEMyNjQuNjkgMTcwLjA1IDI2My4wMCAxNjguMDAgMjYxLjY2IDE2Ni4zMkMyNjAuMzEgMTY0LjY0IDI1OC43MyAxNjIuNzYgMjU4LjE1IDE2Mi4xNEwyNTcuMDkgMTYxLjAwTDI0MS4zMiAxNjEuMDBDMjI2LjE4IDE2MS4wMCAyMjUuNTMgMTYwLjk4IDIyNC45NyAxNjAuNTJDMjI0LjM5IDE2MC4wNSAyMjQuMzcgMTU5Ljk0IDIyNC4yMyAxNTQuNTlDMjI0LjE1IDE1MS41OCAyMjQuMDEgMTQ4Ljk1IDIyMy45MSAxNDguNzNDMjIzLjgxIDE0OC41MSAyMjMuMzcgMTQ4LjA2IDIyMi45MyAxNDcuNzNMMjIyLjEyIDE0Ny4xMkwxNjUuMjUgMTQ3LjA4QzEzMS40NyAxNDcuMDUgMTA4LjE1IDE0Ny4xMiAxMDcuODEgMTQ3LjI2Wk0xMjAuMTkgMTcyLjI2QzExOS4zNiAxNzIuNzYgMTE5LjIyIDE3My4zOSAxMTkuNzcgMTc0LjEwTDEyMC4yOSAxNzQuNzVMMTI1Ljk2IDE3NC43NUMxMzIuMTIgMTc0Ljc0IDEzMi44MiAxNzQuNjIgMTMyLjk1IDE3My40N0MxMzMuMTAgMTcyLjIyIDEzMi42NyAxNzIuMTMgMTI2LjQwIDE3Mi4wNkMxMjIuNzAgMTcyLjAyIDEyMC40NyAxNzIuMDkgMTIwLjE5IDE3Mi4yNlpNMTQzLjg4IDIxNi4xN0MxNDAuMTAgMjE2LjY5IDEzNi4yNyAyMTkuMjUgMTM0LjI4IDIyMi41OUMxMzMuMTQgMjI0LjUwIDEzMi4xOSAyMjguMTYgMTMyLjQwIDIyOS44NUMxMzIuOTQgMjM0LjMzIDEzNS4xOSAyMzguMTIgMTM4LjUwIDI0MC4xMUMxNDMuOTcgMjQzLjQwIDE1MC40OSAyNDIuNTkgMTU0Ljc3IDIzOC4wOEMxNTguOTAgMjMzLjczIDE1OS42MiAyMjguMzMgMTU2LjgxIDIyMi44N0MxNTUuNDcgMjIwLjI4IDE1Mi41NSAyMTcuODggMTQ5LjU2IDIxNi45MkMxNDcuNjIgMjE2LjI5IDE0NS4yNyAyMTUuOTggMTQzLjg4IDIxNi4xN1pNMTQ4Ljc4IDIyMS41NEMxNTAuODEgMjIyLjQ4IDE1Mi4yMCAyMjMuODUgMTUzLjA5IDIyNS43NUMxNTMuNzMgMjI3LjEzIDE1My44NCAyMjcuNjYgMTUzLjgyIDIyOS4yNUMxNTMuNzcgMjMzLjM1IDE1MS4yMCAyMzYuMzggMTQ2Ljk0IDIzNy4zN0MxNDUuMDggMjM3LjgwIDE0My44OCAyMzcuNjQgMTQxLjc1IDIzNi42NkMxMzkuMjEgMjM1LjUwIDEzNy4wMCAyMzIuMDYgMTM3LjAwIDIyOS4yOEMxMzcuMDAgMjI3Ljg2IDEzNy45NSAyMjUuMDYgMTM4Ljc5IDIyNC4wNUMxNDEuMzIgMjIwLjk3IDE0NS4zNSAyMTkuOTUgMTQ4Ljc4IDIyMS41NFpNMjUyLjAwIDIxNi4xN0MyNTAuNTcgMjE2LjMwIDI0OC4wNiAyMTcuMTEgMjQ2LjU3IDIxNy45NEMyNDUuMDUgMjE4Ljc5IDI0Mi42MSAyMjEuMzIgMjQxLjg0IDIyMi44M0MyNDAuMTEgMjI2LjIyIDIzOS43NiAyMjkuOTcgMjQwLjg2IDIzMy4yMEMyNDIuNzEgMjM4LjY0IDI0Ny41OSAyNDIuMTQgMjUzLjI1IDI0Mi4wN0MyNTYuOTkgMjQyLjAzIDI2MC4wOSAyNDAuNjggMjYyLjY2IDIzNy45NUMyNjUuMDEgMjM1LjQ2IDI2Ni40MyAyMzEuNTcgMjY2LjE3IDIyOC4zOEMyNjUuOTAgMjI1LjE3IDI2NC4yOSAyMjEuNzcgMjYyLjExIDIxOS43OEMyNTkuMjggMjE3LjIwIDI1NS41NyAyMTUuODcgMjUyLjAwIDIxNi4xN1pNMjU2Ljc4IDIyMS42OUMyNTkuMDkgMjIyLjg4IDI2MC40NyAyMjQuNDkgMjYxLjIyIDIyNi44OUMyNjEuNTEgMjI3LjgyIDI2MS43NSAyMjguODIgMjYxLjc1IDIyOS4xMUMyNjEuNzUgMjMwLjA4IDI2MC44MCAyMzIuOTUgMjYwLjE3IDIzMy44OEMyNTkuMjEgMjM1LjI5IDI1Ny4xNyAyMzYuNjggMjU1LjE4IDIzNy4yOUMyNTMuNDYgMjM3LjgxIDI1My4zNiAyMzcuODEgMjUxLjY5IDIzNy40MUMyNDcuNDQgMjM2LjM5IDI0NC45MSAyMzMuMzUgMjQ0Ljg5IDIyOS4yNUMyNDQuODcgMjI0LjQ0IDI0OC41MCAyMjAuNzcgMjUzLjMwIDIyMC43NkMyNTQuNzQgMjIwLjc1IDI1NS4yMSAyMjAuODggMjU2Ljc4IDIyMS42OVpNMjE0LjE0IDI0Mi4yOEMyMTEuNDQgMjQyLjY3IDIxMC4wNyAyNDQuMzYgMjA5LjgyIDI0Ny41OEMyMDkuNTQgMjUxLjI4IDIxMC42MyAyNTMuMzUgMjEzLjI2IDI1NC4wOUMyMTQuMDEgMjU0LjMwIDIxNS45MiAyNTQuNjQgMjE3LjQ5IDI1NC44NEMyMjAuMDYgMjU1LjE2IDIyMC40MiAyNTUuMjcgMjIwLjkzIDI1NS44NkMyMjEuNjUgMjU2LjcxIDIyMS42NSAyNTcuMzAgMjIwLjkxIDI1OC4xNUMyMjAuNDIgMjU4LjczIDIyMC4wOCAyNTguODYgMjE4LjgwIDI1OC45NUMyMTYuNzcgMjU5LjA5IDIxNi4wNiAyNTguODkgMjE1LjA4IDI1Ny44NUMyMTQuMzYgMjU3LjA4IDIxNC4wOCAyNTYuOTcgMjEyLjY0IDI1Ni44M0MyMTEuMzQgMjU2LjcxIDIxMC44OSAyNTYuNzcgMjEwLjM1IDI1Ny4xMkMyMDkuNzIgMjU3LjUzIDIwOS42OSAyNTcuNjQgMjA5LjgyIDI1OS4wNEMyMTAuMDUgMjYxLjYwIDIxMS4zNiAyNjIuNzggMjE0LjUwIDI2My4yN0MyMTYuOTUgMjYzLjY1IDIyMi41NiAyNjMuNDUgMjIzLjc1IDI2Mi45NEMyMjQuOTUgMjYyLjQyIDIyNi4xNSAyNjEuMDkgMjI2LjYxIDI1OS43OEMyMjcuMjIgMjU4LjA1IDIyNy4xMiAyNTUuMTQgMjI2LjQwIDI1My41OUMyMjUuNDUgMjUxLjU2IDIyMy43NyAyNTAuODEgMjE5LjI1IDI1MC4zN0MyMTcuMDYgMjUwLjE2IDIxNi4yMiAyNDkuODYgMjE1LjY1IDI0OS4wOEMyMTUuMjEgMjQ4LjQ5IDIxNS4yMCAyNDguMzYgMjE1LjUzIDI0Ny43OEMyMTYuMDEgMjQ2LjkzIDIxNi44OCAyNDYuNTEgMjE4LjIwIDI0Ni41MEMyMTkuMzcgMjQ2LjUwIDIxOS45OCAyNDYuNzUgMjIxLjA4IDI0Ny42NkMyMjEuNjkgMjQ4LjE3IDIyMi4wNiAyNDguMjUgMjIzLjc0IDI0OC4yNUMyMjYuMDggMjQ4LjI1IDIyNi4zNyAyNDguMDIgMjI2LjE5IDI0Ni4zN0MyMjYuMDMgMjQ1LjAxIDIyNS4xOCAyNDMuNjcgMjI0LjAzIDI0Mi45OEMyMjIuNTcgMjQyLjExIDIxNy42OCAyNDEuNzYgMjE0LjE0IDI0Mi4yOFpNMTY2LjM1IDI0Mi40M0MxNjUuNTYgMjQyLjk5IDE2NS41MCAyNDMuNzkgMTY1LjUwIDI1Mi45M0MxNjUuNTAgMjYxLjA3IDE2NS41NSAyNjIuMjEgMTY1LjkxIDI2Mi43M0wxNjYuMzIgMjYzLjMxTDE3Mi43MiAyNjMuMjBMMTc5LjEyIDI2My4xMEwxODAuNzUgMjYyLjI0QzE4Mi4xMyAyNjEuNTAgMTgyLjQ5IDI2MS4xNyAxODMuMTIgMjYwLjAwTDE4My44OCAyNTguNjJMMTgzLjg4IDI1Mi43NUwxODMuODggMjQ2Ljg4TDE4My4xOCAyNDUuNzBDMTgyLjQyIDI0NC40MCAxODEuMzcgMjQzLjQ5IDE3OS44NiAyNDIuODRDMTc5LjA0IDI0Mi40OCAxNzcuODUgMjQyLjM5IDE3Mi43NSAyNDIuMzJDMTY5LjM4IDI0Mi4yNyAxNjYuNTAgMjQyLjMyIDE2Ni4zNSAyNDIuNDNaTTE3Ny4wMCAyNDcuMzhDMTc4LjA3IDI0Ny45MyAxNzguMzEgMjQ5LjE2IDE3OC4yMSAyNTMuNTRDMTc4LjEwIDI1OC4zMyAxNzguMDkgMjU4LjM0IDE3NC40OCAyNTguNDZDMTcwLjg0IDI1OC41OSAxNzEuMDAgMjU4Ljg0IDE3MS4wMCAyNTIuODlDMTcxLjAwIDI0Ni44MiAxNzAuOTEgMjQ3LjAwIDE3NC4wMyAyNDcuMDBDMTc1LjU0IDI0Ny4wMCAxNzYuNTEgMjQ3LjEyIDE3Ny4wMCAyNDcuMzhaTTE4OS4wMCAyNDIuNDFDMTg4Ljc5IDI0Mi41MCAxODguNDMgMjQyLjc0IDE4OC4xOSAyNDIuOTVDMTg3Ljc5IDI0My4zMCAxODcuNzUgMjQ0LjA5IDE4Ny43NSAyNTIuODhDMTg3Ljc1IDI2MS40NyAxODcuNzkgMjYyLjQ3IDE4OC4xNiAyNjIuNzhDMTg4LjcyIDI2My4yNCAxOTIuMzQgMjYzLjI2IDE5Mi44MCAyNjIuODBDMTkzLjAyIDI2Mi41OCAxOTMuMTYgMjYxLjM4IDE5My4yNSAyNTkuMDZDMTkzLjM3IDI1NS43MiAxOTMuMzkgMjU1LjYzIDE5NC4wMCAyNTUuMzJDMTk0LjM3IDI1NS4xMyAxOTUuNjAgMjU1LjAxIDE5Ny4wMyAyNTUuMDBDMjAwLjU1IDI1NS4wMCAyMDAuNjAgMjU1LjA1IDIwMC43MSAyNTkuMTZDMjAwLjgxIDI2My4wNiAyMDAuOTIgMjYzLjI1IDIwMy4wMCAyNjMuMjVDMjA1LjA5IDI2My4yNSAyMDUuOTUgMjYyLjg4IDIwNi4xMiAyNjEuOTJDMjA2LjIwIDI2MS40OCAyMDYuMjMgMjU3LjExIDIwNi4xOSAyNTIuMjBDMjA2LjExIDI0MS42OSAyMDYuMzEgMjQyLjM4IDIwMy4zOCAyNDIuMzhDMjAyLjE5IDI0Mi4zOCAyMDEuNDEgMjQyLjQ5IDIwMS4yMCAyNDIuNzBDMjAwLjk4IDI0Mi45MSAyMDAuODMgMjQ0LjA4IDIwMC43NCAyNDYuMTRDMjAwLjYzIDI0OC41OCAyMDAuNTEgMjQ5LjM0IDIwMC4xOSAyNDkuNjdDMTk5LjcyIDI1MC4xMyAxOTYuNDIgMjUwLjQzIDE5NC45MCAyNTAuMTVDMTkzLjQ2IDI0OS44OCAxOTMuMjUgMjQ5LjQ5IDE5My4yNCAyNDcuMDRDMTkzLjIzIDI0NC44OCAxOTIuOTYgMjQyLjg4IDE5Mi42NSAyNDIuNTZDMTkyLjQzIDI0Mi4zNCAxODkuNDggMjQyLjIyIDE4OS4wMCAyNDIuNDFaTTE3MS45NyAyNzMuNTFDMTY3LjM4IDI3My45MiAxNjQuMzAgMjc3Ljg0IDE2NC43NSAyODIuNjdDMTY1LjE5IDI4Ny4zMSAxNjguMzYgMjkwLjEzIDE3My4wNiAyOTAuMDRDMTc2LjEyIDI4OS45OSAxNzguNjYgMjg4LjM5IDE3OS45OSAyODUuNjhDMTgwLjkxIDI4My44MSAxODEuMDQgMjgyLjQzIDE4MC4zNSAyODEuNzRDMTc5LjkzIDI4MS4zMiAxNzkuNDcgMjgxLjI2IDE3Ni40MSAyODEuMjNDMTc0LjQyIDI4MS4yMiAxNzIuODQgMjgxLjMxIDE3Mi43MCAyODEuNDVDMTcyLjU2IDI4MS41OSAxNzIuNTMgMjgxLjk0IDE3Mi42MiAyODIuMjJDMTcyLjc3IDI4Mi43MSAxNzIuOTcgMjgyLjc1IDE3NS4wMiAyODIuNzVDMTc2LjkyIDI4Mi43NSAxNzcuMzIgMjgyLjgyIDE3Ny43NSAyODMuMjVDMTc4LjM5IDI4My44OSAxNzguMzggMjg0LjM5IDE3Ny42OCAyODUuNjJDMTc2LjAyIDI4OC41NCAxNzEuMTYgMjg5LjExIDE2OC42NCAyODYuNjdDMTY2LjE0IDI4NC4yNSAxNjYuMTYgMjc5LjQwIDE2OC42OSAyNzYuOTRDMTY5Ljc2IDI3NS45MCAxNzAuMzUgMjc1LjYzIDE3Mi4xNiAyNzUuMzlDMTczLjg5IDI3NS4xNSAxNzUuMjggMjc1LjYxIDE3Ni43MSAyNzYuODhDMTc4LjA4IDI3OC4wOSAxNzguNjkgMjc4LjM2IDE3OS4xNiAyNzcuOTdDMTgwLjAzIDI3Ny4yNSAxNzguOTMgMjc1LjU4IDE3Ni44MiAyNzQuNDRDMTc1LjIyIDI3My41NyAxNzMuOTggMjczLjMzIDE3MS45NyAyNzMuNTFaTTE5Mi42NCAyNzMuNjFDMTkwLjQ0IDI3NC40MiAxODkuMjYgMjc2LjAxIDE4OS4yNSAyNzguMThDMTg5LjI1IDI3OS4yOSAxODkuMzcgMjc5LjYyIDE5MC4wNCAyODAuMzhDMTkxLjAwIDI4MS40OCAxOTEuNjggMjgxLjg0IDE5NC4wMCAyODIuNDhDMTk3LjczIDI4My41MiAxOTguOTYgMjg1LjU4IDE5Ny4wMSAyODcuNTNDMTk2LjM5IDI4OC4xNSAxOTYuMTAgMjg4LjI1IDE5NC44OCAyODguMjVDMTkzLjI1IDI4OC4yNSAxOTIuOTAgMjg4LjEwIDE5MS42NyAyODYuODdDMTkwLjU3IDI4NS43NyAxODkuNjcgMjg1Ljc0IDE4OS41NSAyODYuODBDMTg5LjM4IDI4OC4yNiAxOTEuMDcgMjg5LjYzIDE5My41MyAyOTAuMDJDMTk4LjM5IDI5MC44MSAyMDIuMDQgMjg2LjM1IDE5OS4yMCAyODMuMTBDMTk4LjI4IDI4Mi4wNSAxOTcuMjUgMjgxLjUxIDE5NC44MyAyODAuNzhDMTkyLjM5IDI4MC4wNSAxOTEuNTAgMjc5LjI4IDE5MS41MCAyNzcuOTFDMTkxLjUwIDI3Ni42NCAxOTEuOTQgMjc1Ljk1IDE5My4xMSAyNzUuNDBDMTk0LjE0IDI3NC45MSAxOTQuOTYgMjc1LjA1IDE5Ni4zNCAyNzUuOThDMTk4LjcyIDI3Ny41NiAxOTguNzQgMjc3LjU3IDE5OS4xNSAyNzcuMjNDMTk5LjYzIDI3Ni44MyAxOTkuNDIgMjc1Ljg1IDE5OC42NyAyNzUuMDNDMTk3LjQzIDI3My42NyAxOTQuNDEgMjcyLjk2IDE5Mi42NCAyNzMuNjFaTTIyNy40NCAyNzMuNjFDMjIzLjc1IDI3NC42NyAyMjEuNTAgMjc3Ljc2IDIyMS41MCAyODEuNzVDMjIxLjUwIDI4Ni43NiAyMjQuNzUgMjkwLjA4IDIyOS42MiAyOTAuMDRDMjMyLjM5IDI5MC4wMiAyMzQuOTMgMjg4Ljg2IDIzNi4wMCAyODcuMTJDMjM3LjE1IDI4NS4yNyAyMzUuNjggMjg0Ljk1IDIzMy43MiAyODYuNjNDMjMyLjI5IDI4Ny44NSAyMzEuMjUgMjg4LjI1IDIyOS41MCAyODguMjVDMjI2Ljc4IDI4OC4yNSAyMjUuMDIgMjg3LjA1IDIyNC4wMyAyODQuNTNDMjIyLjU5IDI4MC44NyAyMjQuMzYgMjc2LjQ0IDIyNy42MiAyNzUuNTNDMjI5LjkyIDI3NC44OSAyMzEuODMgMjc1LjM0IDIzMy41MCAyNzYuOTBDMjM0LjM2IDI3Ny43MCAyMzQuODggMjc4LjAwIDIzNS40NCAyNzguMDBDMjM2Ljg4IDI3OC4wMCAyMzYuNjUgMjc2Ljg2IDIzNC44OCAyNzUuMzFDMjMyLjk3IDI3My42MiAyMjkuODYgMjcyLjkxIDIyNy40NCAyNzMuNjFaTTI0My44OSAyNzMuNTNDMjQyLjMzIDI3My45MCAyNDAuODMgMjc1LjE5IDI0MC41MiAyNzYuNDJDMjM5LjY2IDI3OS43OSAyNDAuNzUgMjgxLjI2IDI0NS4wOSAyODIuNTJDMjQ3LjYzIDI4My4yNiAyNDguNzUgMjg0LjIyIDI0OC43NSAyODUuNjhDMjQ4Ljc1IDI4OC41OCAyNDQuNjggMjg5LjQzIDI0Mi43MiAyODYuOTZDMjQyLjExIDI4Ni4xOSAyNDEuNzkgMjg1Ljk5IDI0MS4yOCAyODYuMDVDMjQwLjc0IDI4Ni4xMSAyNDAuNjEgMjg2LjI3IDI0MC41NCAyODYuOTZDMjQwLjQ0IDI4OC4wMSAyNDAuOTcgMjg4LjYzIDI0Mi42MiAyODkuNDBDMjQ0LjQzIDI5MC4yNSAyNDUuNzAgMjkwLjM3IDI0Ny40MCAyODkuODhDMjQ5LjM2IDI4OS4zMSAyNTAuNjQgMjg4LjA1IDI1MC44OCAyODYuNDVDMjUxLjMyIDI4My40OSAyNTAuMDkgMjgyLjExIDI0NS43OCAyODAuNzVDMjQzLjI1IDI3OS45NSAyNDIuNTAgMjc5LjI4IDI0Mi41MCAyNzcuODNDMjQyLjUwIDI3Ni45MyAyNDIuNjQgMjc2LjU3IDI0My4yMyAyNzUuOThDMjQzLjgzIDI3NS4zOCAyNDQuMTcgMjc1LjI1IDI0NS4xMiAyNzUuMjVDMjQ2LjQ2IDI3NS4yNSAyNDcuMzMgMjc1LjY1IDI0OC4zNiAyNzYuNzNDMjQ4Ljc2IDI3Ny4xNSAyNDkuMjkgMjc3LjUwIDI0OS41NCAyNzcuNTBDMjUwLjE2IDI3Ny41MCAyNTAuNTUgMjc2LjY3IDI1MC4yNyAyNzUuOTRDMjQ5Ljk2IDI3NS4xMiAyNDguNDMgMjczLjgzIDI0Ny41OCAyNzMuNjZDMjQ1LjkzIDI3My4zNSAyNDQuODEgMjczLjMwIDI0My44OSAyNzMuNTNaTTE1MC44NiAyNzQuMDhDMTQ4LjQ2IDI3NS4yMiAxNDcuMDUgMjc2LjkwIDE0Ni4xMyAyNzkuNzJDMTQ1LjQxIDI4MS45MSAxNDYuMDYgMjg1LjEwIDE0Ny42NCAyODcuMTdDMTQ5LjA4IDI4OS4wNiAxNTIuMzAgMjkwLjQzIDE1NC42MiAyOTAuMTRDMTU4LjEwIDI4OS43MSAxNjAuNjggMjg3Ljg0IDE2MS43NyAyODQuOTNDMTYzLjMwIDI4MC45MCAxNjEuNTkgMjc2LjI3IDE1Ny44OCAyNzQuMzhDMTU2LjY0IDI3My43NCAxNTYuMDcgMjczLjYxIDE1NC4yNyAyNzMuNTVDMTUyLjQzIDI3My40OSAxNTEuOTUgMjczLjU3IDE1MC44NiAyNzQuMDhaTTE1Ni44OCAyNzUuOTRDMTU4LjI3IDI3Ni42NiAxNTkuMTMgMjc3LjY1IDE1OS43MyAyNzkuMjVDMTYwLjM5IDI4MS4wMSAxNjAuMzkgMjgyLjYxIDE1OS43MSAyODQuNDNDMTU4LjY5IDI4Ny4xOCAxNTYuNjQgMjg4LjQxIDE1My4zOSAyODguMjFDMTUxLjIzIDI4OC4wNyAxNDkuOTIgMjg3LjE3IDE0OC44OCAyODUuMTFDMTQ4LjI0IDI4My44NSAxNDguMTMgMjgzLjM1IDE0OC4xMyAyODEuNzVDMTQ4LjE0IDI4MC4yMiAxNDguMjYgMjc5LjY1IDE0OC44MCAyNzguNjJDMTQ5LjU2IDI3Ny4xNyAxNTAuNTIgMjc2LjIwIDE1MS43NSAyNzUuNjVDMTUyLjk1IDI3NS4xMiAxNTUuNTYgMjc1LjI2IDE1Ni44OCAyNzUuOTRaTTE4NC40NiAyNzMuOTJDMTg0LjIwIDI3NC4yMyAxODQuMTEgMjc1Ljg4IDE4NC4wNCAyODEuMjNDMTgzLjk1IDI4OS42MiAxODQuMTYgMjkwLjczIDE4NS42NCAyODkuNjVDMTg2LjEwIDI4OS4zMSAxODYuMTMgMjg4Ljg5IDE4Ni4yMCAyODIuMzJDMTg2LjI0IDI3OC4xMCAxODYuMTcgMjc1LjA4IDE4Ni4wMiAyNzQuNjlDMTg1LjY3IDI3My43NyAxODQuOTAgMjczLjM5IDE4NC40NiAyNzMuOTJaTTIwMy4xNCAyNzMuODlDMjAyLjkzIDI3NC4xMSAyMDIuNzUgMjc0LjM5IDIwMi43NSAyNzQuNTFDMjAyLjc1IDI3NC45MCAyMDMuNjkgMjc1LjI1IDIwNC43NCAyNzUuMjVDMjA1LjUwIDI3NS4yNSAyMDUuOTMgMjc1LjQxIDIwNi4zOSAyNzUuODZMMjA3LjAwIDI3Ni40OEwyMDcuMDAgMjgyLjUwQzIwNy4wMCAyODcuNDEgMjA3LjA3IDI4OC42NiAyMDcuMzggMjg5LjI2QzIwNy44MiAyOTAuMTIgMjA4LjAyIDI5MC4xNyAyMDguNTcgMjg5LjU2QzIwOC45MSAyODkuMTkgMjA4Ljk4IDI4OC4xNiAyMDkuMDUgMjgyLjg2QzIwOS4xNCAyNzUuNTMgMjA5LjIxIDI3NS4yNSAyMTEuMDkgMjc1LjI1QzIxMi40NyAyNzUuMjUgMjEzLjI3IDI3NC41NSAyMTIuNjIgMjczLjkwQzIxMi4wMyAyNzMuMzEgMjAzLjc0IDI3My4zMCAyMDMuMTQgMjczLjg5Wk0yMTYuNzEgMjczLjkyQzIxNi40NSAyNzQuMjMgMjE2LjM2IDI3NS44OCAyMTYuMjkgMjgxLjIzQzIxNi4yMCAyODkuNjIgMjE2LjQxIDI5MC43MyAyMTcuODkgMjg5LjY1QzIxOC4zNSAyODkuMzEgMjE4LjM4IDI4OC44OSAyMTguNDUgMjgyLjMyQzIxOC40OSAyNzguMTAgMjE4LjQyIDI3NS4wOCAyMTguMjcgMjc0LjY5QzIxNy45MiAyNzMuNzcgMjE3LjE1IDI3My4zOSAyMTYuNzEgMjczLjkyWk0xMzYuNjUgMjc0LjE1QzEzNi41NyAyNzQuMzYgMTM2LjUwIDI3Ny44OCAxMzYuNTAgMjgxLjk3QzEzNi41MCAyODcuNDIgMTM2LjU4IDI4OS40OCAxMzYuODAgMjg5LjcwQzEzNy4yMyAyOTAuMTMgMTQzLjAwIDI5MC4xMSAxNDMuNTkgMjg5LjY4QzE0NC4xNCAyODkuMjggMTQzLjkxIDI4OC42MCAxNDMuMTcgMjg4LjQwQzE0Mi44NyAyODguMzIgMTQxLjg3IDI4OC4yNiAxNDAuOTYgMjg4LjI1QzEzOC4zOCAyODguMjUgMTM4LjUwIDI4OC41OSAxMzguNTAgMjgwLjkxQzEzOC41MCAyNzYuMTQgMTM4LjQyIDI3NC4yNyAxMzguMjAgMjc0LjA1QzEzNy43NyAyNzMuNjIgMTM2LjgzIDI3My42OCAxMzYuNjUgMjc0LjE1WiIvPjwvc3ZnPgo=" alt="DHS Logistics">
+      <div>
+        <h1>Depot Stock Ledger</h1>
+        <small>Transport Nagar · Harrawala · Doiwala</small>
+      </div>
+    </div>
+    <div class="who"><span id="whoName"></span><button class="btn ghost small" id="accBtn" type="button" hidden>Access</button><a class="btn ghost small" href="./">Dashboard</a></div>
+  </div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <div class="wrap tabrow">
+    <button role="tab" id="tab-entry" data-view="entry" aria-selected="true">New Entry</button>
+    <button role="tab" id="tab-stock" data-view="stock" aria-selected="false">Depot Status</button>
+    <button role="tab" id="tab-dealers" data-view="dealers" aria-selected="false">Dealer Stock</button>
+    <button role="tab" id="tab-tally" data-view="tally" aria-selected="false">Opening Balance</button>
+    <button role="tab" id="tab-log" data-view="log" aria-selected="false">Get Report</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <section class="panel" id="accessPanel" hidden aria-labelledby="accTitle">
+    <div class="phead"><div><h3 id="accTitle">Who can open this ledger</h3>
+      <p class="hint">Only the people ticked here, and the Admin, can open this page or read its figures; the database refuses everyone else. Nobody else sees the way in. Of those ticked, Supervisors and DMOs can make changes; everyone else can only view.</p></div>
+      <button class="btn ghost small" id="accClose" type="button">Close</button></div>
+    <div class="acclist" id="accList"></div>
+    <details class="paste" id="impBox"><summary>Bring over the old ledger (one time)</summary>
+      <p class="hint">Choose the file <b>ledger_import.json</b> that Claude gave you. It copies the opening balances, the SAP and physical stock reports and the entries from the claude.ai ledger into this one. Records with the same date and depot are replaced, so choosing it twice does no harm.</p>
+      <input type="file" id="impFile" accept=".json,application/json" aria-label="Ledger export file">
+      <p class="hint" id="impMsg"></p></details>
+  </section>
+  <div id="setup-banner" class="banner" hidden></div>
+  <div id="banner" class="banner" hidden></div>
+  <div id="cap-alert" class="capalert" role="status" hidden></div>
+
+  <!-- NEW ENTRY -->
+  <section id="view-entry" class="view" aria-labelledby="tab-entry">
+    <div class="head">
+      <div>
+        <h2>New entry</h2>
+        <p class="sub">Punch in what happened at a depot. Depot Status and Dealer Stock update by themselves.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <span class="lbl">What happened?</span>
+      <div class="seg types four" role="group" aria-label="Entry type">
+        <button type="button" data-type="billing" aria-pressed="true"><b>Billing</b><small>Invoice raised in SAP</small></button>
+        <button type="button" data-type="dispatch" aria-pressed="false"><b>Dispatch</b><small>Lifted from the godown</small></button>
+        <button type="button" data-type="arrival" aria-pressed="false"><b>Arrival</b><small>Trailer received</small></button>
+        <button type="button" data-type="correction" aria-pressed="false"><b>Correction</b><small>Fix a balance</small></button>
+      </div>
+      <p class="hint" id="type-hint"></p>
+    </div>
+
+    <div class="panel">
+      <h3>Details</h3>
+      <div class="row">
+        <div class="field"><label for="f-date">Date</label><input id="f-date" type="date"></div>
+        <div class="field" id="wrap-target" hidden>
+          <label for="f-target">Correct</label>
+          <select id="f-target">
+            <option value="dealer">Dealer balance</option>
+            <option value="sap">SAP stock</option>
+            <option value="phys">Physical stock</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="wrap-godown">
+        <span class="lbl">Depot</span>
+        <div class="seg" role="group" aria-label="Depot" id="f-godown">
+          <button type="button" data-g="TPN" aria-pressed="true"><span class="lg">Transport Nagar</span><span class="sh">TPN</span></button>
+          <button type="button" data-g="HAR" aria-pressed="false">Harrawala</button>
+          <button type="button" data-g="DOI" aria-pressed="false">Doiwala</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field" id="wrap-dealer">
+          <label for="f-dealer">Dealer</label>
+          <input id="f-dealer" list="dealer-list" autocomplete="off" placeholder="Start typing a dealer name">
+          <datalist id="dealer-list"></datalist>
+        </div>
+        <div class="field"><label for="f-ref">Invoice / vehicle no. (optional)</label><input id="f-ref" autocomplete="off"></div>
+      </div>
+      <p class="hint" id="dealer-hint" hidden></p>
+    </div>
+
+    <div class="panel">
+      <div class="phead">
+        <h3>Quantity</h3>
+        <p class="hint" id="qty-hint">Type bags or MT. The other fills in.</p>
+      </div>
+      <div class="qty" id="qty">
+        <div class="qh">Product</div><div class="qh">Bags</div><div class="qh">MT</div>
+      </div>
+    </div>
+
+    <p class="err" id="f-err" hidden></p>
+    <div class="capwarn" id="f-capwarn" hidden></div>
+    <div class="savebar" role="status">
+      <div class="savebar-msg" id="f-summary">—</div>
+      <div class="actions">
+        <button class="btn ghost" id="f-clear" type="button">Clear</button>
+        <button class="btn" id="f-save" type="button">Save billing</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPOT STATUS -->
+  <section id="view-stock" class="view" aria-labelledby="tab-stock" hidden>
+    <div class="head">
+      <div>
+        <h2>Depot status</h2>
+        <p class="sub" id="s-sub"></p>
+      </div>
+      <div class="field asof"><label for="s-asof">As of</label><input id="s-asof" type="date"></div>
+    </div>
+    <div id="s-status" class="status ok" hidden></div>
+    <div class="panel olderbox" id="stock-older" hidden></div>
+
+    <div class="panel" id="cap-section">
+      <div class="phead">
+        <div>
+          <h3>Depots</h3>
+          <p class="sub" id="cap-sub">SAP stock against what each godown can hold. Above capacity means stock on paper that can’t physically be there.</p>
+        </div>
+        <div class="actions"><button class="btn ghost small" id="cap-edit" type="button" hidden>Set capacity</button></div>
+      </div>
+      <div class="capform" id="cap-form" hidden>
+        <p class="hint">Only admins can change these. Type MT or bags; the other fills in.</p>
+        <div class="qty" id="cap-qty">
+          <div class="qh">Depot</div><div class="qh">MT</div><div class="qh">Bags</div>
+        </div>
+        <div class="row">
+          <div class="field" style="flex: 0 1 12rem;"><label for="cap-pct">Warn from (% full)</label><input id="cap-pct" type="number" inputmode="numeric" min="50" max="100" step="1"></div>
+        </div>
+        <p class="err" id="cap-err" hidden></p>
+        <div class="row">
+          <button class="btn ghost" id="cap-cancel" type="button">Cancel</button>
+          <button class="btn" id="cap-save" type="button">Save capacity</button>
+        </div>
+      </div>
+      <div class="caps" id="caps"></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead">
+        <h3 id="s-title">Godown stock</h3>
+        <div class="actions"><button class="btn ghost small" id="s-copy" type="button">Copy for WhatsApp</button></div>
+      </div>
+      <div class="tbl-wrap"><table class="sheet" id="s-table"></table></div>
+      <pre class="wa" id="s-wa" hidden></pre>
+    </div>
+  </section>
+
+  <!-- DEALER STOCK -->
+  <section id="view-dealers" class="view" aria-labelledby="tab-dealers" hidden>
+    <div class="head">
+      <div>
+        <h2>Dealer stock</h2>
+        <p class="sub" id="d-note"></p>
+      </div>
+      <div class="field asof"><label for="d-asof">As of</label><input id="d-asof" type="date"></div>
+    </div>
+    <div class="panel olderbox" id="dealers-older" hidden></div>
+
+    <div class="panel">
+      <div class="row">
+        <div class="field" style="flex: 2 1 22rem;">
+          <span class="lbl">Dealer sheet</span>
+          <div class="seg four" role="group" aria-label="Dealer sheet" id="d-godown">
+            <button type="button" data-g="TPH" aria-pressed="true">TP + Harrawala</button>
+            <button type="button" data-g="TPN" aria-pressed="false"><span class="lg">Transport Nagar only</span><span class="sh">TPN only</span></button>
+            <button type="button" data-g="HAR" aria-pressed="false">Harrawala only</button>
+            <button type="button" data-g="DOI" aria-pressed="false">Doiwala</button>
+          </div>
+        </div>
+        <div class="field"><label for="d-search">Search</label><input id="d-search" type="search" placeholder="Dealer name"></div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><span class="lbl">Pendency</span><div class="v neg" id="d-pend">—</div><div class="u">bags</div><div class="m" id="d-pend-mt"></div><div class="m" id="d-pend-n"></div></div>
+      <div class="tile"><span class="lbl">Advance</span><div class="v pos" id="d-adv">—</div><div class="u">bags</div><div class="m" id="d-adv-mt"></div><div class="m" id="d-adv-n"></div></div>
+      <div class="tile"><span class="lbl">Net</span><div class="v" id="d-net">—</div><div class="u">bags</div><div class="m" id="d-net-mt"></div><div class="m" id="d-net-n"></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead">
+        <h3 id="d-title">TP+Harrawala</h3>
+        <div class="actions">
+          <button class="btn ghost small" id="d-open-edit" type="button" hidden>Opening dealer balances</button>
+          <div class="seg compact" role="group" aria-label="View as" id="d-mode">
+            <button type="button" data-m="sheet" aria-pressed="true">Sheet</button>
+            <button type="button" data-m="list" aria-pressed="false">List</button>
+          </div>
+          <button class="btn ghost small" id="d-copy" type="button">Copy for WhatsApp</button>
+        </div>
+      </div>
+      <label class="check"><input id="d-zero" type="checkbox"> Show dealers with zero balance</label>
+      <div id="d-sheetwrap">
+        <div class="fhead" id="d-fhead" aria-hidden="true"><table class="sheet dsheet" id="d-fhead-t"></table></div>
+        <div class="tbl-wrap" id="d-scroll"><table class="sheet dsheet ghosthead" id="d-table"></table></div>
+      </div>
+      <div class="dlist" id="d-list" hidden></div>
+      <pre class="wa" id="d-wa" hidden></pre>
+    </div>
+  </section>
+
+  <!-- OPENING DEALER BALANCES (admin, opened from Dealer Stock) -->
+  <section id="view-setup" class="view" aria-labelledby="setup-title" hidden>
+    <div class="head">
+      <div>
+        <h2 id="setup-title">Opening dealer balances</h2>
+        <p class="sub">Each dealer’s balance on the ledger’s start day, <b id="o-start">—</b>. Billing and dispatches from that day on are added to these. Only admins can change them.</p>
+      </div>
+      <div class="actions"><button class="btn ghost small" id="setup-back" type="button">Back</button></div>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <div class="field">
+          <span class="lbl">Dealer sheet</span>
+          <div class="seg" role="group" aria-label="Dealer sheet" id="o-book">
+            <button type="button" data-b="TPH" aria-pressed="true">TP + Harrawala</button>
+            <button type="button" data-b="DOI" aria-pressed="false">Doiwala</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">Type in</span>
+          <div class="seg" role="group" aria-label="Type in" id="o-unit">
+            <button type="button" data-u="bags" aria-pressed="true">Bags</button>
+            <button type="button" data-u="mt" aria-pressed="false">MT</button>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Use the dealer sheet of <b id="o-start2">—</b>. For a later day’s sheet, first move the ledger start on Opening Balance. Minus = pendency, plus = advance. Blank = 0.</p>
+      <details class="paste" id="o-pastebox">
+        <summary>Paste from your Excel dealer sheet</summary>
+        <p class="hint">Copy the dealer rows from Excel: the name, then Black, PPC, OPC 53, OPC 43, W.S, S.S (the total is optional). Dealers already in the list are updated; new ones are added.</p>
+        <textarea id="o-paste" aria-label="Pasted dealer rows" placeholder="SAMPLE TRADERS	0	-100	0	0	0	0	-100"></textarea>
+        <div class="row"><button class="btn ghost small" id="o-paste-go" type="button">Add pasted rows</button></div>
+        <p class="hint" id="o-paste-note" hidden></p>
+      </details>
+    </div>
+
+    <div class="panel">
+      <div class="phead">
+        <h3 id="o-dtot-label">Sheet total</h3>
+        <div class="actions"><button class="btn ghost small" id="o-add" type="button">Add dealer</button></div>
+      </div>
+      <div class="tbl-wrap"><table class="sheet" id="o-dtot"></table></div>
+      <div class="odealers" id="o-dealers"></div>
+    </div>
+
+    <div id="o-check" class="status ok"></div>
+    <p class="err" id="o-err" hidden></p>
+    <div class="savebar" id="o-savebar" role="status">
+      <div class="savebar-msg" id="o-state">No changes yet</div>
+      <div class="actions">
+        <button class="btn ghost" id="o-cancel" type="button">Close</button>
+        <button class="btn" id="o-save" type="button" disabled>Save dealer balances</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPENING BALANCE (daily SAP opening stock) -->
+  <section id="view-tally" class="view" aria-labelledby="tab-tally" hidden>
+    <div class="head">
+      <div>
+        <h2>Opening balance</h2>
+        <p class="sub">Every morning, enter each depot’s opening stock from the SAP report. The ledger checks it against its own figures.</p>
+      </div>
+    </div>
+
+    <div class="panel keep" id="t-formcard">
+      <div class="row">
+        <div class="field"><label for="t-date">SAP report date</label><input id="t-date" type="date"></div>
+        <div class="field">
+          <span class="lbl">Type in</span>
+          <div class="seg" role="group" aria-label="Type in" id="t-unit">
+            <button type="button" data-u="mt" aria-pressed="true">MT</button>
+            <button type="button" data-u="bags" aria-pressed="false">Bags</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Depot</span>
+        <div class="seg" role="group" aria-label="Depot" id="t-godown">
+          <button type="button" data-g="TPN" aria-pressed="true"><span class="lg">Transport Nagar</span><span class="sh">TPN</span></button>
+          <button type="button" data-g="HAR" aria-pressed="false">Harrawala</button>
+          <button type="button" data-g="DOI" aria-pressed="false">Doiwala</button>
+        </div>
+      </div>
+      <p class="saved-note" id="t-saved" hidden></p>
+      <div class="qty tq" id="t-qty">
+        <div class="qh">Product</div><div class="qh">SAP stock</div><div class="qh">Physical</div>
+      </div>
+      <p class="hint">Physical is optional: fill it in when you have the godown count. It is needed on the ledger’s start day.</p>
+      <p class="err" id="t-err" hidden></p>
+      <div class="row">
+        <button class="btn ghost" id="t-clear" type="button">Clear</button>
+        <button class="btn" id="t-save" type="button">Save opening balance</button>
+      </div>
+    </div>
+
+    <div class="panel olderbox" id="tally-older" hidden></div>
+    <div id="t-status" class="status ok" hidden></div>
+
+    <div class="panel">
+      <div class="phead">
+        <div>
+          <h3 id="t-title">Tally</h3>
+          <p class="sub" id="t-sub"></p>
+        </div>
+        <div class="actions"><button class="btn ghost small" id="t-copy" type="button">Copy for WhatsApp</button></div>
+      </div>
+      <div class="tbl-wrap" id="t-tablewrap"><table class="sheet" id="t-table"></table></div>
+      <pre class="wa" id="t-wa" hidden></pre>
+    </div>
+
+    <div class="panel" id="t-histcard">
+      <div>
+        <h3>Last 14 days</h3>
+        <p class="sub">Tap a day to open it. ✓ means official SAP agrees with the ledger (and physical stock too, when it was entered).</p>
+      </div>
+      <div class="tbl-wrap" id="t-histwrap"><table class="sheet hist" id="t-hist"></table></div>
+    </div>
+
+    <div class="panel startbox" id="t-start" hidden>
+      <h3>Ledger start · admin</h3>
+      <p class="hint" id="t-start-note"></p>
+      <div class="okbox" id="t-start-confirm" hidden></div>
+      <p class="err" id="t-start-err" hidden></p>
+      <div class="row"><button class="btn ghost" id="t-start-btn" type="button">Start the ledger</button></div>
+    </div>
+  </section>
+
+  <!-- GET REPORT -->
+  <section id="view-log" class="view" aria-labelledby="tab-log" hidden>
+    <div class="head">
+      <div>
+        <h2>Get report</h2>
+        <p class="sub">This month’s entries, newest first. Pick a date for an earlier day: last month opens here, older months download as Excel. Filter by type, dealer or invoice number.</p>
+      </div>
+    </div>
+    <div class="panel keep">
+      <div class="row">
+        <div class="field"><label for="l-date">Date</label><input id="l-date" type="date"></div>
+        <div class="field">
+          <label for="l-type">Type</label>
+          <select id="l-type"><option value="">All types</option><option value="billing">Billing</option><option value="dispatch">Dispatch</option><option value="arrival">Arrival</option><option value="correction">Correction</option></select>
+        </div>
+        <div class="field"><label for="l-search">Search</label><input id="l-search" type="search" placeholder="Dealer or invoice no."></div>
+      </div>
+    </div>
+    <div class="panel olderbox" id="log-older" hidden></div>
+    <p class="hint" id="l-count"></p>
+    <div class="log" id="l-list"><div class="empty">Loading entries…</div></div>
+  </section>
+</main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* The ledger below was written for claude.ai's storage and asks for claude.use('db') and claude.use('user').
+   This stand-in answers them with your Firebase database, once the module script after it has checked who
+   is signed in and that they are allowed in. Until then the ledger waits.
+   Everyone allowed in can view; only the Admin, Supervisors and DMOs can make changes (the database enforces it). */
+window.__stock = {};
+window.__stock.ready = new Promise(r => { window.__stock.resolve = r; });
+window.claude = { use: k => window.__stock.ready.then(api => (api ? api[k] : null)) };
+</script>
+<script type="module">
+/* DHS Logistics - Depot Stock Ledger (stock.html): reached from a small "s" in the dashboard's name menu, which only
+   the Admin and the people on the ledger's access list ever see. The page's code is public like the rest of the site;
+   what keeps the figures private is the database rules: only the Admin and the people on stockConfig/access can read
+   or write stockEntries, stockReports, stockCloses and stockConfig. Nothing from here is kept on the device (memory-only cache). */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, memoryLocalCache, doc, collection, getDoc, getDocs, getDocsFromServer, onSnapshot, setDoc, addDoc, deleteDoc, query, where, limit, writeBatch, increment, FieldPath }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const $ = s => document.querySelector(s);
+const COL = { entries: "stockEntries", sapReports: "stockReports", config: "stockConfig", closes: "stockCloses" };
+let fdb, me = "", isAdmin = false, canEdit = false, done = false;
+
+function gate(mode){
+  const g = $("#stockGate"), app = $("#ledgerApp");
+  if (mode === "ok") { g.hidden = true; app.hidden = false; return; }
+  app.hidden = true; g.hidden = false;
+  const msg = {
+    checking: ["Checking access…", ""],
+    signin: ["Sign in on the dashboard first.", "Then come back here from the dashboard."],
+    ended: ["Your sign-in has ended on this device.", "Sign in on the dashboard again, then come back here."],
+    none: ["This page isn't available.", ""],
+    offline: ["Couldn't connect.", "Check your internet connection and reload the page."],
+    maint: ["Under maintenance", "The dashboard is under maintenance. Please check again after some time."],
+  }[mode] || ["This page isn't available.", ""];
+  $("#gateTitle").textContent = msg[0]; $("#gateText").textContent = msg[1];
+  $("#gateBack").hidden = mode === "checking";
+  if (!done && mode !== "checking") { done = true; window.__stock.resolve(null); }
+}
+// Access ended while open (signed out elsewhere, or removed from the list): stop showing anything.
+function lost(){
+  const b = $("#banner"); if (b) { b.hidden = false; b.textContent = "Your access to this page has ended. Open it again from the dashboard."; }
+  setTimeout(() => gate("none"), 1500);
+}
+
+// The ledger's storage calls, answered by Firestore. A refusal comes back with the code the ledger already handles.
+function makeDb(){
+  const ref = p => { const [c, id] = String(p).split("/"); if (!COL[c] || !id) throw new Error("Unknown record " + p); return doc(fdb, COL[c], id); };
+  const tr = e => { const x = new Error((e && e.message) || "error"); x.code = e && e.code === "permission-denied" ? "invalid_argument" : (e && e.code) || "unknown"; return x; };
+  const snapDoc = s => ({ id: s.id, exists: s.exists(), data: () => s.data() });
+  const onErr = cb => e => { if (e && e.code === "permission-denied") lost(); if (cb) cb(e); };
+  return {
+    doc: p => ({
+      onSnapshot: (next, err) => onSnapshot(ref(p), s => next(snapDoc(s)), onErr(err)),
+      get: async () => snapDoc(await getDoc(ref(p))),
+      set: async d => { try { await setDoc(ref(p), d); } catch (e) { throw tr(e); } },
+      delete: async () => { try { await deleteDoc(ref(p)); } catch (e) { throw tr(e); } },
+    }),
+    // an entry dated in a month that already has a close (last month): the entry and the close's change in one write,
+    // as increments, so two people saving at once both count
+    entryWithClose: async ({ add, del, close, deltas }) => {
+      try {
+        const b = writeBatch(fdb); let id = null;
+        if (add) { const r = doc(collection(fdb, COL.entries)); b.set(r, add); id = r.id; }
+        if (del) b.delete(doc(fdb, COL.entries, String(del)));
+        const args = [];
+        for (const [segs, v] of deltas) args.push(new FieldPath(...segs.map(String)), increment(v));
+        args.push("at", new Date().toISOString(), "by", me);
+        b.update(doc(fdb, COL.closes, close), ...args);
+        await b.commit(); return { id };
+      } catch (e) { throw tr(e); }
+    },
+    collection: c => ({
+      onSnapshot: (next, err) => onSnapshot(collection(fdb, COL[c]), s => next({ docs: s.docs.map(snapDoc), size: s.docs.length, fromCache: s.metadata.fromCache }), onErr(err)),
+      add: async d => { try { const r = await addDoc(collection(fdb, COL[c]), d); return { id: r.id }; } catch (e) { throw tr(e); } },
+      // only part of a collection, e.g. [["date", ">=", "2026-10-01"]]: the ledger loads just the last two months
+      query: conds => {
+        const q = query(collection(fdb, COL[c]), ...conds.map(([f, op, v]) => where(f, op, v)));
+        return {
+          onSnapshot: (next, err) => onSnapshot(q, s => next({ docs: s.docs.map(snapDoc), size: s.docs.length, fromCache: s.metadata.fromCache }), onErr(err)),
+          // straight from the server (never a partial copy on the device): used to close a month and for Excel
+          get: async () => { try { const s = await getDocsFromServer(q); return { docs: s.docs.map(snapDoc), size: s.docs.length }; } catch (e) { throw tr(e); } },
+        };
+      },
+    }),
+  };
+}
+
+// ---------- Admin: who can open the ledger, and the one-time import ----------
+let access = [];
+async function loadAccess(){
+  try { const a = await getDoc(doc(fdb, "stockConfig", "access")); access = a.exists() && Array.isArray(a.data().emails) ? a.data().emails : []; } catch (e) { access = []; }
+}
+async function renderAccess(){
+  const box = $("#accList"); box.textContent = "Loading the team…";
+  await loadAccess();
+  let people = [];
+  try { people = (await getDocs(collection(fdb, "members"))).docs.map(d => ({ email: d.id, ...d.data() })); } catch (e) { box.textContent = "Couldn't load the team. Reload and try again."; return; }
+  const ROLE = { admin: "Admin", dispatch: "Supervisor", dmo: "DMO", desk: "Dispatch", viewer: "Viewer" };
+  people.sort((a, b) => (a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0) || String(a.name || a.email).localeCompare(String(b.name || b.email)));
+  box.replaceChildren();
+  for (const p of people) {
+    const row = document.createElement("label"); row.className = "accrow";
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.dataset.email = p.email;
+    const admin = p.role === "admin";
+    cb.checked = admin || access.includes(p.email); cb.disabled = admin;
+    const t = document.createElement("span");
+    const b = document.createElement("b"); b.textContent = p.name || p.email;
+    const edits = admin || p.role === "dispatch" || p.role === "dmo";
+    const s = document.createElement("small"); s.textContent = p.email + " · " + (ROLE[p.role] || p.role || "") + (admin ? " · always allowed" : "") + (edits ? " · can make changes" : " · view only");
+    t.append(b, s); row.append(cb, t); box.appendChild(row);
+  }
+  if (!people.length) box.textContent = "No one on the team yet.";
+}
+async function saveAccess(e){
+  const cb = e.target; if (!cb.dataset || !cb.dataset.email) return;
+  const em = cb.dataset.email, on = cb.checked;
+  const next = on ? [...new Set([...access, em])] : access.filter(x => x !== em);
+  try {
+    await setDoc(doc(fdb, "stockConfig", "access"), { emails: next, updatedBy: me, updatedAt: new Date().toISOString() });
+    access = next; toastMsg((on ? "Can now open the ledger: " : "Can no longer open the ledger: ") + em);
+  } catch (err) { cb.checked = !on; toastMsg("Couldn't save. Only the Admin can change this."); }
+}
+function toastMsg(m){ const t = $("#toast"); if (!t) return; t.textContent = m; t.hidden = false; clearTimeout(window.__accT); window.__accT = setTimeout(() => { t.hidden = true; }, 3200); }
+
+// One-time import of the old claude.ai ledger: { config: {id: data}, sapReports: {id: data}, entries: [{id, ...}] }
+async function importFile(e){
+  const f = e.target.files && e.target.files[0]; const msg = $("#impMsg"); if (!f) return;
+  msg.textContent = "Reading the file…";
+  let d; try { d = JSON.parse(await f.text()); } catch (err) { msg.textContent = "That file isn't a ledger export."; return; }
+  if (!d || typeof d !== "object" || (!d.config && !d.sapReports && !d.entries)) { msg.textContent = "That file isn't a ledger export."; return; }
+  try { if (!(await getDocs(query(collection(fdb, "stockCloses"), limit(1)))).empty) { msg.textContent = "The ledger has already closed a month, so the one-time import can't be used any more."; e.target.value = ""; return; } }
+  catch (err) { msg.textContent = "Couldn't check the ledger. Check your connection and try again."; return; }
+  // entries and reports first, the settings (opening balances) last; no month is closed while this runs
+  const jobs = [];
+  for (const v of d.entries || []) { const { id, ...rest } = v; jobs.push([id ? doc(fdb, "stockEntries", String(id)) : doc(collection(fdb, "stockEntries")), rest]); }
+  for (const [id, v] of Object.entries(d.sapReports || {})) jobs.push([doc(fdb, "stockReports", id), v]);
+  for (const [id, v] of Object.entries(d.config || {})) if (id !== "access") jobs.push([doc(fdb, "stockConfig", id), v]);
+  let n = 0;
+  window.__stockImporting = true;
+  try { for (const [r, v] of jobs) { await setDoc(r, v); n++; msg.textContent = "Copying… " + n + " of " + jobs.length; } }
+  catch (err) { msg.textContent = "Stopped after " + n + " of " + jobs.length + ": " + ((err && err.code) || "error") + ". Nothing is lost; choose the file again to finish."; return; }   // still marked as importing: no month closes on half the records
+  window.__stockImporting = false;
+  msg.textContent = "Done: " + n + " records copied. The ledger now shows them.";
+  if (window.__stockAfterImport) window.__stockAfterImport();
+  e.target.value = "";
+}
+
+// ---------- start: who is this, and are they allowed in? ----------
+gate("checking");
+let app, auth;
+try {
+  app = initializeApp(firebaseConfig); auth = getAuth(app);
+  fdb = initializeFirestore(app, { localCache: memoryLocalCache() });   // nothing confidential kept on the device
+} catch (e) { gate("offline"); }
+if (auth) onAuthStateChanged(auth, async user => {
+  if (done) { if (!user) gate("signin"); return; }
+  if (!user || !user.email) return gate("signin");
+  me = user.email.toLowerCase();
+  let m;
+  try { m = await getDoc(doc(fdb, "members", me)); } catch (e) { return gate(e && e.code === "unavailable" ? "offline" : "none"); }
+  if (!m.exists()) return gate("none");
+  const md = m.data();
+  try { const tok = await user.getIdTokenResult(); if ((md.sess || 0) > Number(tok.claims.auth_time || 0)) return gate("ended"); } catch (e) {}
+  isAdmin = md.role === "admin";
+  canEdit = isAdmin || md.role === "dispatch" || md.role === "dmo";   // changes: the Admin, Supervisors and DMOs; others view
+  if (!isAdmin) {
+    try { await loadAccess(); } catch (e) {}
+    if (!access.includes(me)) return gate("none");
+  }
+  $("#whoName").textContent = md.name || me;
+  $("#accBtn").hidden = !isAdmin;
+  done = true; gate("ok");
+  // Maintenance (switched by the Admin on the dashboard): everyone else sees the message; when it's switched off, the page reloads.
+  let paused = false;
+  if (!isAdmin) onSnapshot(doc(fdb, "config", "maintenance"), s => {
+    const d = s.exists() ? s.data() : {};
+    if (d.on) { paused = true; gate("maint"); if (String(d.msg || "").trim()) $("#gateText").textContent = String(d.msg).trim(); }
+    else if (paused) location.reload();
+  }, () => {});
+  window.__stock.resolve({ db: makeDb(), user: { id: async () => me, can: async () => canEdit, canEdit: async () => isAdmin } });
+});
+$("#accBtn").addEventListener("click", () => { const p = $("#accessPanel"); p.hidden = !p.hidden; if (!p.hidden) { renderAccess(); p.scrollIntoView({ block: "start" }); } });
+$("#accClose").addEventListener("click", () => { $("#accessPanel").hidden = true; });
+$("#accList").addEventListener("change", saveAccess);
+$("#impFile").addEventListener("change", importFile);
+</script>
+
+<script>
+(() => {
+  const P = {
+    PPC: 'PPC', OPC43: 'OPC 43', OPC53: 'OPC 53', SS: 'SS', WSS: 'WSS', BLACK: 'LPP/BLACK',
+  };
+  const KEYS = Object.keys(P);
+  // Column order of each register, as the depot keeps it
+  const STOCK_ORDER = ['PPC', 'OPC43', 'SS', 'WSS', 'BLACK', 'OPC53'];
+  const DEALER_ORDER = ['BLACK', 'PPC', 'OPC53', 'OPC43', 'WSS', 'SS'];
+  const DEALER_LABEL = { BLACK: 'BLACK', PPC: 'PPC', OPC53: 'OPC 53', OPC43: 'OPC 43', WSS: 'W.S', SS: 'S.S' };
+  const GODOWNS = [
+    { k: 'TPN', label: 'Transport Nagar', sheet: 'STOCK DEHRADUN TPN', short: 'TPN' },
+    { k: 'HAR', label: 'Harrawala', sheet: 'STOCK HARRAWALA', short: 'HARRAWALA' },
+    { k: 'DOI', label: 'Doiwala', sheet: 'STOCK DOIWALA', short: 'DOIWALA' },
+  ];
+  // each dealer sheet ("book") covers one or more godowns
+  const BOOKS = [
+    { k: 'TPH', label: 'TP+Harrawala', godowns: ['TPN', 'HAR'] },
+    { k: 'DOI', label: 'Doiwala', godowns: ['DOI'] },
+  ];
+  const bookOf = (g) => (g === 'DOI' ? 'DOI' : 'TPH');
+  const GLABEL = { TPN: 'Transport Nagar', HAR: 'Harrawala', DOI: 'Doiwala', TPH: 'TP+Harrawala' };
+  const openingBook = (b) => (opening && opening.books ? opening.books[b] : b === 'TPH' && opening ? opening.dealers : null) || {};
+  const TYPES = {
+    billing: { label: 'Billing', hint: 'Invoice raised in SAP. SAP stock goes down; dealer balance goes up (advance).' },
+    dispatch: { label: 'Dispatch', hint: 'Material lifted from the godown. Physical stock goes down; dealer balance goes down (pendency).' },
+    arrival: { label: 'Arrival', hint: 'Trailer received. Adds to both SAP and physical stock.' },
+    correction: { label: 'Correction', hint: 'Fix a balance after checking. Use + or − to add or remove. The depot decides which dealer sheet a dealer correction goes to. Corrections stay in the Entries log.' },
+  };
+
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+  const fmt = new Intl.NumberFormat('en-IN');
+  const fmt2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sgn = (n) => (n < 0 ? '-' : '') + fmt.format(Math.abs(n));
+  const mt = (bags) => (bags < 0 ? '-' : '') + fmt2.format(Math.abs(bags) / 20);
+  const tone = (n) => (n < 0 ? 'neg' : n > 0 ? 'pos' : 'zero');
+  const toDMY = (iso) => (iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4) : '');
+  const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+  const normDealer = (s) => String(s || '').trim().replace(/\s+/g, ' ').toUpperCase();
+  const plural = (n) => n + (n === 1 ? ' dealer' : ' dealers');
+  const bm = (n) => sgn(n) + ' bags · ' + mt(n) + ' MT';
+
+  let db = null, user = null, myId = null, canWrite = true;
+  let opening = null, entries = [], entriesLoaded = false;
+  let capacity = null, isAdmin = false, capConfirmKey = null;
+  let reports = {}; // `${date}_${godown}` -> {date, godown, sap:{k:bags}, phys:{k:bags}}
+
+  let origOpening = null, closes = {}; // the ledger's own start (config/opening) and its month-end closes (closes/YYYY-MM)
+  let needLoad = () => false, extend = () => {};   // set at start-up: is a date in last month not loaded yet; load it
+  const monthOf = (iso) => iso.slice(0, 7);
+  const shiftMonth = (ym, n) => { let [y, m] = ym.split('-').map(Number); m += n; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + String(m).padStart(2, '0'); };
+  const lastDayOf = (ym) => { const d = new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0)); return d.toISOString().slice(0, 10); };
+  const monthName = (ym) => new Date(ym + '-01T00:00:00').toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+  // the first day on screen: the 1st of last month (or the ledger's start, if later)
+  function windowStart() { const w = shiftMonth(monthOf(todayISO()), -1) + '-01'; const s = origOpening ? origOpening.date : ''; return s > w ? s : w; }
+  const state = { view: 'entry', type: 'billing', godown: 'TPN', dGodown: 'TPH', dMode: 'sheet', confirmId: null };
+
+  let toastTimer;
+  const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); };
+
+  // ---------- tabs ----------
+  $$('.tabs button').forEach((b) => b.addEventListener('click', () => {
+    const go = () => { state.view = b.dataset.view; renderTabs(); renderAll(); };
+    if (state.view === 'setup' && ost.dirty) { leaveSetup(go); return; }
+    if (state.view === 'setup') { ost.draft = null; }
+    go();
+  }));
+  function renderTabs() {
+    const v = state.view === 'setup' ? 'dealers' : state.view;
+    $$('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === v)));
+    ['entry', 'stock', 'dealers', 'tally', 'log', 'setup'].forEach((v) => { $('#view-' + v).hidden = v !== state.view; });
+  }
+
+  // ---------- entry form: bags and MT linked ----------
+  const qty = $('#qty');
+  STOCK_ORDER.forEach((k) => {
+    const p = document.createElement('div'); p.className = 'qp'; p.textContent = P[k];
+    const bw = document.createElement('div'); const b = document.createElement('input');
+    b.type = 'number'; b.id = 'fb-' + k; b.inputMode = 'numeric'; b.step = '1'; b.placeholder = '0'; b.setAttribute('aria-label', P[k] + ' bags');
+    const mw = document.createElement('div'); const m = document.createElement('input');
+    m.type = 'number'; m.id = 'fm-' + k; m.inputMode = 'decimal'; m.step = '0.05'; m.placeholder = '0.00'; m.setAttribute('aria-label', P[k] + ' MT');
+    b.addEventListener('input', () => { const v = b.value === '' ? '' : Number(b.value); m.value = v === '' || isNaN(v) ? '' : (Math.round(v) / 20).toFixed(2); updateTotal(); });
+    m.addEventListener('input', () => { const v = m.value === '' ? '' : Number(m.value); b.value = v === '' || isNaN(v) ? '' : String(Math.round(v * 20)); updateTotal(); });
+    m.addEventListener('blur', () => { if (b.value !== '') m.value = (Number(b.value) / 20).toFixed(2); });
+    bw.appendChild(b); mw.appendChild(m);
+    qty.append(p, bw, mw);
+  });
+  const tl = document.createElement('div'); tl.className = 'qt first'; tl.textContent = 'TOTAL';
+  const tb = document.createElement('div'); tb.className = 'qt'; tb.id = 'f-total-b'; tb.textContent = '0';
+  const tm = document.createElement('div'); tm.className = 'qt'; tm.id = 'f-total-m'; tm.textContent = '0.00';
+  qty.append(tl, tb, tm);
+
+  $('#f-date').value = todayISO();
+  $$('.seg.types button').forEach((b) => b.addEventListener('click', () => { state.type = b.dataset.type; renderForm(); }));
+  $$('#f-godown button').forEach((b) => b.addEventListener('click', () => { state.godown = b.dataset.g; renderForm(); }));
+  $('#f-target').addEventListener('change', renderForm);
+  $('#f-dealer').addEventListener('input', () => { renderDealerHint(); renderSummary(); });
+  $('#f-clear').addEventListener('click', () => clearForm(true));
+  $('#f-save').addEventListener('click', save);
+
+  function readItems() {
+    const items = {};
+    KEYS.forEach((k) => { const v = Math.round(Number($('#fb-' + k).value || 0)); if (v) items[k] = v; });
+    return items;
+  }
+  function updateTotal() {
+    const t = Object.values(readItems()).reduce((a, b) => a + b, 0);
+    $('#f-total-b').textContent = sgn(t); $('#f-total-m').textContent = mt(t);
+    renderSummary();
+  }
+  // one line in the save bar saying exactly what will be saved
+  function renderSummary() {
+    const box = $('#f-summary'); if (!box) return;
+    const t = Object.values(readItems()).reduce((a, b) => a + b, 0);
+    const parts = [el('b', '', TYPES[state.type].label)];
+    if (state.type === 'correction') parts.push(' · ' + ({ dealer: 'Dealer balance', sap: 'SAP stock', phys: 'Physical stock' })[$('#f-target').value]);
+    parts.push(' · ' + GLABEL[state.godown]);
+    const d = normDealer($('#f-dealer').value);
+    if (needsDealer()) parts.push(' · ' + (d || 'no dealer yet'));
+    parts.push(' · ');
+    parts.push(t ? el('b', '', (state.type === 'correction' && t > 0 ? '+' : '') + sgn(t) + ' bags') : 'no quantity yet');
+    if (t) parts.push(' (' + mt(t) + ' MT)');
+    box.replaceChildren(...parts);
+  }
+  const needsDealer = () => state.type === 'billing' || state.type === 'dispatch' || (state.type === 'correction' && $('#f-target').value === 'dealer');
+  const needsGodown = () => true;
+  function resetCapWarn() { if (capConfirmKey) { capConfirmKey = null; $('#f-capwarn').hidden = true; } }
+  ['#view-entry'].forEach((s) => { const v = $(s); v.addEventListener('input', resetCapWarn); v.addEventListener('click', (e) => { if (e.target.closest('.seg')) resetCapWarn(); }); });
+  function renderForm() {
+    $$('.seg.types button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.type === state.type)));
+    $$('#f-godown button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.g === state.godown)));
+    $('#type-hint').textContent = TYPES[state.type].hint;
+    $('#wrap-target').hidden = state.type !== 'correction';
+    $('#wrap-dealer').hidden = !needsDealer();
+    $('#wrap-godown').hidden = !needsGodown();
+    $('#qty-hint').textContent = state.type === 'correction' ? 'Type bags or MT, with − to remove. The other fills in.' : 'Type bags or MT. The other fills in.';
+    $('#f-save').textContent = capConfirmKey ? 'Save anyway' : 'Save ' + TYPES[state.type].label.toLowerCase();
+    $('#f-save').disabled = !canWrite || !db;
+    renderDealerHint(); renderSummary();
+  }
+  function knownDealers() {
+    const s = new Set(BOOKS.flatMap((b) => Object.keys(openingBook(b.k))));
+    entries.forEach((e) => { if (e.dealer) s.add(e.dealer); });
+    return [...s].sort();
+  }
+  function renderDealerList() {
+    const dl = $('#dealer-list'); dl.replaceChildren();
+    knownDealers().forEach((n) => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  }
+  function renderDealerHint() {
+    const h = $('#dealer-hint'); const n = normDealer($('#f-dealer').value);
+    if (!needsDealer() || !n || !opening) { h.hidden = true; return; }
+    const known = knownDealers().includes(n);
+    h.hidden = known; h.textContent = known ? '' : 'New dealer: “' + n + '” will be added to the dealer sheet.';
+  }
+  function clearForm(all) {
+    KEYS.forEach((k) => { $('#fb-' + k).value = ''; $('#fm-' + k).value = ''; });
+    $('#f-ref').value = '';
+    if (all) $('#f-dealer').value = '';
+    $('#f-err').hidden = true; updateTotal(); renderDealerHint();
+  }
+  async function save() {
+    const err = (m) => { $('#f-err').textContent = m; $('#f-err').hidden = false; };
+    $('#f-err').hidden = true;
+    if (!db) return err('Not connected. Reload the page.');
+    if (!opening) return err('The ledger hasn’t been set up yet. An admin needs to enter the starting balances in Ledger setup first.');
+    const date = $('#f-date').value;
+    if (!date) return err('Pick a date.');
+    if (opening && !opening.rolled && date < opening.date) return err('Entries must be dated ' + toDMY(opening.date) + ' or later (the opening stock date).');
+    if (date < windowStart()) return err('Entries must be dated ' + toDMY(windowStart()) + ' or later. The ledger keeps the last two months; earlier months are closed. Fix an older balance with a Correction entry.');
+    const items = readItems();
+    if (!Object.keys(items).length) return err('Enter bags or MT for at least one product.');
+    if (state.type !== 'correction' && Object.values(items).some((v) => v < 0)) return err('Quantities can’t be negative here. Use a Correction to reduce a balance.');
+    const dealer = needsDealer() ? normDealer($('#f-dealer').value) : '';
+    if (needsDealer() && !dealer) return err('Enter the dealer name.');
+    const doc = {
+      type: state.type, date, items,
+      godown: needsGodown() ? state.godown : '',
+      dealer, target: state.type === 'correction' ? $('#f-target').value : '',
+      ref: $('#f-ref').value.trim().slice(0, 80),
+      at: new Date().toISOString(), by: myId || '',
+    };
+    // capacity check: arrivals and upward SAP corrections raise SAP stock
+    const raisesSap = doc.godown && (doc.type === 'arrival' || (doc.type === 'correction' && doc.target === 'sap'));
+    const capB = capacity && Number(capacity[doc.godown] || 0);
+    if (raisesSap && capB > 0 && opening) {
+      const before = sapTotal(compute(date, 'TPH').stock, doc.godown);
+      const after = before + Object.values(items).reduce((a, b) => a + b, 0);
+      const key = JSON.stringify([doc.godown, date, items]);
+      if (after > capB && capConfirmKey !== key) {
+        const w = $('#f-capwarn'); w.replaceChildren();
+        w.append(el('strong', '', 'Over capacity at ' + GLABEL[doc.godown]),
+          el('span', '', 'This takes SAP stock to ' + mt(after) + ' MT. Capacity is ' + mt(capB) + ' MT, so it would be ' + mt(after - capB) + ' MT over.'),
+          el('span', '', 'Bill pending material first if you can. Press Save anyway only if this stock is really arriving.'));
+        w.hidden = false; capConfirmKey = key; $('#f-save').textContent = 'Save anyway';
+        return;
+      }
+    }
+    const btn = $('#f-save'); btn.disabled = true;
+    try {
+      await addEntry(doc);
+      capConfirmKey = null; $('#f-capwarn').hidden = true;
+      const tot = Object.values(items).reduce((a, b) => a + b, 0);
+      toast(TYPES[state.type].label + ' saved' + (dealer ? ': ' + dealer : '') + ', ' + bm(tot));
+      clearForm(false);
+    } catch (e) {
+      if (e && e.code === 'invalid_argument') { canWrite = false; err('You can view this ledger but not make changes. Only the Admin, Supervisors and DMOs can.'); }
+      else if (e && e.code === 'quota_exceeded') err('Couldn’t save. Try again.');
+      else err('Couldn’t save. Check your connection and try again.');
+    } finally { btn.disabled = !canWrite; }
+  }
+
+  // ---------- computation ----------
+  const emptyItems = () => Object.fromEntries(KEYS.map((k) => [k, 0]));
+  function compute(asOf, scope) {
+    const stock = {};
+    GODOWNS.forEach((g) => {
+      stock[g.k] = {};
+      const rep = opening.rolled ? null : reports[repKey(opening.date, g.k)]; // the start day's Opening Balance is the starting stock (not after a month-end close)
+      KEYS.forEach((k) => {
+        const o = ((opening.stock || {})[g.k] || {})[k] || {};
+        stock[g.k][k] = { sap: rep ? Number(rep.sap[k] || 0) : Number(o.sap || 0), phys: rep && rep.phys ? Number(rep.phys[k] || 0) : Number(o.phys || 0) };
+      });
+    });
+    // scope: a dealer book (TPH, DOI) with its opening balances, or one godown (TPN, HAR) showing only its movements
+    const dealers = {};
+    const touch = (n) => (dealers[n] = dealers[n] || emptyItems());
+    const isBook = scope === 'TPH' || scope === 'DOI';
+    // a depot on its own (TPN, Harrawala) starts from its billing − dispatch carried forward by the month-end closes
+    Object.entries(isBook ? openingBook(scope) : ((opening.rolled && opening.moves && opening.moves[scope]) || {})).forEach(([n, it]) => { const d = touch(n); KEYS.forEach((k) => { d[k] += Number(it[k] || 0); }); });
+    const used = entries.filter((e) => e.date >= opening.date && e.date <= asOf);
+    for (const e of used) {
+      for (const [k, raw] of Object.entries(e.items || {})) {
+        const n = Number(raw) || 0; if (!(k in P)) continue;
+        const s = e.godown && stock[e.godown] ? stock[e.godown][k] : null;
+        const g = e.godown || 'TPN';
+        const inScope = isBook ? bookOf(g) === scope : g === scope;
+        if (e.type === 'billing') { if (s) s.sap -= n; if (inScope) touch(e.dealer)[k] += n; }
+        else if (e.type === 'dispatch') { if (s) s.phys -= n; if (inScope) touch(e.dealer)[k] -= n; }
+        else if (e.type === 'arrival') { if (s) { s.sap += n; s.phys += n; } }
+        else if (e.type === 'correction') {
+          if (e.target === 'dealer') { if (inScope) touch(e.dealer)[k] += n; }
+          else if (e.target === 'sap' && s) s.sap += n;
+          else if (e.target === 'phys' && s) s.phys += n;
+        }
+      }
+    }
+    return { stock, dealers, count: used.length };
+  }
+  // g: a godown key, a book key (sums its godowns) or 'ALL' (every godown)
+  function stockFor(st, g) {
+    const list = g === 'ALL' ? GODOWNS.map((x) => x.k) : (BOOKS.find((b) => b.k === g) || { godowns: [g] }).godowns;
+    const out = {};
+    KEYS.forEach((k) => { out[k] = list.reduce((a, x) => ({ sap: a.sap + st[x][k].sap, phys: a.phys + st[x][k].phys }), { sap: 0, phys: 0 }); });
+    return out;
+  }
+
+  // ---------- sheet helpers ----------
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const labTd = (long, short, tag) => { const c = el(tag || 'td', 'lab'); c.append(el('span', 'lg', long), el('span', 'sh', short || long)); return c; };
+  function bmCell(tr, bags, opts = {}) {
+    const td = el('td', opts.cls || '');
+    td.append(el('span', 'b ' + (opts.tone ? tone(bags) : ''), sgn(bags)), el('span', 'm', bags === 0 ? '\u00a0' : mt(bags) + ' MT'));
+    tr.appendChild(td); return td;
+  }
+
+  // ---------- stock sheet (SAP report layout) ----------
+  $('#s-asof').value = todayISO();
+  $('#s-asof').addEventListener('change', renderStock);
+  $('#s-copy').addEventListener('click', () => copyText($('#s-wa'), stockText()));
+
+  function reconOf(r, book) {
+    const c = stockFor(r.stock, book);
+    const dealerNet = emptyItems();
+    Object.values(r.dealers).forEach((d) => KEYS.forEach((k) => { dealerNet[k] += d[k]; }));
+    const stockGap = {}, gap = {};
+    KEYS.forEach((k) => { stockGap[k] = c[k].phys - c[k].sap; gap[k] = dealerNet[k] - stockGap[k]; });
+    return { c, dealerNet, stockGap, gap };
+  }
+
+  function renderStock() {
+    const tbl = $('#s-table'); tbl.replaceChildren();
+    if (!opening) { $('#s-sub').textContent = 'Loading balances…'; $('#s-status').hidden = true; return; }
+    if (olderView('stock', $('#s-asof').value || todayISO())) { $('#s-sub').textContent = ''; $('#s-status').hidden = true; return; }
+    const asOf = $('#s-asof').value || todayISO();
+    const r = compute(asOf, 'TPH');
+    const rd = compute(asOf, 'DOI');
+    const recs = { TPH: reconOf(r, 'TPH'), DOI: reconOf(rd, 'DOI') };
+    const rc = recs.TPH;
+    $('#s-title').textContent = toDMY(asOf) + ' GODOWN STOCK';
+    $('#s-sub').textContent = 'Closing position: ' + (opening.rolled ? 'stock carried forward to ' : 'SAP opening stock of ') + toDMY(opening.date) + ' + ' + r.count + ' entries up to ' + toDMY(asOf) + '. Difference = physical − SAP.';
+
+    const thead = el('thead'); const hr = el('tr');
+    hr.append(labTd('STOCK', 'STOCK', 'th'), ...STOCK_ORDER.map((k) => el('th', '', P[k])), el('th', '', 'TOTAL'));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const body = el('tbody');
+    const sec = (label, short) => { const tr = el('tr', 'sec'); tr.append(labTd(label, short, 'th'), ...STOCK_ORDER.map((k) => el('th', '', P[k])), el('th', '', 'TOTAL')); body.appendChild(tr); };
+    const spacer = () => { const tr = el('tr', 'spacer'); const td = el('td'); td.colSpan = STOCK_ORDER.length + 2; tr.appendChild(td); body.appendChild(tr); };
+    const line = (label, short, f, opts = {}) => {
+      const tr = el('tr', opts.rowCls || ''); tr.appendChild(labTd(label, short));
+      let tot = 0;
+      STOCK_ORDER.forEach((k) => {
+        const v = f(k); tot += v;
+        const td = el('td', (opts.signed ? tone(v) : '') + (opts.flag ? (v !== 0 ? ' flag' : ' zero') : ''), opts.unit === 'mt' ? mt(v) : sgn(v));
+        tr.appendChild(td);
+      });
+      tr.appendChild(el('td', (opts.signed ? tone(tot) : '') + (opts.flag ? (tot !== 0 ? ' flag' : ' zero') : ''), opts.unit === 'mt' ? mt(tot) : sgn(tot)));
+      body.appendChild(tr);
+    };
+
+    const block = (g) => {
+      const s = stockFor(r.stock, g.k);
+      const sr = el('tr', 'sec'); sr.append(labTd(g.sheet, g.short, 'th'), ...STOCK_ORDER.map(() => el('th', '', '')), el('th', '', '')); body.appendChild(sr);
+      line('SAP IN MT', 'SAP MT', (k) => s[k].sap, { unit: 'mt' });
+      line('SAP IN BAGS', 'SAP BAGS', (k) => s[k].sap);
+      line('PHYSICAL STOCK IN MT', 'PHY MT', (k) => s[k].phys, { unit: 'mt' });
+      line('PHYSICAL STOCK IN BAGS', 'PHY BAGS', (k) => s[k].phys);
+      line('TOTAL DIFFERENCE PHY. STOCK IN MT', 'DIFF MT', (k) => s[k].phys - s[k].sap, { unit: 'mt', signed: true, rowCls: 'diff' });
+      line('TOTAL DIFFERENCE PHY. STOCK IN BAGS', 'DIFF BAGS', (k) => s[k].phys - s[k].sap, { signed: true, rowCls: 'diff' });
+    };
+    const G = Object.fromEntries(GODOWNS.map((g) => [g.k, g]));
+    block(G.TPN); spacer(); block(G.HAR); spacer();
+    line('TOTAL OF COMBINE STOCK IN BAGS', 'TP+H DIFF BAGS', (k) => recs.TPH.stockGap[k], { signed: true, rowCls: 'comb' });
+    line('TOTAL OF COMBINE STOCK IN MT', 'TP+H DIFF MT', (k) => recs.TPH.stockGap[k], { unit: 'mt', signed: true, rowCls: 'comb' });
+    spacer(); block(G.DOI); spacer();
+    const allGap = (k) => recs.TPH.stockGap[k] + recs.DOI.stockGap[k];
+    line('TOTAL OF ALL 3 DEPOTS IN BAGS', 'ALL 3 DIFF BAGS', allGap, { signed: true, rowCls: 'comb' });
+    line('TOTAL OF ALL 3 DEPOTS IN MT', 'ALL 3 DIFF MT', allGap, { unit: 'mt', signed: true, rowCls: 'comb' });
+    BOOKS.forEach((b) => {
+      const x = recs[b.k];
+      const off = KEYS.some((k) => x.gap[k] !== 0) ? ' gap' : '';
+      spacer();
+      sec('DEALER CHECK (' + b.label.toUpperCase() + ')', 'DEALER CHECK ' + (b.k === 'TPH' ? 'TP+H' : 'DOIWALA'));
+      line('DEALER BALANCE IN BAGS', 'DEALER BAGS', (k) => x.dealerNet[k], { signed: true, rowCls: 'diff' });
+      line('DEALER BALANCE IN MT', 'DEALER MT', (k) => x.dealerNet[k], { unit: 'mt', signed: true, rowCls: 'diff' });
+      line('UNRECONCILED IN BAGS', 'UNREC. BAGS', (k) => x.gap[k], { flag: true, rowCls: 'diff' + off });
+      line('UNRECONCILED IN MT', 'UNREC. MT', (k) => x.gap[k], { unit: 'mt', flag: true, rowCls: 'diff' + off });
+    });
+    tbl.appendChild(body);
+
+    const st = $('#s-status'); st.hidden = false; st.replaceChildren();
+    const off = BOOKS.filter((b) => KEYS.some((k) => recs[b.k].gap[k] !== 0));
+    st.className = 'status ' + (off.length ? 'bad' : 'ok');
+    st.append(off.length ? 'NOT RECONCILED' : 'ALL RECONCILED');
+    BOOKS.forEach((b) => {
+      const x = recs[b.k]; const t = KEYS.reduce((a, k) => a + x.gap[k], 0);
+      const ok = KEYS.every((k) => x.gap[k] === 0);
+      st.append(el('small', '', b.label + ': ' + (ok ? 'matched ✓' : sgn(t) + ' bags (' + mt(t) + ' MT), off in ' + STOCK_ORDER.filter((k) => x.gap[k] !== 0).map((k) => P[k] + ' ' + sgn(x.gap[k])).join(', '))));
+    });
+    renderCaps(asOf);
+    if (!$('#s-wa').hidden) $('#s-wa').textContent = stockText();
+  }
+
+  function stockText() {
+    if (!opening) return '';
+    const asOf = $('#s-asof').value || todayISO();
+    const r = compute(asOf, 'TPH'); const rd = compute(asOf, 'DOI');
+    const recs = { TPH: reconOf(r, 'TPH'), DOI: reconOf(rd, 'DOI') };
+    const L = ['*' + toDMY(asOf) + ' GODOWN STOCK*', '(MT / bags)'];
+    GODOWNS.forEach((g) => {
+      const s = stockFor(r.stock, g.k);
+      L.push('', '*' + g.sheet + '*');
+      let ts = 0, tp = 0;
+      STOCK_ORDER.forEach((k) => {
+        const v = s[k]; ts += v.sap; tp += v.phys;
+        if (v.sap || v.phys) L.push(P[k] + '  SAP ' + mt(v.sap) + '/' + sgn(v.sap) + '  PHY ' + mt(v.phys) + '/' + sgn(v.phys) + '  DIFF ' + mt(v.phys - v.sap) + '/' + sgn(v.phys - v.sap));
+      });
+      L.push('TOTAL  SAP ' + mt(ts) + '/' + sgn(ts) + '  PHY ' + mt(tp) + '/' + sgn(tp) + '  DIFF ' + mt(tp - ts) + '/' + sgn(tp - ts));
+    });
+    if (capacity) GODOWNS.forEach((g) => { const capB = Number(capacity[g.k] || 0); if (!capB) return; const sb = sapTotal(r.stock, g.k); const cs = capState(sb, capB);
+      L.push((cs.cls === 'bad' ? '⚠️ ' : '') + g.label.toUpperCase() + ' CAPACITY: SAP ' + mt(sb) + ' / ' + mt(capB) + ' MT (' + Math.round(cs.pct) + '%)' + (cs.cls === 'bad' ? ' OVER by ' + mt(sb - capB) + ' MT' : '')); });
+    let all3 = 0;
+    BOOKS.forEach((b) => {
+      const x = recs[b.k];
+      const sg = KEYS.reduce((a, k) => a + x.stockGap[k], 0), dn = KEYS.reduce((a, k) => a + x.dealerNet[k], 0); all3 += sg;
+      L.push('', '*' + b.label.toUpperCase() + '*  STOCK DIFF ' + mt(sg) + ' MT / ' + sgn(sg) + ' bags  |  DEALERS ' + mt(dn) + ' MT / ' + sgn(dn) + ' bags');
+      L.push(KEYS.every((k) => x.gap[k] === 0) ? '✅ MATCHED' : '❌ DIFFERENCE ' + mt(dn - sg) + ' MT / ' + sgn(dn - sg) + ' bags');
+    });
+    L.push('', '*TOTAL OF ALL 3 DEPOTS*: ' + mt(all3) + ' MT / ' + sgn(all3) + ' bags');
+    return L.join('\n');
+  }
+
+  // ---------- depot capacity ----------
+  const sapTotal = (st, g) => KEYS.reduce((a, k) => a + st[g][k].sap, 0);
+  const physTotal = (st, g) => KEYS.reduce((a, k) => a + st[g][k].phys, 0);
+  const warnPct = () => Math.min(100, Math.max(50, Number((capacity && capacity.warnPct) || 90)));
+  function capState(sapB, capB) {
+    if (!capB) return { cls: 'none', label: 'Not set', pct: 0 };
+    const pct = (sapB / capB) * 100;
+    if (sapB > capB) return { cls: 'bad', label: 'Over capacity', pct };
+    if (pct >= warnPct()) return { cls: 'warn', label: 'Near limit', pct };
+    return { cls: 'ok', label: 'Within capacity', pct };
+  }
+  function renderCaps(asOf) {
+    const box = $('#caps'); box.replaceChildren();
+    if (!opening) return;
+    const st = compute(asOf, 'TPH').stock;
+    $('#cap-edit').hidden = !isAdmin || !$('#cap-form').hidden;
+    GODOWNS.forEach((g) => {
+      const sapB = sapTotal(st, g.k), phB = physTotal(st, g.k), capB = Number((capacity && capacity[g.k]) || 0);
+      const cs = capState(sapB, capB);
+      const card = el('div', 'cap');
+      const top = el('div', 'cap-top'); top.append(el('span', 'cap-name', g.label.toUpperCase()), el('span', 'pill ' + cs.cls, cs.cls === 'none' ? 'Capacity not set' : cs.label + (cs.cls === 'bad' ? '' : ' · ' + Math.round(cs.pct) + '%')));
+      card.appendChild(top);
+      const fig = el('div', 'cap-fig', mt(sapB) + ' '); fig.appendChild(el('small', '', capB ? 'of ' + mt(capB) + ' MT in SAP' : 'MT in SAP'));
+      card.appendChild(fig);
+      if (capB) {
+        const bar = el('div', 'capbar'); bar.setAttribute('role', 'img'); bar.setAttribute('aria-label', Math.round(cs.pct) + '% of capacity');
+        const f = el('div', 'fill ' + cs.cls); f.style.width = Math.min(100, cs.pct) + '%';
+        const m = el('div', 'mark'); m.style.left = 'calc(' + warnPct() + '% - 1px)';
+        bar.append(f, m); card.appendChild(bar);
+      }
+      const dl = el('dl', 'cap-rows');
+      const row = (k, bags, cls, text) => {
+        const dd = el('dd', cls || '', text || mt(bags) + ' MT');
+        if (!text) dd.appendChild(el('small', '', sgn(bags) + ' bags'));
+        dl.append(el('dt', '', k), dd);
+      };
+      row('SAP stock', sapB);
+      row('Physical stock', phB);
+      if (capB) {
+        row('Capacity', capB);
+        const free = capB - sapB;
+        row(free < 0 ? 'Over by' : 'Room left in SAP', Math.abs(free), free < 0 ? 'neg' : '');
+      } else {
+        row('Capacity', 0, 'zero', isAdmin ? 'Press Set capacity' : 'Admin to set');
+      }
+      card.appendChild(dl); box.appendChild(card);
+    });
+  }
+  function renderCapAlert() {
+    const a = $('#cap-alert');
+    if (!opening || !capacity) { a.hidden = true; return; }
+    const st = compute(todayISO(), 'TPH').stock;
+    const hits = GODOWNS.map((g) => ({ g, sapB: sapTotal(st, g.k), capB: Number(capacity[g.k] || 0) }))
+      .map((x) => ({ ...x, cs: capState(x.sapB, x.capB) })).filter((x) => x.cs.cls === 'bad' || x.cs.cls === 'warn');
+    if (!hits.length || state.view === 'stock') { a.hidden = true; return; }
+    const over = hits.some((x) => x.cs.cls === 'bad');
+    a.className = 'capalert ' + (over ? 'bad' : 'warn'); a.replaceChildren();
+    const txt = el('div', 'capalert-txt');
+    txt.append(el('strong', '', over ? 'Over capacity' : 'Near capacity'), ' ',
+      el('span', '', hits.map((x) => x.g.label + ' ' + (x.cs.cls === 'bad' ? '+' + mt(x.sapB - x.capB) + ' MT' : Math.round(x.cs.pct) + '%')).join(' · ')));
+    const go = el('button', 'btn ghost small', 'Depot Status'); go.type = 'button';
+    go.addEventListener('click', () => { if (state.view === 'setup' && ost.dirty) return; state.view = 'stock'; renderTabs(); renderAll(); });
+    a.append(txt, go);
+    a.hidden = false;
+  }
+  // admin form
+  const capQty = $('#cap-qty');
+  GODOWNS.forEach((g) => {
+    const p = el('div', 'qp', g.label);
+    const mw = el('div'), bw = el('div');
+    const m = el('input'); m.type = 'number'; m.id = 'capm-' + g.k; m.inputMode = 'decimal'; m.step = '0.05'; m.min = '0'; m.placeholder = '0.00'; m.setAttribute('aria-label', g.label + ' capacity MT');
+    const b = el('input'); b.type = 'number'; b.id = 'capb-' + g.k; b.inputMode = 'numeric'; b.step = '1'; b.min = '0'; b.placeholder = '0'; b.setAttribute('aria-label', g.label + ' capacity bags');
+    m.addEventListener('input', () => { b.value = m.value === '' ? '' : String(Math.round(Number(m.value) * 20)); });
+    b.addEventListener('input', () => { m.value = b.value === '' ? '' : (Math.round(Number(b.value)) / 20).toFixed(2); });
+    mw.appendChild(m); bw.appendChild(b); capQty.append(p, mw, bw);
+  });
+  function openCapForm() {
+    GODOWNS.forEach((g) => { const v = Number((capacity && capacity[g.k]) || 0); $('#capb-' + g.k).value = v ? String(v) : ''; $('#capm-' + g.k).value = v ? (v / 20).toFixed(2) : ''; });
+    $('#cap-pct').value = String(warnPct()); $('#cap-err').hidden = true;
+    $('#cap-form').hidden = false; $('#cap-edit').hidden = true;
+  }
+  $('#cap-edit').addEventListener('click', openCapForm);
+  $('#cap-cancel').addEventListener('click', () => { $('#cap-form').hidden = true; renderStock(); });
+  $('#cap-save').addEventListener('click', async () => {
+    const err = (t) => { $('#cap-err').textContent = t; $('#cap-err').hidden = false; };
+    const data = {};
+    for (const g of GODOWNS) {
+      const v = Math.round(Number($('#capb-' + g.k).value || 0));
+      if (v < 0) return err('Capacity can’t be negative.');
+      data[g.k] = v;
+    }
+    const pct = Math.round(Number($('#cap-pct').value || 90));
+    if (pct < 50 || pct > 100) return err('Warn level must be between 50% and 100%.');
+    data.warnPct = pct; data.updatedAt = new Date().toISOString(); data.by = myId || '';
+    const btn = $('#cap-save'); btn.disabled = true;
+    try { await db.doc('config/capacity').set(data); $('#cap-form').hidden = true; toast('Capacity saved'); }
+    catch (e) { err(e && e.code === 'invalid_argument' ? 'Only an admin can change capacity.' : 'Couldn’t save. Check your connection and try again.'); }
+    finally { btn.disabled = false; }
+  });
+
+  // ---------- dealer sheet (dealer register layout) ----------
+  $('#d-asof').value = todayISO();
+  $('#d-asof').addEventListener('change', renderDealers);
+  $('#d-zero').addEventListener('change', renderDealers);
+  $('#d-search').addEventListener('input', renderDealers);
+  $$('#d-godown button').forEach((b) => b.addEventListener('click', () => { state.dGodown = b.dataset.g; renderDealers(); }));
+  $('#d-copy').addEventListener('click', () => copyText($('#d-wa'), dealerText()));
+  try { const m = localStorage.getItem('dmode'); if (m === 'list' || m === 'sheet') state.dMode = m; } catch {}
+  $$('#d-mode button').forEach((b) => b.addEventListener('click', () => { state.dMode = b.dataset.m; try { localStorage.setItem('dmode', state.dMode); } catch {} renderDealers(); }));
+
+  function dealerRows() {
+    const asOf = $('#d-asof').value || todayISO();
+    const r = compute(asOf, state.dGodown);
+    return Object.entries(r.dealers)
+      .map(([name, it]) => ({ name, it, total: KEYS.reduce((a, k) => a + it[k], 0), nz: KEYS.some((k) => it[k] !== 0) }))
+      .sort((a, b) => a.total - b.total || a.name.localeCompare(b.name));
+  }
+  function renderDealers() {
+    $$('#d-godown button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.g === state.dGodown)));
+    $$('#d-mode button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.m === state.dMode)));
+    $('#d-sheetwrap').hidden = state.dMode !== 'sheet'; $('#d-list').hidden = state.dMode !== 'list';
+    const tbl = $('#d-table'); tbl.replaceChildren(); $('#d-list').replaceChildren();
+    if (!opening) { $('#d-note').textContent = 'Loading balances…'; return; }
+    if (olderView('dealers', $('#d-asof').value || todayISO())) { $('#d-note').textContent = ''; return; }
+    const asOf = $('#d-asof').value || todayISO();
+    $('#d-title').textContent = GLABEL[state.dGodown].toUpperCase() + ' · ' + toDMY(asOf);
+    $('#d-note').textContent = (state.dGodown === 'TPH' || state.dGodown === 'DOI')
+      ? 'Closing balance: balances ' + (opening.rolled ? 'carried forward to ' : 'of ') + toDMY(opening.date) + ' + billing − dispatch from then up to ' + toDMY(asOf) + '. Minus = pendency, plus = advance. Bags, with MT below.'
+      : 'TP+Harrawala opening balances are kept combined, so this shows only ' + GLABEL[state.dGodown] + ' billing − dispatch since ' + toDMY(opening.startDate || opening.date) + '.';
+    const all = dealerRows();
+    const q = $('#d-search').value.trim().toUpperCase();
+    const rows = all.filter((r) => ($('#d-zero').checked || r.nz) && (!q || r.name.includes(q)));
+    // product-wise: a dealer's PPC pendency is not offset by their WSS advance
+    const cells = all.flatMap((r) => KEYS.map((k) => r.it[k]));
+    const pend = cells.filter((v) => v < 0).reduce((a, v) => a + v, 0);
+    const adv = cells.filter((v) => v > 0).reduce((a, v) => a + v, 0);
+    const nPend = all.filter((r) => KEYS.some((k) => r.it[k] < 0)).length;
+    const nAdv = all.filter((r) => KEYS.some((k) => r.it[k] > 0)).length;
+    $('#d-pend').textContent = sgn(pend); $('#d-pend-mt').textContent = mt(pend) + ' MT'; $('#d-pend-n').textContent = plural(nPend);
+    $('#d-adv').textContent = sgn(adv); $('#d-adv-mt').textContent = mt(adv) + ' MT'; $('#d-adv-n').textContent = plural(nAdv);
+    const net = $('#d-net'); net.textContent = sgn(pend + adv); net.className = 'v ' + tone(pend + adv); $('#d-net-mt').textContent = mt(pend + adv) + ' MT'; $('#d-net-n').textContent = plural(all.filter((r) => r.nz).length);
+
+    const thead = el('thead'); const hr = el('tr');
+    hr.append(el('th', '', 'DATE'), el('th', '', 'DEALERS'), ...DEALER_ORDER.map((k) => el('th', '', DEALER_LABEL[k])), el('th', '', 'TOTAL'));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const body = el('tbody');
+    if (!rows.length) { const tr = el('tr'); tr.appendChild(el('td', '', toDMY(asOf))); const td = el('td', 'zero', q ? 'No dealer matches “' + q + '”.' : 'No balances yet.'); td.colSpan = DEALER_ORDER.length + 2; tr.appendChild(td); body.appendChild(tr); }
+    const tot = emptyItems(); let gt = 0;
+    rows.forEach((r, i) => {
+      const tr = el('tr');
+      tr.appendChild(el('td', 'lab', i === 0 ? toDMY(asOf) : ''));
+      tr.appendChild(el('td', 'lab', r.name));
+      DEALER_ORDER.forEach((k) => { tot[k] += r.it[k]; bmCell(tr, r.it[k], { tone: true }); });
+      gt += r.total; bmCell(tr, r.total, { tone: true }).style.fontWeight = '700';
+      body.appendChild(tr);
+    });
+    if (rows.length) {
+      const tr = el('tr', 'tot'); tr.append(el('td', '', ''), el('td', 'lab', q ? 'TOTAL (SHOWN)' : 'TOTAL'));
+      DEALER_ORDER.forEach((k) => bmCell(tr, tot[k], { tone: true })); bmCell(tr, gt, { tone: true }); body.appendChild(tr);
+    }
+    tbl.appendChild(body);
+    syncHead();
+
+    // list view: one card per dealer, products as small tiles
+    const list = $('#d-list');
+    if (!rows.length) list.appendChild(el('div', 'empty', q ? 'No dealer matches “' + q + '”.' : 'No balances yet.'));
+    const card = (name, it, total, isTot) => {
+      const c = el('div', 'dcard' + (isTot ? ' tot' : ''));
+      const top = el('div', 'dcard-top');
+      const tt = el('div', 'dcard-tot ' + tone(total), sgn(total) + ' bags'); tt.appendChild(el('small', '', mt(total) + ' MT'));
+      top.append(el('div', 'dcard-name', name), tt);
+      const grid = el('div', 'dcard-grid');
+      DEALER_ORDER.filter((k) => it[k] !== 0 || isTot).forEach((k) => {
+        const g = el('div'); g.append(el('span', 'k', DEALER_LABEL[k]), el('span', tone(it[k]), sgn(it[k]))); g.appendChild(el('small', '', mt(it[k]) + ' MT')); grid.appendChild(g);
+      });
+      c.append(top); if (grid.childNodes.length) c.append(grid); list.appendChild(c);
+    };
+    rows.forEach((r) => card(r.name, r.it, r.total, false));
+    if (rows.length) card(q ? 'TOTAL (SHOWN)' : 'TOTAL', tot, gt, true);
+    if (!$('#d-wa').hidden) $('#d-wa').textContent = dealerText();
+  }
+  function syncHead() {
+    const src = $('#d-table'), head = $('#d-fhead-t');
+    head.replaceChildren();
+    const th0 = src.querySelector('thead tr'); if (!th0) return;
+    const clone = th0.cloneNode(true); const thead = el('thead'); thead.appendChild(clone); head.appendChild(thead);
+    const srcCells = [...th0.children], dst = [...clone.children];
+    head.style.width = src.getBoundingClientRect().width + 'px';
+    srcCells.forEach((c, i) => {
+      const w = c.getBoundingClientRect().width;
+      dst[i].style.width = dst[i].style.minWidth = dst[i].style.maxWidth = w + 'px';
+      dst[i].style.boxSizing = 'border-box';
+    });
+    $('#d-fhead').scrollLeft = $('#d-scroll').scrollLeft;
+  }
+  $('#d-scroll').addEventListener('scroll', () => { $('#d-fhead').scrollLeft = $('#d-scroll').scrollLeft; }, { passive: true });
+  const setTabsH = () => document.documentElement.style.setProperty('--tabs-h', $('.tabs').offsetHeight + 'px');
+  setTabsH();
+  window.addEventListener('resize', () => { setTabsH(); if (state.view === 'dealers' && state.dMode === 'sheet') syncHead(); });
+  function dealerText() {
+    if (!opening) return '';
+    const asOf = $('#d-asof').value || todayISO();
+    const rows = dealerRows().filter((r) => r.nz);
+    const L = ['*' + GLABEL[state.dGodown].toUpperCase() + ' DEALER BALANCE ' + toDMY(asOf) + '*', '(− pendency, + advance; bags / MT)', ''];
+    let gt = 0;
+    rows.forEach((r) => {
+      gt += r.total;
+      const parts = DEALER_ORDER.filter((k) => r.it[k]).map((k) => DEALER_LABEL[k] + ' ' + sgn(r.it[k]));
+      L.push(r.name + ': ' + sgn(r.total) + ' / ' + mt(r.total) + ' MT' + (parts.length > 1 ? '  (' + parts.join(', ') + ')' : parts.length ? '  (' + parts[0] + ')' : ''));
+    });
+    L.push('', '*TOTAL*: ' + sgn(gt) + ' bags / ' + mt(gt) + ' MT');
+    return L.join('\n');
+  }
+
+  async function copyText(pre, text) {
+    pre.textContent = text; pre.hidden = false;
+    try { await navigator.clipboard.writeText(text); toast('Copied. Paste it into WhatsApp.'); }
+    catch { const rg = document.createRange(); rg.selectNodeContents(pre); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rg); toast('Text selected below. Copy it from there.'); }
+  }
+
+  // ---------- entries log ----------
+  ['#l-date', '#l-type'].forEach((s) => $(s).addEventListener('change', renderLog));
+  $('#l-search').addEventListener('input', renderLog);
+  function renderLog() {
+    const box = $('#l-list'); box.replaceChildren();
+    if (!entriesLoaded) { box.appendChild(el('div', 'empty', 'Loading entries…')); return; }
+    const date = $('#l-date').value, type = $('#l-type').value, q = $('#l-search').value.trim().toUpperCase();
+    if (olderView('log', date)) { $('#l-count').textContent = ''; return; }
+    const list = entries.filter((e) => (!date || e.date === date) && (!type || e.type === type) && (!q || (e.dealer || '').includes(q) || (e.ref || '').toUpperCase().includes(q)))
+      .sort((a, b) => (b.date + b.at).localeCompare(a.date + a.at));
+    $('#l-count').textContent = list.length + ' of ' + entries.length + ' entries';
+    if (!list.length) { box.appendChild(el('div', 'empty', entries.length ? 'No entries match these filters.' : 'No entries yet. Add the first one from New Entry.')); return; }
+    list.slice(0, 300).forEach((e) => {
+      const card = el('div', 'entry');
+      const top = el('div', 'entry-top');
+      const left = el('div', 'entry-who');
+      left.append(el('span', 'chip ' + e.type, (TYPES[e.type] || {}).label || e.type),
+        el('span', '', e.dealer || (e.type === 'arrival' ? 'Trailer arrival' : e.target === 'sap' ? 'SAP stock' : e.target === 'phys' ? 'Physical stock' : '')));
+      const right = el('div');
+      if (state.confirmId === e.id) {
+        right.className = 'confirm';
+        const y = el('button', 'btn danger small', 'Delete');
+        y.addEventListener('click', async () => { try { await removeEntry(e); toast('Entry deleted'); } catch { toast('Couldn’t delete. Try again.'); } state.confirmId = null; renderLog(); });
+        const n = el('button', 'btn ghost small', 'Keep');
+        n.addEventListener('click', () => { state.confirmId = null; renderLog(); });
+        right.append(el('span', '', 'Delete this entry?'), y, n);
+      } else if (canWrite && db) {
+        const del = el('button', 'btn ghost small', 'Delete');
+        del.addEventListener('click', () => { state.confirmId = e.id; renderLog(); });
+        right.appendChild(del);
+      }
+      top.append(left, right);
+      // mini register: product | bags | MT
+      const keys = STOCK_ORDER.filter((k) => e.items && e.items[k]);
+      const wrap = el('div', 'tbl-wrap'); const t = el('table', 'sheet');
+      const th = el('thead'); const hr = el('tr');
+      hr.append(el('th', '', ''), ...keys.map((k) => el('th', '', P[k])), el('th', '', 'TOTAL')); th.appendChild(hr); t.appendChild(th);
+      const tbd = el('tbody'); let tot = 0;
+      const rb = el('tr'); rb.appendChild(el('td', 'lab', 'BAGS'));
+      const rm = el('tr'); rm.appendChild(el('td', 'lab', 'MT'));
+      keys.forEach((k) => { const v = Number(e.items[k]); tot += v; rb.appendChild(el('td', '', sgn(v))); rm.appendChild(el('td', '', mt(v))); });
+      rb.appendChild(el('td', '', sgn(tot))).style.fontWeight = '700'; rm.appendChild(el('td', '', mt(tot))).style.fontWeight = '700';
+      tbd.append(rb, rm); t.appendChild(tbd); wrap.appendChild(t);
+      const meta = el('div', 'entry-meta', [toDMY(e.date), e.godown ? GLABEL[e.godown] : 'TP+Harrawala', e.ref ? 'Ref ' + e.ref : ''].filter(Boolean).join(' · '));
+      card.append(top, wrap, meta); box.appendChild(card);
+    });
+  }
+
+  function renderAll() {
+    renderForm();
+    renderCapAlert();
+    if (state.view === 'stock') renderStock();
+    if (state.view === 'dealers') renderDealers();
+    if (state.view === 'log') renderLog();
+    if (state.view === 'tally') renderTally();
+    if (state.view === 'setup') renderSetupLive();
+    renderSetupBanner();
+  }
+
+  // ---------- opening dealer balances (admin) ----------
+  const ost = { book: 'TPH', unit: 'bags', draft: null, confirm: false };
+  try { const u = localStorage.getItem('ounit'); if (u === 'mt' || u === 'bags') ost.unit = u; } catch {}
+  let oid = 0;
+  const oToBags = (v) => (v === '' || v == null || isNaN(Number(String(v).replace(/,/g, ''))) ? 0 : Math.round((ost.unit === 'mt' ? 20 : 1) * Number(String(v).replace(/,/g, ''))));
+  const oFromBags = (b) => (!b ? '' : ost.unit === 'mt' ? (b / 20).toFixed(2) : String(b));
+  const oConv = (b) => (!b ? '' : ost.unit === 'mt' ? fmt.format(b) + ' bags' : mt(b) + ' MT');
+  function newDraft() {
+    const d = { rows: {} };
+    BOOKS.forEach((b) => { d.rows[b.k] = Object.entries(openingBook(b.k)).map(([name, it]) => ({ id: ++oid, name, it: Object.fromEntries(KEYS.map((k) => [k, Number(it[k] || 0)])) })); });
+    return d;
+  }
+  function oInputsMode(scope) {
+    (scope || document).querySelectorAll('#view-setup input[type="number"]').forEach((i) => { i.inputMode = ost.unit === 'mt' ? 'decimal' : 'numeric'; i.step = ost.unit === 'mt' ? '0.05' : '1'; i.placeholder = ost.unit === 'mt' ? '0.00' : '0'; });
+  }
+  // dealer cards
+  function dealerCard(row, open) {
+    const c = el('div', 'ocard' + (open ? ' open' : '')); c.dataset.id = row.id;
+    const head = el('div', 'ocard-head');
+    const nm = el('div', 'ocard-name');
+    const tot = el('div', 'ocard-tot');
+    const tg = el('button', 'btn ghost small', open ? 'Done' : 'Edit'); tg.type = 'button';
+    head.append(nm, tg);
+    const sum = el('div', 'ocard-sum');
+    const meta = el('div', 'ocard-meta'); meta.append(sum, tot);
+    const edit = el('div', 'ocard-edit'); edit.hidden = !open;
+    const showHead = () => {
+      nm.textContent = row.name || 'New dealer'; nm.classList.toggle('blank', !row.name);
+      const t = KEYS.reduce((a, k) => a + row.it[k], 0);
+      tot.replaceChildren(el('b', tone(t), sgn(t)), ' bags · ' + mt(t) + ' MT');
+      const parts = DEALER_ORDER.filter((k) => row.it[k]).map((k) => DEALER_LABEL[k] + ' ' + sgn(row.it[k]));
+      sum.textContent = parts.length ? parts.join(' · ') : 'All products 0';
+    };
+    const top = el('div', 'ocard-top');
+    const name = el('input'); name.type = 'text'; name.value = row.name; name.placeholder = 'Dealer name'; name.setAttribute('list', 'dealer-list'); name.setAttribute('aria-label', 'Dealer name'); name.autocomplete = 'off';
+    name.addEventListener('input', () => { row.name = name.value; showHead(); renderOCheck(); });
+    name.addEventListener('blur', () => { row.name = normDealer(name.value); name.value = row.name; showHead(); });
+    const rm = el('button', 'btn ghost small', 'Remove'); rm.type = 'button';
+    rm.addEventListener('click', () => {
+      if (rm.dataset.armed) { ost.draft.rows[ost.book] = ost.draft.rows[ost.book].filter((r) => r !== row); c.remove(); renderODTot(); renderOCheck(); setDirty(true); return; }
+      rm.dataset.armed = '1'; rm.textContent = 'Tap again to remove'; rm.classList.add('danger'); rm.classList.remove('ghost');
+    });
+    top.append(name, rm);
+    const grid = el('div', 'ogrid');
+    DEALER_ORDER.forEach((k) => {
+      const l = el('label'); const i = el('input'); i.type = 'number'; i.value = oFromBags(row.it[k]); i.setAttribute('aria-label', DEALER_LABEL[k]);
+      const cv = el('small', '', oConv(row.it[k]));
+      i.addEventListener('input', () => { row.it[k] = oToBags(i.value); cv.textContent = oConv(row.it[k]); showHead(); renderODTot(); renderOCheck(); });
+      i.addEventListener('blur', () => { i.value = oFromBags(row.it[k]); });
+      l.append(el('span', 'k', DEALER_LABEL[k]), i, cv); grid.appendChild(l);
+    });
+    edit.append(top, grid);
+    tg.addEventListener('click', () => {
+      const o = edit.hidden; edit.hidden = !o; c.classList.toggle('open', o); tg.textContent = o ? 'Done' : 'Edit';
+      if (o) { oInputsMode(edit); name.focus(); } else { row.name = normDealer(name.value); name.value = row.name; showHead(); }
+    });
+    showHead();
+    c.append(head, meta, edit);
+    return c;
+  }
+  function renderODealers() {
+    $$('#o-book button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.b === ost.book)));
+    const box = $('#o-dealers'); box.replaceChildren();
+    const rows = ost.draft.rows[ost.book];
+    if (!rows.length) box.appendChild(el('div', 'empty', 'No dealers in this sheet yet. Paste them from Excel or add them one by one.'));
+    rows.forEach((r) => box.appendChild(dealerCard(r, false)));
+    oInputsMode(box); renderODTot();
+  }
+  function renderODTot() {
+    const rows = ost.draft.rows[ost.book];
+    $('#o-dtot-label').textContent = (ost.book === 'TPH' ? 'TP + Harrawala' : 'Doiwala') + ' sheet total · ' + plural(rows.length);
+    const tbl = $('#o-dtot'); tbl.replaceChildren();
+    const thead = el('thead'); const hr = el('tr'); hr.append(el('th', '', ''), ...DEALER_ORDER.map((k) => el('th', '', DEALER_LABEL[k])), el('th', '', 'TOTAL')); thead.appendChild(hr);
+    const body = el('tbody'); const tr = el('tr', 'tot'); tr.appendChild(el('td', 'lab', 'TOTAL'));
+    let gt = 0; DEALER_ORDER.forEach((k) => { const t = rows.reduce((a, r) => a + r.it[k], 0); gt += t; bmCell(tr, t, { tone: true }); });
+    bmCell(tr, gt, { tone: true }); body.appendChild(tr); tbl.append(thead, body);
+  }
+  // dealer balances against the start day's stock difference, per dealer sheet
+  function renderOCheck() {
+    if (!ost.draft || !opening) return;
+    const stk = compute(prevDay(opening.date), 'TPH').stock;
+    const st = $('#o-check'); st.replaceChildren();
+    const res = BOOKS.map((b) => {
+      const gap = {}; KEYS.forEach((k) => { gap[k] = ost.draft.rows[b.k].reduce((a, r) => a + r.it[k], 0) - b.godowns.reduce((a, g) => a + stk[g][k].phys - stk[g][k].sap, 0); });
+      return { b, gap, t: KEYS.reduce((a, k) => a + gap[k], 0), ok: KEYS.every((k) => gap[k] === 0) };
+    });
+    const allOk = res.every((x) => x.ok);
+    st.className = 'status ' + (allOk ? 'ok' : 'bad');
+    st.append(allOk ? 'DEALER BALANCES MATCH THE STOCK ✓' : 'DEALER BALANCES DON’T MATCH THE STOCK');
+    res.forEach((x) => st.append(el('small', '', x.b.label + ': ' + (x.ok ? 'matches the stock difference of ' + toDMY(opening.date) + ' ✓' : 'dealers ' + (x.t > 0 ? '+' : '') + sgn(x.t) + ' bags (' + mt(x.t) + ' MT) vs stock difference, off in ' + STOCK_ORDER.filter((k) => x.gap[k] !== 0).map((k) => P[k] + ' ' + sgn(x.gap[k])).join(', ')))));
+    if (!allOk) st.append(el('small', '', 'You can still save. The difference will show as unreconciled on Depot Status until it is corrected.'));
+  }
+  // unsaved-changes state of the dealer balances editor
+  function setDirty(v, msg) {
+    ost.dirty = v; ost.discardArmed = false;
+    const bar = $('#o-savebar'); bar.classList.toggle('dirty', v);
+    $('#o-state').textContent = msg || (v ? 'Not saved yet. Dealer Stock still shows the saved balances until you press Save.' : 'No changes yet');
+    $('#o-save').disabled = !v; $('#o-cancel').textContent = v ? 'Discard' : 'Close';
+  }
+  function nudgeSave(msg) {
+    const bar = $('#o-savebar'); $('#o-state').textContent = msg;
+    bar.classList.remove('nudge'); void bar.offsetWidth; bar.classList.add('nudge');
+  }
+  function leaveSetup(then) {
+    if (ost.dirty && !ost.discardArmed) {
+      ost.discardArmed = true; $('#o-cancel').textContent = 'Tap again to discard';
+      nudgeSave('You have unsaved dealer balances. Save them, or tap Discard again to throw them away.');
+      ost.pendingLeave = then; return;
+    }
+    setDirty(false); closeSetup(); if (then) then();
+  }
+  function setOUnit() { $$('#o-unit button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.u === ost.unit))); oInputsMode(); }
+  function openSetup() {
+    if (!opening || !isAdmin || Object.keys(closes).length) return;
+    ost.draft = newDraft(); ost.book = state.dGodown === 'DOI' ? 'DOI' : 'TPH';
+    $('#o-start').textContent = toDMY(opening.date); $('#o-start2').textContent = toDMY(opening.date);
+    $('#o-err').hidden = true; setDirty(false);
+    $('#o-paste-note').hidden = true; $('#o-paste').value = '';
+    state.view = 'setup'; renderTabs(); renderSetupBanner();
+    setOUnit(); renderODealers(); renderOCheck();
+    $('#view-setup').scrollIntoView({ block: 'start' });
+  }
+  function closeSetup() { ost.draft = null; state.view = 'dealers'; renderTabs(); renderAll(); }
+  function renderSetupLive() { if (!ost.draft) { if (opening) openSetup(); else closeSetup(); return; } renderOCheck(); }
+  function renderSetupBanner() {
+    $('#d-open-edit').hidden = !isAdmin || !opening || Object.keys(closes).length > 0;
+    const b = $('#setup-banner');
+    if (opening || !db) { b.hidden = true; return; }
+    b.hidden = false; b.replaceChildren();
+    if (isAdmin) {
+      b.append(el('span', '', 'The ledger hasn’t been started yet. On Opening Balance, save the day’s SAP opening stock of all three depots (with physical stock) and press Start the ledger. Then enter the dealers’ balances of that day on Dealer Stock. '));
+      const go = el('button', 'btn small', 'Go to Opening Balance'); go.type = 'button';
+      go.addEventListener('click', () => { state.view = 'tally'; renderTabs(); renderAll(); });
+      if (state.view !== 'tally') b.append(go);
+    } else b.textContent = 'The ledger hasn’t been started yet. An admin needs to start it from Opening Balance.';
+  }
+  $('#d-open-edit').addEventListener('click', openSetup);
+  $('#setup-back').addEventListener('click', () => leaveSetup());
+  $('#o-cancel').addEventListener('click', () => {
+    if (ost.dirty && ost.discardArmed) { const then = ost.pendingLeave; setDirty(false); closeSetup(); if (then) then(); return; }
+    leaveSetup();
+  });
+  $('#view-setup').addEventListener('input', (e) => { if (e.target.id !== 'o-paste' && ost.draft) setDirty(true); });
+  $$('#o-book button').forEach((b) => b.addEventListener('click', () => { ost.book = b.dataset.b; renderODealers(); }));
+  $$('#o-unit button').forEach((b) => b.addEventListener('click', () => {
+    ost.unit = b.dataset.u; try { localStorage.setItem('ounit', ost.unit); } catch {}
+    setOUnit(); renderODealers();
+  }));
+  $('#o-add').addEventListener('click', () => {
+    const row = { id: ++oid, name: '', it: Object.fromEntries(KEYS.map((k) => [k, 0])) };
+    ost.draft.rows[ost.book].push(row);
+    const box = $('#o-dealers'); box.querySelectorAll('.empty').forEach((e) => e.remove());
+    const card = dealerCard(row, true); box.appendChild(card); oInputsMode(card); renderODTot(); setDirty(true);
+    card.querySelector('.ocard-edit input').focus();
+  });
+  // paste from Excel: name, then Black, PPC, OPC 53, OPC 43, W.S, S.S (and optionally the total)
+  function parseDealerPaste(text) {
+    const rows = [], skipped = [];
+    const isNum = (t) => /^[-+−]?[\d,]*\.?\d+$/.test(t);
+    const num = (t) => Number(t.replace(/,/g, '').replace('−', '-'));
+    text.split(/\r?\n/).forEach((line) => {
+      const raw = line.trim(); if (!raw) return;
+      let toks = raw.replace(/\|/g, ' ').split(/\s+/).filter(Boolean);
+      if (toks.length && /^\d{1,2}[./-]\d{1,2}[./-]\d{2,4}$/.test(toks[0])) toks = toks.slice(1);
+      let i = toks.length; while (i > 0 && isNum(toks[i - 1])) i--;
+      let nums = toks.slice(i).map(num); let nameToks = toks.slice(0, i);
+      const name = normDealer(nameToks.join(' '));
+      if (!name || /^(TOTAL|DEALERS?|DATE)\b/.test(name)) { skipped.push(raw); return; }
+      let total = null;
+      if (nums.length >= 7) { const last7 = nums.slice(-7); const s6 = last7.slice(0, 6).reduce((a, b) => a + b, 0); if (Math.abs(s6 - last7[6]) < 0.001) { total = last7[6]; nums = last7.slice(0, 6); } else nums = nums.slice(-6); }
+      if (nums.length !== 6) { skipped.push(raw); return; }
+      const it = Object.fromEntries(KEYS.map((k) => [k, 0]));
+      DEALER_ORDER.forEach((k, j) => { it[k] = Math.round(nums[j] * (ost.unit === 'mt' ? 20 : 1)); });
+      rows.push({ name, it });
+    });
+    return { rows, skipped };
+  }
+  $('#o-paste-go').addEventListener('click', () => {
+    const { rows, skipped } = parseDealerPaste($('#o-paste').value);
+    const list = ost.draft.rows[ost.book]; let added = 0, updated = 0;
+    rows.forEach((r) => { const ex = list.find((x) => normDealer(x.name) === r.name); if (ex) { ex.it = r.it; updated++; } else { list.push({ id: ++oid, name: r.name, it: r.it }); added++; } });
+    renderODealers(); renderOCheck();
+    const n = $('#o-paste-note'); n.hidden = false;
+    n.textContent = (rows.length ? [added ? 'Added ' + plural(added) : '', updated ? (added ? 'updated ' : 'Updated ') + plural(updated) : ''].filter(Boolean).join(', ') + '.' : 'No dealer rows found.') + (skipped.length ? ' Skipped ' + skipped.length + ' line' + (skipped.length > 1 ? 's' : '') + ' (headers, totals, or rows without six figures): ' + skipped.slice(0, 3).map((x) => '“' + x.slice(0, 40) + '”').join(', ') + (skipped.length > 3 ? '…' : '') : '');
+    if (rows.length) { $('#o-paste').value = ''; setDirty(true); n.textContent += ' Not saved yet: press Save dealer balances at the bottom to put them in the ledger.'; }
+  });
+  $('#o-save').addEventListener('click', async () => {
+    const err = (t) => { $('#o-err').textContent = t; $('#o-err').hidden = false; };
+    $('#o-err').hidden = true;
+    if (!db || !opening) return err('The ledger has to be started on Opening Balance first.');
+    const d = ost.draft;
+    const books = {};
+    for (const b of BOOKS) {
+      books[b.k] = {};
+      for (const r of d.rows[b.k]) {
+        const name = normDealer(r.name); const nz = KEYS.filter((k) => r.it[k]);
+        if (!name) { if (nz.length) return err('A dealer in the ' + b.label + ' sheet has figures but no name.'); continue; }
+        if (books[b.k][name]) return err(name + ' appears twice in the ' + b.label + ' sheet. Combine them into one row.');
+        books[b.k][name] = Object.fromEntries(nz.map((k) => [k, r.it[k]]));
+      }
+    }
+    const btn = $('#o-save'); btn.disabled = true; $('#o-state').textContent = 'Saving…';
+    try {
+      const now = new Date().toISOString();
+      await db.doc('config/opening-backup-' + now.replace(/[-:]/g, '').slice(0, 15)).set({ ...(origOpening || opening), replacedAt: now, replacedBy: myId || '' });
+      const { dealers: _old, ...rest } = (origOpening || opening);
+      await db.doc('config/opening').set({ ...rest, books, updatedAt: now, by: myId || '' });
+      setDirty(false);
+      toast('Dealer balances of ' + toDMY(opening.date) + ' saved. Dealer Stock now shows them.');
+      closeSetup();
+    } catch (e) {
+      err(e && e.code === 'invalid_argument' ? 'Only an admin can change the opening dealer balances.' : 'Couldn’t save. Check your connection and try again.');
+      if (ost.draft) { btn.disabled = false; $('#o-state').textContent = 'Not saved. ' + $('#o-err').textContent; }
+    }
+  });
+
+  // ---------- SAP tally ----------
+  const tstate = { godown: 'TPN', unit: 'mt', loadedKey: null };
+  try { const u = localStorage.getItem('tunit'); if (u === 'mt' || u === 'bags') tstate.unit = u; } catch {}
+  const prevDay = (iso) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
+  const addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const repKey = (d, g) => d + '_' + g;
+  const tq = $('#t-qty');
+  const toBags = (v) => (v === '' || isNaN(Number(v)) ? null : Math.round(tstate.unit === 'mt' ? Number(v) * 20 : Number(v)));
+  const fromBags = (b) => (b == null ? '' : tstate.unit === 'mt' ? (b / 20).toFixed(2) : String(b));
+  const convText = (b) => (b == null ? '' : tstate.unit === 'mt' ? fmt.format(b) + ' bags' : mt(b) + ' MT');
+  STOCK_ORDER.forEach((k) => {
+    tq.appendChild(el('div', 'qp', P[k]));
+    ['s', 'p'].forEach((c) => {
+      const cell = el('div', 'stack');
+      const i = el('input'); i.type = 'number'; i.id = 't' + c + '-' + k; i.min = '0';
+      i.setAttribute('aria-label', P[k] + (c === 's' ? ' SAP stock' : ' physical stock'));
+      const cv = el('span', 'conv'); cv.id = 'tc' + c + '-' + k;
+      i.addEventListener('input', () => { cv.textContent = convText(toBags(i.value)); tTotals(); });
+      i.addEventListener('blur', () => { const b = toBags(i.value); if (b != null) i.value = fromBags(b); });
+      cell.append(i, cv); tq.appendChild(cell);
+    });
+  });
+  const tt = [el('div', 'qt first', 'TOTAL'), el('div', 'qt'), el('div', 'qt')];
+  tt[1].id = 't-tot-s'; tt[2].id = 't-tot-p'; tq.append(...tt);
+  function setUnitInputs() {
+    STOCK_ORDER.forEach((k) => ['s', 'p'].forEach((c) => {
+      const i = $('#t' + c + '-' + k);
+      i.inputMode = tstate.unit === 'mt' ? 'decimal' : 'numeric'; i.step = tstate.unit === 'mt' ? '0.05' : '1'; i.placeholder = tstate.unit === 'mt' ? '0.00' : '0';
+    }));
+    $$('#t-unit button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.u === tstate.unit)));
+  }
+  // physical is optional: left blank everywhere, it is saved as not entered (null) and not checked
+  function readReport() {
+    const sap = {}, phys = {}; let anySap = false, anyPhys = false;
+    STOCK_ORDER.forEach((k) => {
+      const a = $('#ts-' + k).value, b = $('#tp-' + k).value;
+      if (a !== '') anySap = true; if (b !== '') anyPhys = true;
+      sap[k] = toBags(a) || 0; phys[k] = toBags(b) || 0;
+    });
+    return { sap, phys: anyPhys ? phys : null, any: anySap || anyPhys, anySap };
+  }
+  function tTotals() {
+    const r = readReport();
+    [['s', r.sap], ['p', r.phys || {}]].forEach(([c, o]) => {
+      const t = KEYS.reduce((a, k) => a + (o[k] || 0), 0);
+      const box = $('#t-tot-' + c); box.replaceChildren(el('span', '', tstate.unit === 'mt' ? mt(t) : sgn(t)), el('small', '', tstate.unit === 'mt' ? sgn(t) + ' bags' : mt(t) + ' MT'));
+    });
+  }
+  function fillReportForm(rep) {
+    STOCK_ORDER.forEach((k) => ['s', 'p'].forEach((c) => {
+      const src = rep ? (c === 's' ? rep.sap : rep.phys) : null;
+      const b = src ? Number(src[k] || 0) : null;
+      $('#t' + c + '-' + k).value = fromBags(b); $('#tc' + c + '-' + k).textContent = convText(b);
+    }));
+    tTotals();
+  }
+  $('#t-date').value = todayISO();
+  $('#t-date').addEventListener('change', () => { tstate.loadedKey = null; renderTally(); });
+  $$('#t-godown button').forEach((b) => b.addEventListener('click', () => { tstate.godown = b.dataset.g; tstate.loadedKey = null; renderTally(); }));
+  $$('#t-unit button').forEach((b) => b.addEventListener('click', () => {
+    const cur = STOCK_ORDER.map((k) => ['s', 'p'].map((c) => toBags($('#t' + c + '-' + k).value)));
+    tstate.unit = b.dataset.u; try { localStorage.setItem('tunit', tstate.unit); } catch {}
+    setUnitInputs();
+    STOCK_ORDER.forEach((k, i) => ['s', 'p'].forEach((c, j) => { const v = cur[i][j]; $('#t' + c + '-' + k).value = fromBags(v); $('#tc' + c + '-' + k).textContent = convText(v); }));
+    tTotals();
+  }));
+  $('#t-clear').addEventListener('click', () => { fillReportForm(null); $('#t-err').hidden = true; });
+  $('#t-copy').addEventListener('click', () => copyText($('#t-wa'), tallyText()));
+  $('#t-save').addEventListener('click', async () => {
+    const err = (t) => { $('#t-err').textContent = t; $('#t-err').hidden = false; };
+    $('#t-err').hidden = true;
+    if (!db) return err('Not connected. Reload the page.');
+    const date = $('#t-date').value;
+    if (!date) return err('Pick the SAP report date.');
+    if (opening && !opening.rolled && date < opening.date) return err('Opening balances can be entered from ' + toDMY(opening.date) + ', the ledger’s start day, onward.');
+    if (opening && date < windowStart()) return err('The ledger keeps the last two months. Opening balances can be entered from ' + toDMY(windowStart()) + ' onward.');
+    const isStart = opening && !opening.rolled && date === opening.date;
+    if (isStart && !isAdmin) return err('This is the ledger’s start day. Only an admin can change it.');
+    const r = readReport();
+    if (!r.anySap) return err('Enter the SAP stock from the report.');
+    if (isStart && !r.phys) return err('Enter the physical stock too. The ledger needs it on its start day.');
+    if ([...Object.values(r.sap), ...Object.values(r.phys || {})].some((v) => v < 0)) return err('Stock can’t be negative.');
+    const btn = $('#t-save'); btn.disabled = true;
+    try {
+      await db.doc('sapReports/' + repKey(date, tstate.godown)).set({ date, godown: tstate.godown, sap: r.sap, phys: r.phys, at: new Date().toISOString(), by: myId || '' });
+      toast('Opening balance saved: ' + GLABEL[tstate.godown] + ', ' + toDMY(date));
+    } catch (e) {
+      err(e && e.code === 'invalid_argument' ? 'You can view this ledger but not enter reports. Ask the owner for Contributor access.' : 'Couldn’t save. Check your connection and try again.');
+    } finally { btn.disabled = !canWrite; }
+  });
+
+  // ledger position at the start of `date` (= end of the day before) vs the official report
+  function tallyOf(date, g) {
+    if (!opening) return null;
+    const ours = compute(prevDay(date), 'TPH').stock[g];
+    const rep = reports[repKey(date, g)];
+    const start = !opening.rolled && date === opening.date;
+    if (!rep) return { ours, rep: null, start };
+    const hasPhys = !!rep.phys;
+    const sapOff = {}, phyOff = {};
+    KEYS.forEach((k) => { sapOff[k] = ours[k].sap - Number(rep.sap[k] || 0); phyOff[k] = hasPhys ? ours[k].phys - Number(rep.phys[k] || 0) : 0; });
+    const sapT = KEYS.reduce((a, k) => a + sapOff[k], 0), phyT = KEYS.reduce((a, k) => a + phyOff[k], 0);
+    const ok = KEYS.every((k) => sapOff[k] === 0 && phyOff[k] === 0);
+    return { ours, rep, sapOff, phyOff, sapT, phyT, ok, hasPhys, start };
+  }
+  const offList = (o) => STOCK_ORDER.filter((k) => o[k] !== 0).map((k) => P[k] + ' ' + (o[k] > 0 ? '+' : '') + sgn(o[k])).join(', ');
+
+  function renderTally() {
+    $$('#t-godown button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.g === tstate.godown)));
+    setUnitInputs();
+    const date = $('#t-date').value || todayISO(), g = tstate.godown, key = repKey(date, g);
+    if (opening && olderView('tally', date)) { $('#t-status').hidden = true; return; }
+    const rep = reports[key];
+    if (tstate.loadedKey !== key) { fillReportForm(rep || null); tstate.loadedKey = key; $('#t-err').hidden = true; }
+    const locked = !!(opening && !opening.rolled && date === opening.date && !isAdmin);
+    const sn = $('#t-saved'); sn.hidden = !rep && !locked;
+    sn.textContent = locked ? 'This is the ledger’s start day. Only an admin can change these figures.' : rep ? 'Saved. Change any figure and save again to update it.' : '';
+    $('#t-qty').querySelectorAll('input').forEach((i) => { i.disabled = locked; });
+    $('#t-save').textContent = rep ? 'Update opening balance' : 'Save opening balance';
+    $('#t-save').disabled = !canWrite || !db || locked;
+    $('#t-clear').disabled = locked;
+    const tbl = $('#t-table'); tbl.replaceChildren();
+    $('#t-title').textContent = GLABEL[g].toUpperCase() + ' · OPENING ' + toDMY(date);
+    const st = $('#t-status'); st.replaceChildren();
+    if (!opening) {
+      $('#t-sub').textContent = 'The ledger hasn’t been started yet, so there is nothing to tally against. Save this day’s opening balance for all three depots (with physical stock), then start the ledger below.';
+      st.hidden = true; $('#t-tablewrap').hidden = true; renderHist(); renderStartBox(); return;
+    }
+    if (date < opening.date) { $('#t-sub').textContent = 'The ledger starts on ' + toDMY(opening.date) + '. Pick that date or later.'; st.hidden = true; $('#t-tablewrap').hidden = true; renderHist(); renderStartBox(); return; }
+    $('#t-tablewrap').hidden = false;
+    const t = tallyOf(date, g);
+    $('#t-sub').textContent = 'Ledger position at the end of ' + toDMY(prevDay(date)) + ' against the SAP report for the opening of ' + toDMY(date) + '. Bags, with MT below. Mismatch = ledger − official.';
+
+    const thead = el('thead'); const hr = el('tr');
+    hr.append(labTd('TALLY', 'TALLY', 'th'), ...STOCK_ORDER.map((k) => el('th', '', P[k])), el('th', '', 'TOTAL'));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const body = el('tbody');
+    const line = (label, short, f, opts = {}) => {
+      const tr = el('tr', opts.rowCls || ''); tr.appendChild(labTd(label, short));
+      let tot = 0, has = true;
+      STOCK_ORDER.forEach((k) => {
+        const v = f(k); if (v == null) { has = false; tr.appendChild(el('td', 'zero', '—')); return; }
+        tot += v; const td = bmCell(tr, v, { tone: opts.signed });
+        if (opts.flag) td.classList.add(v !== 0 ? 'flag' : 'zero');
+      });
+      if (has) { const td = bmCell(tr, tot, { tone: opts.signed }); td.style.fontWeight = '700'; if (opts.flag) td.classList.add(tot !== 0 ? 'flag' : 'zero'); }
+      else tr.appendChild(el('td', 'zero', '—'));
+      if (opts.flag && has && STOCK_ORDER.some((k) => f(k) !== 0)) tr.classList.add('gap');
+      body.appendChild(tr);
+    };
+    const R = t.rep;
+    const secRow = (label, short) => { const tr = el('tr', 'sec'); tr.append(labTd(label, short, 'th'), ...STOCK_ORDER.map(() => el('th', '', '')), el('th', '', '')); body.appendChild(tr); };
+    const spacer = () => { const tr = el('tr', 'spacer'); const td = el('td'); td.colSpan = STOCK_ORDER.length + 2; tr.appendChild(td); body.appendChild(tr); };
+    secRow('SAP STOCK', 'SAP STOCK');
+    line('OFFICIAL SAP (REPORT)', 'OFFICIAL', (k) => (R ? Number(R.sap[k] || 0) : null));
+    line('LEDGER SAP', 'LEDGER', (k) => t.ours[k].sap);
+    line('MISMATCH (LEDGER − OFFICIAL)', 'MISMATCH', (k) => (R ? t.sapOff[k] : null), { flag: true, rowCls: 'diff' });
+    spacer();
+    secRow('PHYSICAL STOCK', 'PHYSICAL');
+    line('PHYSICAL (REPORT)', 'REPORT', (k) => (R && R.phys ? Number(R.phys[k] || 0) : null));
+    line('LEDGER PHYSICAL', 'LEDGER', (k) => t.ours[k].phys);
+    line('MISMATCH (LEDGER − REPORT)', 'MISMATCH', (k) => (R && R.phys ? t.phyOff[k] : null), { flag: true, rowCls: 'diff' });
+    tbl.appendChild(body);
+
+    st.hidden = false;
+    if (t.start) {
+      st.className = 'status ok'; st.append('LEDGER START DAY');
+      st.append(el('small', '', 'The ledger starts from this day’s opening balance, so there is nothing earlier to check it against. Every later day is checked against it.'));
+    } else if (!R) {
+      st.className = 'status none'; st.append('NOT ENTERED YET');
+      st.append(el('small', '', 'Enter ' + GLABEL[g] + '’s opening balance for ' + toDMY(date) + ' above to tally it.'));
+    } else if (t.ok) {
+      st.className = 'status ok'; st.append('TALLIED ✓');
+      st.append(el('small', '', t.hasPhys ? 'Official SAP, ledger SAP and physical stock all match for every product.' : 'Official SAP matches the ledger for every product. Physical stock wasn’t entered, so it wasn’t checked.'));
+    } else {
+      st.className = 'status bad'; st.append('NOT TALLIED');
+      if (t.sapT !== 0 || STOCK_ORDER.some((k) => t.sapOff[k])) st.append(el('small', '', 'SAP: ledger ' + (t.sapT > 0 ? '+' : '') + sgn(t.sapT) + ' bags (' + mt(t.sapT) + ' MT) vs official. ' + offList(t.sapOff) + '.'));
+      if (t.phyT !== 0 || STOCK_ORDER.some((k) => t.phyOff[k])) st.append(el('small', '', 'Physical: ledger ' + (t.phyT > 0 ? '+' : '') + sgn(t.phyT) + ' bags (' + mt(t.phyT) + ' MT) vs report. ' + offList(t.phyOff) + '.'));
+      if (!t.hasPhys) st.append(el('small', '', 'Physical stock wasn’t entered, so only SAP was checked.'));
+    }
+    renderHist(); renderStartBox();
+    if (!$('#t-wa').hidden) $('#t-wa').textContent = tallyText();
+  }
+  function renderHist() {
+    const tbl = $('#t-hist'); tbl.replaceChildren();
+    const thead = el('thead'); const hr = el('tr');
+    hr.append(el('th', '', 'DATE'), ...GODOWNS.map((g) => labTd(g.label.toUpperCase(), g.k, 'th')));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const body = el('tbody');
+    const sel = $('#t-date').value;
+    for (let i = 0; i < 14; i++) {
+      const d = addDays(todayISO(), -i);
+      if ((opening && d < opening.date) || d < windowStart()) break;
+      const tr = el('tr', d === sel ? 'sel' : ''); tr.appendChild(el('td', 'lab', toDMY(d)));
+      GODOWNS.forEach((g) => {
+        const td = el('td'); const t = tallyOf(d, g.k);
+        const b = el('button'); b.type = 'button';
+        let long, short;
+        if (!opening) { const has = reports[repKey(d, g.k)]; b.className = has ? 'ok' : 'none'; long = has ? (has.phys ? 'Saved' : 'Saved, no physical') : 'Not entered'; short = has ? '✓' : '—'; }
+        else if (t && t.start) { b.className = 'ok'; long = 'Start day'; short = 'Start'; }
+        else if (!t || !t.rep) { b.className = 'none'; long = 'Not entered'; short = '—'; }
+        else if (t.ok) { b.className = 'ok'; long = t.hasPhys ? '✓ Tallied' : '✓ SAP tallied'; short = '✓'; }
+        else { b.className = 'bad'; const parts = []; if (STOCK_ORDER.some((k) => t.sapOff[k])) parts.push('SAP ' + (t.sapT > 0 ? '+' : '') + sgn(t.sapT)); if (STOCK_ORDER.some((k) => t.phyOff[k])) parts.push('PHY ' + (t.phyT > 0 ? '+' : '') + sgn(t.phyT)); long = parts.join(' · '); short = '✗ Off'; }
+        b.append(el('span', 'lg', long), el('span', 'sh', short));
+        b.setAttribute('aria-label', g.label + ', ' + toDMY(d) + ': ' + long);
+        b.addEventListener('click', () => { $('#t-date').value = d; syncDates(); tstate.godown = g.k; tstate.loadedKey = null; renderTally(); $('#view-tally').scrollIntoView({ block: 'start' }); });
+        td.appendChild(b); tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    }
+    tbl.appendChild(body);
+  }
+  // ---------- ledger start (admin): the chosen day's Opening Balance becomes the starting stock ----------
+  let startConfirm = null;
+  function renderStartBox() {
+    const box = $('#t-start');
+    box.hidden = !isAdmin || !db;
+    // before the ledger starts, keep the box right under the form; afterwards, at the bottom of the tab
+    const anchor = opening ? $('#t-histcard') : $('#t-formcard');
+    if (anchor.nextElementSibling !== box) anchor.after(box);
+    if (box.hidden) return;
+    if (Object.keys(closes).length) { $('#t-start-note').textContent = 'The ledger closes each month by itself on the 1st. Its start (' + toDMY((origOpening || opening).date) + ') can no longer be moved; fix a balance with a Correction entry.'; $('#t-start-btn').hidden = true; return; }
+    const date = $('#t-date').value || todayISO();
+    if (startConfirm && startConfirm !== date) { startConfirm = null; $('#t-start-confirm').hidden = true; }
+    const note = $('#t-start-note'), btn = $('#t-start-btn');
+    if (opening && opening.date === date) {
+      note.textContent = 'The ledger starts from this day. Its starting depot stock is this day’s opening balance of all three depots; the dealers’ starting balances are on Dealer Stock.';
+      btn.hidden = true; return;
+    }
+    btn.hidden = false;
+    btn.textContent = startConfirm ? 'Confirm' : (opening ? 'Move the ledger start to ' : 'Start the ledger from ') + toDMY(date);
+    const missing = GODOWNS.filter((g) => { const r = reports[repKey(date, g.k)]; return !r || !r.phys; });
+    note.textContent = (opening ? 'The ledger starts from ' + toDMY(opening.date) + '. ' : '') + 'Starting from ' + toDMY(date) + ' makes this day’s opening balance of all three depots the starting stock.' + (missing.length ? ' First save it, with physical stock, for ' + missing.map((g) => g.label).join(', ') + '.' : '');
+    btn.disabled = missing.length > 0;
+  }
+  $('#t-start-btn').addEventListener('click', async () => {
+    const date = $('#t-date').value || todayISO();
+    const err = (t) => { $('#t-start-err').textContent = t; $('#t-start-err').hidden = false; };
+    $('#t-start-err').hidden = true;
+    if (!startConfirm) {
+      const before = entries.filter((e) => e.date < date).length;
+      const box = $('#t-start-confirm'); box.replaceChildren(el('strong', '', (opening ? 'Move the ledger start to ' : 'Start the ledger from ') + toDMY(date) + '?'));
+      box.append(el('span', '', 'Every sheet will be worked out from this day’s opening balance of all three depots.'));
+      if (before) box.append(el('span', '', before + (before === 1 ? ' entry' : ' entries') + ' dated before ' + toDMY(date) + ' will stop counting.'));
+      box.append(el('span', '', opening ? 'Dealer balances stay as entered for ' + toDMY(opening.date) + '. Update them to ' + toDMY(date) + ' on Dealer Stock. The current setup is kept as a backup.' : 'Next, enter the dealers’ balances of ' + toDMY(date) + ' on Dealer Stock.'));
+      box.hidden = false; startConfirm = date; renderStartBox(); return;
+    }
+    const btn = $('#t-start-btn'); btn.disabled = true;
+    try {
+      const now = new Date().toISOString();
+      const stock = Object.fromEntries(GODOWNS.map((g) => { const r = reports[repKey(date, g.k)]; return [g.k, Object.fromEntries(KEYS.map((k) => [k, { sap: Number(r.sap[k] || 0), phys: Number(r.phys[k] || 0) }]))]; }));
+      const books = opening ? (opening.books || { TPH: opening.dealers || {}, DOI: {} }) : { TPH: {}, DOI: {} };
+      if (opening) await db.doc('config/opening-backup-' + now.replace(/[-:]/g, '').slice(0, 15)).set({ ...(origOpening || opening), replacedAt: now, replacedBy: myId || '' });
+      await db.doc('config/opening').set({ date, stock, books, updatedAt: now, by: myId || '' });
+      toast('The ledger now starts from ' + toDMY(date) + '. Next: dealer balances on Dealer Stock.');
+    } catch (e) {
+      err(e && e.code === 'invalid_argument' ? 'Only an admin can start the ledger.' : 'Couldn’t save. Check your connection and try again.');
+    } finally { startConfirm = null; $('#t-start-confirm').hidden = true; btn.disabled = false; renderStartBox(); }
+  });
+  $('#view-tally').addEventListener('input', () => { if (startConfirm) { startConfirm = null; $('#t-start-confirm').hidden = true; renderStartBox(); } });
+
+  function tallyText() {
+    if (!opening) return '';
+    const date = $('#t-date').value || todayISO();
+    const L = ['*OPENING BALANCE TALLY · ' + toDMY(date) + '*', '(ledger − official, bags)'];
+    GODOWNS.forEach((g) => {
+      const t = tallyOf(date, g.k);
+      L.push('');
+      if (!t || !t.rep) { L.push('*' + g.label.toUpperCase() + '*: SAP report not entered'); return; }
+      L.push('*' + g.label.toUpperCase() + '*: ' + (t.start ? 'LEDGER START DAY' : t.ok ? '✅ TALLIED' : '❌ NOT TALLIED'));
+      const sapRep = KEYS.reduce((a, k) => a + Number(t.rep.sap[k] || 0), 0), phyRep = KEYS.reduce((a, k) => a + Number((t.rep.phys || {})[k] || 0), 0);
+      L.push('Official SAP ' + mt(sapRep) + ' MT / ' + sgn(sapRep) + (STOCK_ORDER.some((k) => t.sapOff[k]) ? '  |  off: ' + offList(t.sapOff) : '  |  ledger matches'));
+      L.push(t.hasPhys ? 'Physical ' + mt(phyRep) + ' MT / ' + sgn(phyRep) + (STOCK_ORDER.some((k) => t.phyOff[k]) ? '  |  off: ' + offList(t.phyOff) : '  |  ledger matches') : 'Physical: not entered');
+    });
+    return L.join('\n');
+  }
+
+  // ---------- date fields ----------
+  const fmtDateBox = (v) => (v ? toDMY(v) : '');
+  function enhanceDates() {
+    $$('input[type="date"]').forEach((inp) => {
+      if (inp.parentElement.classList.contains('datebox')) return;
+      const box = el('div', 'datebox');
+      const show = el('div', 'dateshow');
+      show.setAttribute('aria-hidden', 'true');
+      const dv = el('span', 'dv');
+      const ic = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      ic.setAttribute('viewBox', '0 0 24 24'); ic.setAttribute('fill', 'none'); ic.setAttribute('stroke', 'currentColor'); ic.setAttribute('stroke-width', '1.8');
+      ic.innerHTML = '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>';
+      show.append(dv, ic);
+      inp.parentElement.insertBefore(box, inp); box.append(show, inp);
+      const sync = () => { const v = fmtDateBox(inp.value); dv.textContent = v || (inp.dataset.empty || 'Any date'); show.classList.toggle('is-blank', !v); };
+      inp.addEventListener('input', sync); inp.addEventListener('change', sync);
+      inp._syncDate = sync; sync();
+    });
+  }
+  const syncDates = () => $$('input[type="date"]').forEach((i) => i._syncDate && i._syncDate());
+  enhanceDates();
+
+  // ---------- boot ----------
+  // let long product names break after the slash on narrow phones (LPP/ BLACK)
+  $$('.qty .qp').forEach((e) => { e.textContent = e.textContent.replace('/', '/\u200b'); });
+  renderTabs(); renderForm(); updateTotal(); syncDates();
+
+  // ---------- an entry dated in a month that already has a close (last month) also updates that close ----------
+  const closeFor = (date) => { const c = closes[monthOf(date)]; return c && date <= c.date ? c : null; };
+  // what one entry does to a close, as [field path, change]; the same arithmetic as compute()
+  function deltasOf(e, sgn) {
+    const out = [[['entries'], sgn]];
+    const g = e.godown || 'TPN', bk = bookOf(g), mv = g === 'TPN' || g === 'HAR', st = !!(e.godown && GODOWNS.some((x) => x.k === e.godown));
+    for (const [k, raw] of Object.entries(e.items || {})) {
+      const n = (Number(raw) || 0) * sgn; if (!(k in P) || !n) continue;
+      const dealer = (v) => { if (!e.dealer) return; out.push([['books', bk, e.dealer, k], v]); if (mv) out.push([['moves', g, e.dealer, k], v]); };
+      if (e.type === 'billing') { if (st) out.push([['stock', e.godown, k, 'sap'], -n]); dealer(n); }
+      else if (e.type === 'dispatch') { if (st) out.push([['stock', e.godown, k, 'phys'], -n]); dealer(-n); }
+      else if (e.type === 'arrival') { if (st) { out.push([['stock', e.godown, k, 'sap'], n]); out.push([['stock', e.godown, k, 'phys'], n]); } }
+      else if (e.type === 'correction') { if (e.target === 'dealer') dealer(n); else if ((e.target === 'sap' || e.target === 'phys') && st) out.push([['stock', e.godown, k, e.target], n]); }
+    }
+    return out;
+  }
+  async function addEntry(d) {
+    const c = closeFor(d.date);
+    return c ? db.entryWithClose({ add: d, close: c.month, deltas: deltasOf(d, 1) }) : db.collection('entries').add(d);
+  }
+  async function removeEntry(e) {
+    const c = closeFor(e.date);
+    return c ? db.entryWithClose({ del: e.id, close: c.month, deltas: deltasOf(e, -1) }) : db.doc('entries/' + e.id).delete();
+  }
+  // a close's figures in a fixed order (zero balances left out), to tell whether two closes say the same
+  const canon = (x) => (x && typeof x === 'object' ? '{' + Object.keys(x).sort().map((k) => JSON.stringify(k) + ':' + canon(x[k])).join(',') + '}' : JSON.stringify(Number(x) || 0));
+  const nzBook = (b) => Object.fromEntries(Object.entries(b || {}).map(([bk, dl]) => [bk, Object.fromEntries(Object.entries(dl || {})
+    .map(([n, it]) => [n, Object.fromEntries(Object.entries(it || {}).filter(([, v]) => Number(v)))]).filter(([, it]) => Object.keys(it).length))]));
+  const sameClose = (a, b) => canon(a.stock) === canon(b.stock) && canon(nzBook(a.books)) === canon(nzBook(b.books)) && canon(nzBook(a.moves)) === canon(nzBook(b.moves));
+
+  // ---------- older than the last two months: Excel instead of the screen ----------
+  let xlsxP = null;
+  function loadXLSX() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (!xlsxP) xlsxP = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = () => res(window.XLSX); s.onerror = () => { xlsxP = null; rej(new Error('xlsx')); }; document.head.appendChild(s); });
+    return xlsxP;
+  }
+  function saveBook(X, wb, name) {
+    const blob = new Blob([X.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+  const fetchDocs = async (c, conds) => (await db.collection(c).query(conds).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+  // a month's first and last day, kept inside the ledger (not before its start, not into the two months on screen)
+  function monthRange(date) {
+    const m = monthOf(date), a = m + '-01', b = lastDayOf(m), s = origOpening.date, w = prevDay(windowStart());
+    return [a < s ? s : a, b > w ? w : b];
+  }
+  // balances at the end of `date`: the month-end close before that month (or the ledger start) + that month's entries
+  async function balancesAsOf(date) {
+    const ms = Object.keys(closes).filter((m) => closes[m] && closes[m].date >= origOpening.date && closes[m].date < date).sort();
+    let base = origOpening;
+    if (ms.length) { const c = closes[ms[ms.length - 1]]; base = { date: addDays(c.date, 1), stock: c.stock, books: c.books, moves: c.moves || {}, rolled: true }; }
+    const ents = await fetchDocs('entries', [['date', '>=', base.date], ['date', '<=', date]]);
+    const reps = base.rolled ? [] : await fetchDocs('sapReports', [['date', '==', base.date]]);
+    const keep = [opening, entries, reports];
+    try {
+      opening = base; entries = ents; reports = Object.fromEntries(reps.map((r) => [r.id, r]));
+      return { tph: compute(date, 'TPH'), doi: compute(date, 'DOI') };
+    } finally { [opening, entries, reports] = keep; }
+  }
+  async function excelBalances(date) {
+    const r = await balancesAsOf(date); const X = await loadXLSX(); const wb = X.utils.book_new();
+    const head = ['Depot', 'Product', 'SAP bags', 'Physical bags', 'Physical − SAP (bags)', 'SAP MT', 'Physical MT'];
+    const rows = [];
+    GODOWNS.forEach((g) => {
+      let ts = 0, tp = 0;
+      STOCK_ORDER.forEach((k) => { const s = r.tph.stock[g.k][k]; ts += s.sap; tp += s.phys; rows.push([g.label, P[k], s.sap, s.phys, s.phys - s.sap, s.sap / 20, s.phys / 20]); });
+      rows.push([g.label, 'TOTAL', ts, tp, tp - ts, ts / 20, tp / 20]);
+    });
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([['Depot Stock Ledger · depot stock at the end of ' + toDMY(date)], [], head, ...rows]), 'Depot stock');
+    [['TPH', r.tph], ['DOI', r.doi]].forEach(([b, res]) => {
+      const dh = ['Dealer', ...DEALER_ORDER.map((k) => DEALER_LABEL[k]), 'Total bags', 'Total MT'];
+      const list = Object.entries(res.dealers).filter(([, it]) => KEYS.some((k) => it[k])).sort((x, y) => x[0].localeCompare(y[0]));
+      const tot = emptyItems();
+      const drows = list.map(([n, it]) => { KEYS.forEach((k) => { tot[k] += it[k]; }); const t = KEYS.reduce((a, k) => a + it[k], 0); return [n, ...DEALER_ORDER.map((k) => it[k]), t, t / 20]; });
+      const tt = KEYS.reduce((a, k) => a + tot[k], 0);
+      drows.push(['TOTAL', ...DEALER_ORDER.map((k) => tot[k]), tt, tt / 20]);
+      X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([['Depot Stock Ledger · ' + GLABEL[b] + ' dealer balances at the end of ' + toDMY(date) + ' (minus = pendency, plus = advance)'], [], dh, ...drows]), GLABEL[b] + ' dealers');
+    });
+    saveBook(X, wb, 'DHS_Stock_Balances_' + date + '.xlsx');
+    return 'Downloaded the balances at the end of ' + toDMY(date) + '.';
+  }
+  async function excelEntries(from, to) {
+    const type = $('#l-type').value, q = $('#l-search').value.trim().toUpperCase();
+    const list = (await fetchDocs('entries', [['date', '>=', from], ['date', '<=', to]]))
+      .filter((e) => (!type || e.type === type) && (!q || (e.dealer || '').includes(q) || (e.ref || '').toUpperCase().includes(q)))
+      .sort((a, b) => (a.date + a.at).localeCompare(b.date + b.at));
+    const span = from === to ? toDMY(from) : toDMY(from) + ' to ' + toDMY(to);
+    if (!list.length) return 'No entries' + (type || q ? ' match these filters' : '') + ' for ' + span + '.';
+    const X = await loadXLSX(); const wb = X.utils.book_new();
+    const head = ['Date', 'Type', 'Depot', 'Dealer', 'Correction of', 'Invoice / vehicle no.', ...STOCK_ORDER.map((k) => P[k] + ' bags'), 'Total bags', 'Total MT', 'Saved by', 'Saved at'];
+    const rows = list.map((e) => {
+      const it = e.items || {}; const t = KEYS.reduce((a, k) => a + Number(it[k] || 0), 0);
+      return [toDMY(e.date), (TYPES[e.type] || {}).label || e.type, e.godown ? GLABEL[e.godown] : '', e.dealer || '',
+        e.type === 'correction' ? ({ sap: 'SAP stock', phys: 'Physical stock', dealer: 'Dealer balance' }[e.target] || e.target || '') : '',
+        e.ref || '', ...STOCK_ORDER.map((k) => Number(it[k] || 0)), t, t / 20, e.by || '', e.at ? String(e.at).replace('T', ' ').slice(0, 16) : ''];
+    });
+    const title = 'Depot Stock Ledger · entries ' + span + (type ? ' · ' + TYPES[type].label : '') + (q ? ' · "' + q + '"' : '');
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([[title], [], head, ...rows]), 'Entries');
+    saveBook(X, wb, 'DHS_Stock_Entries_' + (from === to ? from : monthOf(from)) + '.xlsx');
+    return 'Downloaded ' + list.length + (list.length === 1 ? ' entry.' : ' entries.');
+  }
+  async function excelReports(from, to) {
+    const list = (await fetchDocs('sapReports', [['date', '>=', from], ['date', '<=', to]])).sort((a, b) => (a.date + a.godown).localeCompare(b.date + b.godown));
+    const span = from === to ? toDMY(from) : toDMY(from) + ' to ' + toDMY(to);
+    if (!list.length) return 'No SAP reports were entered for ' + span + '.';
+    const X = await loadXLSX(); const wb = X.utils.book_new();
+    const rows = [];
+    list.forEach((r) => STOCK_ORDER.forEach((k) => rows.push([toDMY(r.date), GLABEL[r.godown] || r.godown, P[k], Number((r.sap || {})[k] || 0), r.phys ? Number(r.phys[k] || 0) : ''])));
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([['Depot Stock Ledger · SAP and physical opening stock, ' + span], [], ['Date', 'Depot', 'Product', 'SAP bags', 'Physical bags'], ...rows]), 'Opening balances');
+    saveBook(X, wb, 'DHS_Stock_Reports_' + (from === to ? from : monthOf(from)) + '.xlsx');
+    return 'Downloaded ' + list.length + (list.length === 1 ? ' report.' : ' reports.');
+  }
+  // an older date on a tab: hide the sheets and offer Excel with the same filters
+  function olderView(view, date) {
+    const sec = $('#view-' + view), box = $('#' + view + '-older');
+    const W = windowStart(), older = !!(date && origOpening && db && date < W), load = !older && needLoad(date);
+    sec.classList.toggle('is-older', older || load); box.hidden = !(older || load);
+    if (load) {   // a date in last month: load it (once), then the normal sheet comes back by itself
+      box.replaceChildren(el('h3', '', 'Loading ' + monthName(monthOf(date)) + '…'), el('p', 'hint', 'The ledger opens on this month; last month loads when you pick one of its dates.'));
+      extend(); return true;
+    }
+    if (!older) return false;
+    if (date < origOpening.date) { box.replaceChildren(el('h3', '', 'Before the ledger starts'), el('p', 'hint', 'The ledger starts on ' + toDMY(origOpening.date) + ', so there is nothing before that.')); return true; }
+    box.replaceChildren(el('h3', '', 'Older than the last two months'));
+    box.append(el('p', 'hint', 'The ledger shows this month and, when you pick one of its dates, last month (from ' + toDMY(W) + '). Each month closes by itself on the 1st. For ' + toDMY(date) + ', download an Excel file instead.'));
+    const row = el('div', 'actions'), msg = el('p', 'hint');
+    const add = (label, fn) => {
+      const b = el('button', 'btn', label); b.type = 'button';
+      b.addEventListener('click', async () => { b.disabled = true; msg.textContent = 'Preparing the Excel…'; try { msg.textContent = await fn(); } catch (e) { msg.textContent = 'Couldn’t make the Excel. Check your connection and try again.'; } finally { b.disabled = false; } });
+      row.appendChild(b);
+    };
+    const mon = monthName(monthOf(date));
+    if (view === 'stock' || view === 'dealers') add('Balances at the end of ' + toDMY(date) + ' (Excel)', () => excelBalances(date));
+    if (view === 'log') { add('Entries of ' + toDMY(date) + ' (Excel)', () => excelEntries(date, date)); add('All entries of ' + mon + ' (Excel)', () => excelEntries(...monthRange(date))); }
+    if (view === 'tally') { add('SAP reports of ' + toDMY(date) + ' (Excel)', () => excelReports(date, date)); add('All SAP reports of ' + mon + ' (Excel)', () => excelReports(...monthRange(date))); }
+    if (view === 'log' && ($('#l-type').value || $('#l-search').value.trim())) box.append(el('p', 'hint', 'The type and search filters you picked apply to the download.'));
+    box.append(row, msg); return true;
+  }
+
+  (async () => {
+    db = await claude.use('db');
+    user = await claude.use('user');
+    if (!db) {
+      const b = $('#banner'); b.hidden = false; b.textContent = 'Couldn’t connect to the database. Check your connection and reload the page.';
+      canWrite = false; renderAll(); return;
+    }
+    if (user) {
+      try { myId = await user.id(); } catch {}
+      let c = null; try { c = user.can ? await user.can('data.write') : null; } catch {}
+      try { isAdmin = (await user.canEdit()) === true; } catch {}
+      if (c === false) { canWrite = false; const b = $('#banner'); b.hidden = false; b.textContent = 'You can view this ledger. Only the Admin, Supervisors and DMOs can make changes.'; }
+    }
+    // When the ledger opens it loads this month only, worked out from last month's close (span 1); picking a date in last
+    // month loads that month too (span 2). Each month is closed by itself on the 1st: provisional while it can still
+    // take entries (kept up to date by every entry dated in it), final once it has left the two months.
+    let gotOpen = false, gotCloses = false, freshC = false, freshLoad = false, base = null, want = null, span = 1;
+    let unsubE = null, unsubR = null, closing = false, healed = false;
+    const curMonth = () => monthOf(todayISO());
+    function effectiveOpening() {
+      if (!origOpening) return null;
+      const cut = shiftMonth(curMonth(), 1 - span) + '-01';
+      const ms = Object.keys(closes).filter((m) => closes[m] && closes[m].date >= origOpening.date && closes[m].date < cut).sort();
+      if (!ms.length) return origOpening;
+      const c = closes[ms[ms.length - 1]];
+      return { date: addDays(c.date, 1), stock: c.stock, books: c.books, moves: c.moves || {}, rolled: true, closedMonth: c.month, startDate: origOpening.date };
+    }
+    // a date before what is loaded but inside the two months (last month): needs loading
+    needLoad = (date) => !!(date && opening && db && date < opening.date && date >= windowStart());
+    extend = () => { if (span === 2) return; span = 2; refreshOpening(); };
+    function subscribe(from) {
+      if (unsubE) unsubE(); if (unsubR) unsubR();
+      base = from; entriesLoaded = false; freshLoad = false;
+      let e = null, r = null, fe = false, fr = false;
+      // the opening and its entries are switched in together, so figures never mix two starting points
+      const apply = () => {
+        if (e === null || r === null) return;
+        entries = e; reports = r; opening = want; entriesLoaded = true; freshLoad = fe && fr;
+        renderDealerList(); renderAll(); heal();
+      };
+      unsubR = db.collection('sapReports').query([['date', '>=', from]]).onSnapshot((snap) => { r = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()])); fr = !snap.fromCache; apply(); }, () => { r = r || {}; apply(); });
+      unsubE = db.collection('entries').query([['date', '>=', from]]).onSnapshot((snap) => { e = snap.docs.map((d) => ({ id: d.id, ...d.data() })); fe = !snap.fromCache; apply(); }, () => { e = e || []; apply(); });
+    }
+    function refreshOpening() {
+      if (!gotOpen || !gotCloses) return;
+      want = effectiveOpening();
+      const from = want ? want.date : '0000-01-01';
+      if (from !== base) subscribe(from); else if (entriesLoaded) opening = want;
+      $('#f-date').min = windowStart();
+      renderDealerList(); renderAll(); autoClose();
+    }
+    // every dealer is carried forward (so the name list stays), with only the products that aren't zero
+    const compact = (dl) => Object.fromEntries(Object.entries(dl).map(([n, it]) => [n, Object.fromEntries(KEYS.filter((k) => it[k]).map((k) => [k, it[k]]))]));
+    // the close of month m, worked out from what is loaded (the opening must start on or before m's first day)
+    function closeOf(m, final) {
+      const end = lastDayOf(m), a = compute(end, 'TPH'), b = compute(end, 'DOI');
+      return { month: m, date: end, from: opening.date, final, stock: a.stock, books: { TPH: compact(a.dealers), DOI: compact(b.dealers) },
+        moves: { TPN: compact(compute(end, 'TPN').dealers), HAR: compact(compute(end, 'HAR').dealers) }, entries: a.count, at: new Date().toISOString(), by: myId || '' };
+    }
+    // On or after the 1st: every month that has ended gets its close; a month that has left the two months gets its
+    // final one, worked out in full from the final close before it. The ledger's first month is closed only for good,
+    // so the first closes always include a final one (and the start stays movable until then). One read of those months' entries, once a month,
+    // by the first page opened by someone who can make changes; nothing to press.
+    async function autoClose() {
+      if (closing || !canWrite || !origOpening || !freshC || window.__stockImporting) return;
+      const cm = curMonth(), W1 = cm + '-01', W = shiftMonth(cm, -1) + '-01';
+      const months = []; for (let m = monthOf(origOpening.date); lastDayOf(m) < W1; m = shiftMonth(m, 1)) months.push(m);
+      // the month the ledger starts in is closed only once, for good (until then the Admin can still change the start)
+      const sm = monthOf(origOpening.date);
+      const need = months.filter((m) => (!closes[m] && (lastDayOf(m) < W || m !== sm)) || (closes[m] && lastDayOf(m) < W && !closes[m].final));
+      if (!need.length) return;
+      closing = true;
+      try {
+        const i0 = months.indexOf(need[0]), prev = i0 > 0 ? closes[months[i0 - 1]] : null;
+        const start = prev ? { date: addDays(prev.date, 1), stock: prev.stock, books: prev.books, moves: prev.moves || {}, rolled: true, startDate: origOpening.date } : origOpening;
+        const ents = await fetchDocs('entries', [['date', '>=', start.date], ['date', '<=', lastDayOf(months[months.length - 1])]]);
+        const reps = start.rolled ? [] : await fetchDocs('sapReports', [['date', '==', start.date]]);
+        const todo = [], keep = [opening, entries, reports];
+        try {
+          entries = ents; reports = Object.fromEntries(reps.map((r) => [r.id, r])); opening = start;
+          for (const m of months.slice(i0)) {
+            const d = closeOf(m, lastDayOf(m) < W);
+            if (need.includes(m) || !sameClose(closes[m], d)) todo.push(d);
+            opening = { date: addDays(d.date, 1), stock: d.stock, books: d.books, moves: d.moves, rolled: true, startDate: origOpening.date };
+          }
+        } finally { [opening, entries, reports] = keep; }
+        for (const d of todo) await db.doc('closes/' + d.month).set(d);
+      } catch (e) { /* offline, or not allowed yet (the server's clock is still in the old month): tried again within the hour */ }
+      finally { closing = false; }
+    }
+    // when last month is loaded by someone who can make changes: check its close against its entries once, fix it if off
+    async function heal() {
+      if (healed || span !== 2 || !canWrite || !freshLoad || !opening) return;
+      const m = shiftMonth(curMonth(), -1), c = closes[m];
+      if (!c || c.final || opening.date > m + '-01') return;
+      healed = true;
+      const d = closeOf(m, false);
+      if (!sameClose(c, d)) { try { await db.doc('closes/' + m).set(d); } catch (e) { /* tried again on the next 1st */ } }
+    }
+    if (window.__STOCK_TEST) window.__STOCK_TEST.api = { compute: (d, s) => compute(d, s), state: () => ({ base, span, opening, entries: entries.length, closes: Object.keys(closes).sort(), windowStart: windowStart() }) };
+    db.doc('config/opening').onSnapshot((snap) => { origOpening = snap.exists ? snap.data() : null; gotOpen = true; refreshOpening(); }, () => {});
+    db.collection('closes').onSnapshot((snap) => { closes = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()])); gotCloses = true; freshC = !snap.fromCache; refreshOpening(); },
+      () => { gotCloses = true; refreshOpening(); });
+    db.doc('config/capacity').onSnapshot((snap) => { capacity = snap.exists ? snap.data() : null; renderAll(); }, () => {});
+    setInterval(refreshOpening, 3600e3);   // a page left open over the 1st moves on by itself
+    window.__stockAfterImport = refreshOpening;   // the Admin's one-time import: close months only once it has finished
+  })();
+})();
+</script>
+</body>
+</html>

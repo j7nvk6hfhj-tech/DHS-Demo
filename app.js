@@ -56,12 +56,12 @@ const S = {
    In Hindi, tab names, headings, column names and field labels switch. Orders, names, products, buttons and
    messages stay in English. The choice is kept on each device only: no database reads or writes. */
 const HI = {
-  "New Order": "नया ऑर्डर", "Orders": "ऑर्डर", "Summary": "सारांश", "Settings": "सेटिंग्स",
+  "New Order": "नया ऑर्डर", "Orders": "ऑर्डर", "Summary": "सारांश", "Stock": "स्टॉक", "Settings": "सेटिंग्स",
   "Queue": "कतार", "All orders": "सभी ऑर्डर", "Dealers": "डीलर", "Vehicles": "गाड़ियाँ", "Team & emails": "टीम और ईमेल",
   "Help": "मदद", "Sign out": "साइन आउट",
   // headings
   "New order": "नया ऑर्डर", "Today": "आज", "Dispatch queue": "डिस्पैच कतार", "Dealer-wise": "डीलर के अनुसार", "Day-wise": "दिन के अनुसार",
-  "Authorised dealers": "अधिकृत डीलर", "Edit dealer": "डीलर बदलें", "Vehicles & GPS tracking": "गाड़ियाँ और GPS ट्रैकिंग", "How to get a tracking link": "ट्रैकिंग लिंक कैसे लें",
+  "Authorised dealers": "अधिकृत डीलर", "Edit dealer": "डीलर बदलें", "Staff permissions": "स्टाफ़ की अनुमतियाँ", "Under maintenance": "रखरखाव चल रहा है", "Check again": "फिर देखें", "Maintenance": "रखरखाव", "Maintenance is on.": "रखरखाव चालू है।", "Turn off": "बंद करें", "Pause the dashboard for staff": "स्टाफ़ के लिए डैशबोर्ड रोकें", "Message to staff (optional)": "स्टाफ़ के लिए संदेश (वैकल्पिक)", "Vehicles & GPS tracking": "गाड़ियाँ और GPS ट्रैकिंग", "How to get a tracking link": "ट्रैकिंग लिंक कैसे लें",
   "Team & roles": "टीम और रोल", "Who can do what": "कौन क्या कर सकता है", "Report emails": "रिपोर्ट ईमेल",
   "Weekly report": "साप्ताहिक रिपोर्ट", "Daily contact list": "दैनिक संपर्क सूची", "Monthly master file": "मासिक मास्टर फ़ाइल", "Edit order": "ऑर्डर बदलें", "Download Excel": "Excel डाउनलोड",
   // field labels
@@ -75,7 +75,7 @@ const HI = {
   "Token": "टोकन", "Order of the day": "दिन का ऑर्डर", "On hold": "होल्ड पर", "on hold": "होल्ड पर", "out of queue": "लाइन से बाहर", "Put on hold": "होल्ड पर रखें", "Reason (optional)": "कारण (वैकल्पिक)",
   "Cancel this order?": "यह ऑर्डर रद्द करें?", "Scheduled": "आगे के ऑर्डर", "coming days": "आने वाले दिन", "Deliver on": "डिलीवरी की तारीख़", "Change date": "तारीख़ बदलें", "Expected": "अनुमान", "these dates": "इन तारीख़ों में", "Vehicle number needed": "गाड़ी नंबर ज़रूरी है", "Dispatch depot needed": "डिस्पैच डिपो ज़रूरी है", "Driver's phone": "ड्राइवर का फ़ोन", "Depot-wise": "डिपो-वार", "Depot": "डिपो", "Phone number needed": "फ़ोन नंबर ज़रूरी है", "Details needed before dispatch": "डिस्पैच से पहले जानकारी ज़रूरी है", "Vehicle number and depot needed": "गाड़ी नंबर और डिपो ज़रूरी है", "Dispatch depot": "डिस्पैच डिपो",  "In line": "लाइन में", "for dispatch": "डिस्पैच के लिए", "Order time": "ऑर्डर का समय", "Party": "पार्टी", "Location": "जगह", "Products": "प्रोडक्ट", "Total bags": "कुल बैग",
   "Vehicle": "गाड़ी", "Time taken": "लगा समय", "Entered by": "दर्ज किया", "Device": "डिवाइस", "Pending": "बाकी", "Dispatched": "डिस्पैच हुए",
-  "Cancelled": "रद्द", "Bags": "बैग", "Pending bags": "बाकी बैग", "Avg time": "औसत समय", "Last order": "आखिरी ऑर्डर", "Date": "तारीख",
+  "Cancelled": "रद्द", "Bags": "बैग", "ordered": "ऑर्डर हुए", "dispatched": "डिस्पैच हुए", "Pending bags": "बाकी बैग", "Avg time": "औसत समय", "Last order": "आखिरी ऑर्डर", "Date": "तारीख",
   "Link status": "लिंक की स्थिति", "Link valid until": "लिंक कब तक चलेगा", "Link added": "लिंक जोड़ा", "Email (login ID)": "ईमेल (लॉगिन ID)",
   // small labels on cards
   "in line": "लाइन में", "bags": "बैग", "Ordered": "ऑर्डर", "Waiting": "इंतज़ार", "Pending now": "अभी बाकी", "this month": "इस महीने",
@@ -93,8 +93,8 @@ const stamp = () => ({ updatedBy: S.me || null, updatedAt: Date.now() });
 function waNumber(p){ let d = (p || "").replace(/\D/g, ""); if (d.length === 11 && d[0] === "0") d = d.slice(1); if (d.length === 10) d = "91" + d; return d.length >= 11 && d.length <= 13 ? d : ""; }
 function waText(o){
   if (o.status === "Dispatched")
-    { const v = vehicleOf(o.vehicle) || {}, dn = o.driver || v.driver || "", dph = o.driverPhone || v.driverPhone || "";
-      return `DHS Logistics: your order of ${fmtDay(o.day)} was dispatched at ${fmtDT(o.executedAt)}.${o.vehicle ? " Vehicle: " + o.vehicle + "." : ""}${dn || dph ? " Driver: " + [dn, dph].filter(Boolean).join(", ") + "." : ""} ${o.bags} bags: ${fmtItems(o)}.`; }
+    { const self = isSelf(o.vehicle), v = self ? {} : vehicleOf(o.vehicle) || {}, dn = self ? "" : o.driver || v.driver || "", dph = self ? "" : o.driverPhone || v.driverPhone || "";
+      return `DHS Logistics: your order of ${fmtDay(o.day)} was dispatched at ${fmtDT(o.executedAt)}.${!o.vehicle ? "" : self ? " Vehicle: Self (your own vehicle)." : " Vehicle: " + o.vehicle + "."}${dn || dph ? " Driver: " + [dn, dph].filter(Boolean).join(", ") + "." : ""} ${o.bags} bags: ${fmtItems(o)}.`; }
   const inLine = o.queue ? ` It is ${ordinal(o.queue)} in line for dispatch.` : "";
   return `DHS Logistics: we have received your order${o.status === "Scheduled" ? " for " + fmtDay(o.day) : ""}.${inLine} ${o.bags} bags: ${fmtItems(o)}.${o.dealer ? " Dealer: " + o.dealer + "." : ""} We will message you when it is dispatched.`;
 }
@@ -112,22 +112,30 @@ function failMsg(e){
   if (e && e.code === "resource-exhausted") return "Daily free limit reached. Ask the Admin to check the Firebase plan.";
   return "Couldn't save. Check your connection and try again.";
 }
-const ROLES = ["admin","dispatch","desk","viewer"];
+const ROLES = ["admin","dispatch","dmo","desk","viewer"];
 // Designations. The stored keys stay the same as before; only the names changed:
 // "dispatch" = Supervisor (was Dispatch), "desk" = Dispatch (was Order desk).
-const ROLE_LABEL = { admin:"Admin", dispatch:"Supervisor", desk:"Dispatch", viewer:"Viewer" };
+// "dmo" = DMO (5 Nov 2026): every right a Supervisor has, including the Supervisor permission switches.
+const ROLE_LABEL = { admin:"Admin", dispatch:"Supervisor", dmo:"DMO", desk:"Dispatch", viewer:"Viewer" };
 function nameOf(email){ if (!email) return ""; const m = S.members.find(x => x.id === email); return (m && m.name) || email; }
 function banner(text){ const b = $("banner"); if (!text){ b.hidden = true; return; } b.hidden = false; b.textContent = text; }
 
 /* ---------- orders: status, tokens, queue ---------- */
-// Advance orders: schedAt = midnight of the day the order is meant to go. Until that day it is "Scheduled" (not in the queue);
-// on that day it joins the line at the start of the day. Time taken and the queue count from then, not from the booking.
-const qAt = o => o.schedAt != null ? Math.max(o.orderAt, o.schedAt) : o.orderAt;
+// Advance orders: schedAt = midnight of the day the order is meant to go. Until 6 am that day it is "Scheduled" (not in the
+// queue); at 6 am, when work starts, it joins the line. Time taken and the queue count from 6 am, not from midnight or the
+// booking (never later than its dispatch). Worked out here, not stored, so "Recalculate month" applies it to past orders too.
+const SCHED_START = 6 * 3600e3;
+const schedStart = o => o.schedAt + SCHED_START;
+const qAt = o => {
+  if (o.schedAt == null) return o.orderAt;
+  const q = Math.max(o.orderAt, schedStart(o));
+  return o.dispatchedAt != null ? Math.min(q, Math.max(o.orderAt, o.dispatchedAt)) : q;
+};
 function norm(o){
   const at = o.dispatchedAt ?? null, q = qAt(o);
   const status = at != null ? "Dispatched" : o.mark === "Cancelled" ? "Cancelled" : o.hold === true ? "On hold"
-    : o.schedAt != null && S.today && dayKey(o.schedAt) > S.today ? "Scheduled" : "Pending";
-  return { ...o, day: o.day || dayKey(o.orderAt), status, qAt: q, executedAt: at, taken: at != null ? at - q : null };
+    : o.schedAt != null && S.today && (dayKey(o.schedAt) > S.today || Date.now() < schedStart(o)) ? "Scheduled" : "Pending";
+  return { ...o, day: o.day || dayKey(o.orderAt), status, qAt: q, executedAt: at, taken: at != null ? workMs(q, at) : null };   // working hours only
 }
 const byTime = (a,b) => (qAt(a) - qAt(b)) || ((a.createdAt||0) - (b.createdAt||0)) || (a.id < b.id ? -1 : 1);
 function known(){
@@ -150,7 +158,8 @@ function aggOf(list){
   for (const o of list){ const st = o.status === "On hold" ? "Hold" : o.status === "Scheduled" ? "Pending" : o.status, b = +o.bags || 0;
     a.n++; a[st]++; if (st === "Cancelled") a.cbags += b; else a.bags += b;
     if (st === "Pending") a.pbags += b; if (st === "Hold") a.hbags += b;
-    if (o.taken != null){ a.tsum += o.taken; a.tn++; } if (a.last == null || o.orderAt > a.last) a.last = o.orderAt; }
+    if (o.taken != null && !isSelf(o.vehicle)){ a.tsum += o.taken; a.tn++; }   // Self dispatches aren't counted in average time
+    if (a.last == null || o.orderAt > a.last) a.last = o.orderAt; }
   return a;
 }
 function daySummary(day, list){
@@ -159,7 +168,8 @@ function daySummary(day, list){
   return { day, total: aggOf(list), dealers: Object.entries(groups).map(([dealer, l]) => ({ dealer, ...aggOf(l) })),
     depots: Object.entries(dg).map(([depot, l]) => ({ depot, ...aggOf(l) })),
     // [order time, dispatch time, cancelled (time, or -1 if not known)] for each order: used by the dispatch estimate
-    flow: list.map(o => [o.qAt ?? qAt(o), o.executedAt ?? null, o.status === "Cancelled" ? (o.cancelledAt || -1) : null]), updatedAt: Date.now() };
+    // (Self orders are left out: they go when the customer's own vehicle arrives, which says nothing about the yard's pace)
+    flow: list.filter(o => !isSelf(o.vehicle)).map(o => [o.qAt ?? qAt(o), o.executedAt ?? null, o.status === "Cancelled" ? (o.cancelledAt || -1) : null]), updatedAt: Date.now() };
 }
 function addAgg(t, a){ for (const k of ["n","Pending","Hold","Dispatched","Cancelled","bags","pbags","hbags","cbags","tsum","tn"]) t[k] += a[k] || 0; if (a.last != null && (t.last == null || a.last > t.last)) t.last = a.last; return t; }
 const emptyAgg = () => ({ n:0, Pending:0, Hold:0, Dispatched:0, Cancelled:0, bags:0, pbags:0, hbags:0, cbags:0, tsum:0, tn:0, last:null });
@@ -171,11 +181,22 @@ const emptyAgg = () => ({ n:0, Pending:0, Hold:0, Dispatched:0, Cancelled:0, bag
    Estimate = now + k x pace, counted only within working hours.
    It also checks itself on the last 60 days of orders: what it would have estimated vs. when each order really went,
    for four weightings of recent vs. older days (keeps the closest), and for "order time + average wait"; it uses whichever was closer.
-   Reads: one small daily-total record per day of history, once a day per device (kept on the device for the day). */
-const ETA_MIN_DAYS = 5, ETA_CLOSED_DAYS = 56, ETA_CHECK_DAYS = 60;
+   Reads: one small daily-total record per day of the last 6 months, once a day per device (kept on the device for the day),
+   so the reads stop growing after 6 months; recent weeks count most anyway. */
+const ETA_MIN_DAYS = 5, ETA_CLOSED_DAYS = 56, ETA_CHECK_DAYS = 60, ETA_HISTORY_DAYS = 183;
 const midnight = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const nextMidnight = ms => midnight(midnight(ms) + 36 * 3600e3);
-const median = a => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; };
+// Working hours, for "time taken": Monday to Saturday 6 am to 6 pm, Sunday 6 am to 4 pm. Time outside them isn't counted,
+// so an order taken at night, or left over from the evening, counts from 6 am. (Same rule in report_emails.py.)
+const WORK_START = 6 * 3600e3, workEnd = wd => (wd === 0 ? 16 : 18) * 3600e3;   // wd: 0 = Sunday
+function workMs(a, b){
+  if (a == null || b == null || !(b > a)) return 0;
+  let t = 0, d0 = midnight(a);
+  for (let i = 0; i < 400 && d0 < b; i++, d0 = nextMidnight(d0))
+    t += Math.max(0, Math.min(b, d0 + workEnd(new Date(d0).getDay())) - Math.max(a, d0 + WORK_START));
+  return t;
+}
+const median =a => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; };
 // weighted quantile: values with weights (recent days weigh more)
 function wq(vals, ws, q){
   if (!vals.length) return null;
@@ -244,9 +265,10 @@ async function loadEta(){
   if (!fdb || !S.today) return;
   try { const c = JSON.parse(localStorage.getItem("dhs.eta") || "null"); if (c && c.day === S.today && c.model && c.model.v === 2) { S.eta = c.model; return; } } catch(e){}
   try {
-    const snap = await getDocs(query(fsCollection(fdb, "daysum"), where("day", "<", S.today)));   // all past days
+    const from = dayKey(Date.parse(S.today + "T12:00:00") - ETA_HISTORY_DAYS * 864e5);
+    const snap = await getDocs(query(fsCollection(fdb, "daysum"), where("day", ">=", from), where("day", "<", S.today)));   // the last 6 months
     const flows = []; for (const d of snap.docs) flows.push(...(d.data().flow || []));
-    for (const o of (S.all || [])) if (o.day === S.today) flows.push([o.qAt ?? qAt(o), o.executedAt ?? null, o.status === "Cancelled" ? (o.cancelledAt || -1) : null]);
+    for (const o of (S.all || [])) if (o.day === S.today && !isSelf(o.vehicle)) flows.push([o.qAt ?? qAt(o), o.executedAt ?? null, o.status === "Cancelled" ? (o.cancelledAt || -1) : null]);
     S.eta = etaModel(flows, S.today);
     try { localStorage.setItem("dhs.eta", JSON.stringify({ day: S.today, model: S.eta })); } catch(e){}
     render();
@@ -311,7 +333,7 @@ function dealerOptions(sel, withAll){
   sel.value = [...sel.options].some(o => o.value === cur) ? cur : (withAll ? "*" : "");
 }
 const pill = s => `<span class="pill ${s.replace(/\s+/g, "")}">${s}</span>`;
-const plate = v => v ? `<span class="plate">${esc(v)}</span>${trackBtn(v)}` : "";
+const plate = v => !v ? "" : isSelf(v) ? `<span class="plate self" title="Customer's own vehicle">Self</span>` : `<span class="plate">${esc(v)}</span>${trackBtn(v)}`;
 // Orders are numbered within their day: "3rd order of 25 Oct". The place in the dispatch line is "4th in line".
 function ordSuffix(n){ return [11, 12, 13].includes(n % 100) ? "th" : ({ 1: "st", 2: "nd", 3: "rd" })[n % 10] || "th"; }
 const ordHTML = n => n == null ? "–" : S.lang === "hi" ? String(n) : `${n}<sup class="ord">${ordSuffix(n)}</sup>`;
@@ -321,6 +343,10 @@ const tok = o => `<span class="tok" title="${o.token ? esc(ofDay(o)) : ""}"><spa
 /* ---------- vehicles & GPS links ---------- */
 const LINK_DAYS = 7; // WheelsEye share links appear to last 7 days
 const normV = v => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+// "Self": the customer sends their own vehicle (DHS pays a nominal freight). Always offered at the bottom of the vehicle
+// list; counts as the vehicle at dispatch; left out of average time taken and of the dispatch-time estimate.
+const SELF = "Self";
+const isSelf = v => normV(v) === "SELF";
 function vehicleOf(v){ const k = normV(v); return k ? S.vehicles.find(x => normV(x.no) === k) : null; }
 // A link lasts 7 days unless a "valid until" date was entered (WheelsEye support can give longer links).
 function linkAge(x){ const end = x.until || (x.addedAt || 0) + LINK_DAYS * 864e5, left = end - Date.now(); return { left, days: Math.ceil(left / 864e5), end }; }
@@ -344,7 +370,6 @@ function trackBtn(v){
 }
 function renderVehicles(){
   const box = $("vehicleBox"); if (!box) return;
-  const dl = $("vehicleList"); if (dl) dl.innerHTML = S.vehicles.map(x => `<option value="${esc(x.no)}">`).join("");
   if (box.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
   const list = S.vehicles.slice().sort((a, b) => normV(a.no).localeCompare(normV(b.no)));
   const rows = list.map(x => { const { left, days } = linkAge(x);
@@ -354,9 +379,10 @@ function renderVehicles(){
     return `<tr><td class="nowrap"><span class="plate">${esc(x.no)}</span>${x.link ? ` <a class="btn sm track" href="${esc(x.link)}" target="_blank" rel="noopener noreferrer">Track</a>` : ""}</td><td>${esc(x.driver || "")}${x.driverPhone ? `<div class="hint">${esc(x.driverPhone)}</div>` : ""}</td><td>${st}</td><td>${x.link ? esc(fmtDT(x.addedAt)) : "–"}</td>
       <td class="nowrap">${S.isAdmin ? `<button class="btn sm" data-act="veh-admin-edit" data-no="${esc(x.no)}">Edit</button> <button class="btn sm danger" data-act="veh-del" data-no="${esc(x.no)}">Remove</button>`
         : S.canVehicles ? `<button class="btn sm" data-act="veh-edit" data-no="${esc(x.no)}">${x.link ? "New link" : "Add link"}</button>` : ""}</td></tr>`; }).join("");
+  const selfRow = `<tr class="dim"><td class="nowrap"><span class="plate self">Self</span></td><td colspan="3"><span class="hint">Customer's own vehicle. Always at the bottom of the vehicle list; built in, can't be removed. Not counted in average time taken.</span></td><td></td></tr>`;
   box.innerHTML = `<div style="display:grid;gap:14px">
-    ${list.length ? `<div class="tscroll"><table><thead><tr><th>${T("Vehicle")}</th><th>${T("Driver")}</th><th>${T("Link status")}</th><th>${T("Link added")}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : `<div class="empty"><b>No vehicles yet</b>${S.canVehicles ? "Add a truck number below (its WheelsEye link is optional)." : "Staff add vehicles here."}</div>`}
+    ${list.length ? "" : `<div class="empty"><b>No trucks saved yet</b>${S.canVehicles ? "Add a truck number below (its WheelsEye link is optional)." : "Staff add vehicles here."}</div>`}
+    <div class="tscroll"><table><thead><tr><th>${T("Vehicle")}</th><th>${T("Driver")}</th><th>${T("Link status")}</th><th>${T("Link added")}</th><th></th></tr></thead><tbody>${rows}${selfRow}</tbody></table></div>
     ${S.canVehicles ? `<form class="vform" id="vehicleForm">
       <div class="fld vlink"><div class="lblrow"><label for="v-link">${T("WheelsEye tracking link")}</label><span class="lblnote">optional</span></div><input id="v-link" type="url" placeholder="https://wheelseye.com/ui/track?token=..."><span class="hint" id="v-check"></span></div>
       <div class="fld"><label for="v-no">${T("Vehicle no.")} <span class="req">*</span></label><input id="v-no" required placeholder="UK07 CD 2280" style="text-transform:uppercase"></div>
@@ -386,6 +412,7 @@ document.addEventListener("submit", async e => {
   const was = e.target.dataset.no, x = S.vehicles.find(v => v.no === was); if (!x) return closeSheet();
   const no = $("ve-no").value.trim().toUpperCase().replace(/\s+/g, " "), link = $("ve-link").value.trim(), ud = $("ve-until").value;
   if (!normV(no)) return toast("Enter the vehicle number.");
+  if (isSelf(no)) return toast("Self is built in. It doesn't need saving.");
   if (S.vehicles.some(v => v !== x && normV(v.no) === normV(no))) return toast(no + " is already saved as another vehicle.");
   if (link && !/^https:\/\/\S+$/.test(link)) return toast("Paste the full tracking link, starting with https://");
   const until = ud ? Date.parse(ud + "T23:59:59+05:30") : null, oldUd = x.until ? dayKey(x.until) : "";
@@ -403,6 +430,7 @@ document.addEventListener("submit", async e => {
   if (e.target.id !== "vehicleForm") return; e.preventDefault();
   const no = $("v-no").value.trim().toUpperCase().replace(/\s+/g, " "), link = $("v-link").value.trim(), driver = $("v-driver").value.trim(), dphone = $("v-dphone").value.trim();
   if (!normV(no)) return toast("Enter the vehicle number.");
+  if (isSelf(no)) return toast("Self is built in. It doesn't need saving.");
   if (link && !/^https:\/\/\S+$/.test(link)) return toast("Paste the full tracking link, starting with https://");
   const ud = $("v-until").value, until = ud ? Date.parse(ud + "T23:59:59+05:30") : null;
   if (ud && (isNaN(until) || ud < S.today)) return toast("The valid-until date can't be in the past.");
@@ -466,8 +494,8 @@ function qCard(o){
       <div class="facts"><span>${T("Ordered")} ${esc(fmtDT(o.orderAt))}</span>${enteredBy(o)}<span class="wait">${T("Waiting")} ${waitTxt(Date.now() - (o.qAt ?? o.orderAt))}</span>${etaSpan(o)}</div>
       ${confirming ? `<div class="confirm"><label for="c-time" style="color:var(--done)">${T("Dispatched at")}</label><input type="datetime-local" id="c-time" value="${toLocalInput(Date.now())}"><button class="btn go sm" data-act="deliver-ok" data-id="${esc(o.id)}">Confirm dispatched</button><button class="btn sm" data-act="deliver-cancel">Back</button></div>`
       : `<div class="acts">
-          <button class="btn go sm" data-act="deliver" data-id="${esc(o.id)}" ${S.canEdit?"":"disabled title=\"View-only access\""}>Mark dispatched</button>
-          ${S.canEdit ? `<button class="btn sm" data-act="hold" data-id="${esc(o.id)}">Put on hold</button>` : ""}
+          <button class="btn go sm" data-act="deliver" data-id="${esc(o.id)}" ${S.canMark ? "" : `disabled title="${S.isViewer ? "View-only access" : "Only a Supervisor or the Admin marks orders dispatched"}"`}>Mark dispatched</button>
+          ${S.canHold ? `<button class="btn sm" data-act="hold" data-id="${esc(o.id)}">Put on hold</button>` : ""}
           ${cxlBtn(o)}
           ${S.canWrite ? `<button class="btn sm" data-edit="${esc(o.id)}">Edit</button>` : ""}</div>`}
     </div></div>`;
@@ -493,7 +521,7 @@ function hCard(o){
       <div class="facts"><span><em>${o.bags}</em> ${T("bags")}</span><span>${esc(fmtItems(o))}</span>${o.location?`<span>${esc(o.location)}</span>`:""}${o.phone?`<span>${esc(o.phone)}</span>`:""}${plate(o.vehicle)}${o.driver || o.driverPhone ? `<span>${esc([o.driver, o.driverPhone].filter(Boolean).join(" · "))}</span>` : ""}${o.depot?`<span class="depot">${T("Depot")} <b>${esc(o.depot)}</b></span>`:""}</div>
       <div class="facts"><span>${T("Ordered")} ${esc(fmtDT(o.orderAt))}</span>${enteredBy(o)}</div>
       <div class="facts"><span class="holdinfo">${holdLine(o)}</span></div>
-      <div class="acts">${S.canEdit ? `<button class="btn go sm" data-act="release" data-id="${esc(o.id)}">Release to queue</button>` : ""}
+      <div class="acts">${S.canHold ? `<button class="btn go sm" data-act="release" data-id="${esc(o.id)}">Release to queue</button>` : ""}
         ${cxlBtn(o)}
         ${S.canWrite ? `<button class="btn sm" data-edit="${esc(o.id)}">Edit</button>` : ""}</div>
     </div></div>`;
@@ -513,7 +541,7 @@ function sCard(o){
       <div class="top">${tok(o)}<b>${esc(o.party)}</b>${o.dealer?`<span class="pill" style="background:var(--surface-2);color:var(--muted)">${esc(o.dealer)}</span>`:""}</div>
       <div class="facts"><span><em>${o.bags}</em> ${T("bags")}</span><span>${esc(fmtItems(o))}</span>${o.location?`<span>${esc(o.location)}</span>`:""}${o.phone?`<span>${esc(o.phone)}</span>`:""}${plate(o.vehicle)}${o.driver || o.driverPhone ? `<span>${esc([o.driver, o.driverPhone].filter(Boolean).join(" · "))}</span>` : ""}${o.depot?`<span class="depot">${T("Depot")} <b>${esc(o.depot)}</b></span>`:""}</div>
       <div class="facts"><span>Booked ${esc(fmtDT(o.orderAt))}</span>${enteredBy(o)}<span class="schinfo">Goes into the queue on ${esc(longDay(o.day))}</span></div>
-      <div class="acts">${S.canEdit ? `<button class="btn sm" data-act="resched" data-id="${esc(o.id)}">Change date</button><button class="btn go sm" data-act="send-today" data-id="${esc(o.id)}">Send today</button>` : ""}
+      <div class="acts">${S.canHold ? `<button class="btn sm" data-act="resched" data-id="${esc(o.id)}">Change date</button><button class="btn go sm" data-act="send-today" data-id="${esc(o.id)}">Send today</button>` : ""}
         ${cxlBtn(o)}
         ${S.canWrite ? `<button class="btn sm" data-edit="${esc(o.id)}">Edit</button>` : ""}</div>
     </div></div>`;
@@ -528,21 +556,22 @@ function openResched(id){
   const o = (S.all || []).find(x => x.id === id); if (!o) return;
   const maxDay = dayKey(Date.parse(S.today + "T12:00:00") + 90 * 864e5);
   $("sheetCard").innerHTML = `${sheetHead(o, T("Change date"))}
-    <p class="sub" style="margin:0">Pick the day this order should go. It waits under Orders → Scheduled and joins the queue by itself at the start of that day. Pick today to put it in today's queue now.</p>
+    <p class="sub" style="margin:0">Pick the day this order should go. It waits under Orders → Scheduled and joins the queue by itself at 6 am that day. Pick today to put it in today's queue now.</p>
     <form id="reschedForm" style="display:grid;gap:12px">
       <div class="fld"><label for="r-day">${T("Deliver on")}</label><input type="date" id="r-day" min="${S.today}" max="${maxDay}" value="${o.day >= S.today ? o.day : S.today}"></div>
       <div class="actions"><button class="btn primary" type="submit">Save date</button><button class="btn" type="button" data-act="close">Close</button></div>
     </form>`;
   $("sheet").hidden = false; $("sheet").dataset.id = id;
 }
-// Move an order to another day (or to today). Today = it joins today's line at the start of the day.
+// Move an order to another day (or to today). Today = it joins today's line as from 6 am (straight away after 6 am).
 function setDay(o, k){
   if (!o || !k) return;
   if (k < S.today) return toast("Pick today or a later date.");
   if (k === o.day && (o.status !== "Scheduled")) return toast(k === S.today ? "It's already in today's queue." : "It's already on that date.");
   const at = Date.parse(k + "T00:00:00");
   commit(updateDoc(fsDoc(fdb, "orders", o.id), { schedAt: at, day: k, ...stamp() }), [o.day, k],
-    k === S.today ? "Sent to today's queue." : "Scheduled for " + longDay(k) + ". It joins the queue by itself that day.");
+    k !== S.today ? "Scheduled for " + longDay(k) + ". It joins the queue by itself at 6 am that day."
+      : Date.now() < at + SCHED_START ? "It joins today's queue at 6 am." : "Sent to today's queue.");
 }
 
 function openHold(id){
@@ -558,7 +587,8 @@ function openHold(id){
 }
 
 /* ---------- Cancel order (queue and hold cards): Admin, Supervisor and Dispatch, any order not yet dispatched ---------- */
-const cxlBtn = o => S.canWrite && ["Pending", "On hold", "Scheduled"].includes(o.status) ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(o.id)}">Cancel order</button>` : "";
+const mineToday = o => o.createdBy === S.me && dayKey(o.orderAt) === S.today;
+const cxlBtn = o => S.canWrite && ["Pending", "On hold", "Scheduled"].includes(o.status) && (S.canCancelAny || mineToday(o)) ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(o.id)}">Cancel order</button>` : "";
 const sheetHead = (o, title) => `<div class="head"><div style="display:flex;gap:12px;align-items:center">${tok(o)}<div><h3>${title}</h3><div class="hint">${esc(o.party)} · ${o.bags} bags · ${esc(fmtItems(o))}</div></div></div></div>`;
 function openCancel(id){
   const o = (S.all || []).find(x => x.id === id); if (!o) return;
@@ -588,7 +618,7 @@ function openDispatch(id){
     <p class="sub" style="margin:0">This order has no ${what}. Fill ${many ? "them" : "it"} in to mark the order dispatched. Without ${many ? "them" : "it"}, the order stays in the queue.</p>
     <form class="grid" id="dispForm" novalidate>
       ${needP ? `<div class="fld wide"><label for="dp-phone">${T("Phone")} <span class="req">*</span></label><input id="dp-phone" inputmode="tel" autocomplete="off" placeholder="98xxxxxxxx" value="${esc(o.phone)}"></div>` : ""}
-      ${needV ? `<div class="fld"><label for="dp-vehicle">${T("Vehicle no.")} <span class="req">*</span></label><input id="dp-vehicle" list="vehicleList" autocomplete="off" style="text-transform:uppercase" placeholder="e.g. UK07CD2280"></div>
+      ${needV ? `<div class="fld combo"><label for="dp-vehicle">${T("Vehicle no.")} <span class="req">*</span></label><input id="dp-vehicle" data-kind="vehicle" role="combobox" aria-expanded="false" aria-controls="dp-vehicle-list" autocomplete="off" style="text-transform:uppercase" placeholder="e.g. UK07CD2280"><div class="combo-list" id="dp-vehicle-list" role="listbox" hidden></div></div>
       <div class="fld"><label for="dp-driver">${T("Driver")}</label><input id="dp-driver" value="${esc(o.driver)}"></div>
       <div class="fld"><label for="dp-driverPhone">${T("Driver's phone")}</label><input id="dp-driverPhone" inputmode="tel" value="${esc(o.driverPhone)}"></div>` : ""}
       ${needD ? `<div class="fld"><label for="dp-depot">${T("Dispatch depot")} <span class="req">*</span></label>${depotSelect("dp-depot", "")}</div>` : ""}
@@ -607,13 +637,14 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => { if (e.target.id === "dp-depot") e.target.classList.remove("bad"); });
 document.addEventListener("input", e => { if (e.target.id === "dp-phone") e.target.classList.remove("bad"); });
 // Typing a vehicle number that is saved under Settings → Vehicles fills in its driver and driver's phone (if empty).
-document.addEventListener("input", e => {
-  const m = /^(f|e|dp)-vehicle$/.exec(e.target.id || ""); if (!m) return;
-  e.target.classList.remove("bad");
-  const x = vehicleOf(e.target.value), p = m[1] + "-"; if (!x) return;
+function fillDriver(inp){
+  const m = /^(f|e|dp)-vehicle$/.exec(inp.id || ""); if (!m) return;
+  inp.classList.remove("bad");
+  const x = isSelf(inp.value) ? null : vehicleOf(inp.value), p = m[1] + "-"; if (!x) return;
   if (x.driver && $(p + "driver") && !$(p + "driver").value.trim()) $(p + "driver").value = x.driver;
   if (x.driverPhone && $(p + "driverPhone") && !$(p + "driverPhone").value.trim()) $(p + "driverPhone").value = x.driverPhone;
-});
+}
+document.addEventListener("input", e => fillDriver(e.target));
 
 /* ---------- All orders ---------- */
 function daysBetween(from, to){ const out = []; let t = Date.parse(from + "T00:00:00"); const end = Date.parse(to + "T00:00:00"); while (t <= end && out.length < 400){ out.push(dayKey(t)); t += 864e5; } return out; }
@@ -645,10 +676,11 @@ function renderOrders(all){
   const q = $("o-q").value.trim().toLowerCase(), qd = q.replace(/\D/g, "");
   const dp = $("o-depot").value;
   const match = o => (dl === "*" || (o.dealer||"") === dl) && (dp === "*" || (o.depot || "-") === dp) && (!q || (o.party||"").toLowerCase().includes(q) || (o.location||"").toLowerCase().includes(q) || (qd.length >= 3 && (o.phone||"").replace(/\D/g, "").includes(qd)));
-  const done = base.filter(o => o.status === "Dispatched"), cx = base.filter(o => o.status === "Cancelled"), timed = done.filter(o => o.taken != null);
+  const done = base.filter(o => o.status === "Dispatched"), cx = base.filter(o => o.status === "Cancelled"), timed = done.filter(o => o.taken != null && !isSelf(o.vehicle));
   $("okpis").innerHTML = kpiHTML({ n: covered ? base.length : null, pend: all.filter(o => o.status === "Pending" && match(o)), held: all.filter(o => o.status === "On hold" && match(o)), sched: all.filter(o => o.status === "Scheduled" && match(o)),
     disp: covered ? done.length : null, cx: covered ? cx.length : null, cbags: covered ? bagsOf(cx) : null,
-    bags: covered ? bagsOf(base.filter(o => o.status !== "Cancelled")) : null, avg: covered && timed.length ? timed.reduce((s, o) => s + o.taken, 0) / timed.length : null,
+    bags: covered ? bagsOf(base.filter(o => o.status !== "Cancelled")) : null, dbags: covered ? bagsOf(done) : null,
+    avg: covered && timed.length ? timed.reduce((s, o) => s + o.taken, 0) / timed.length : null,
     period: T("these dates"), active: { "": "orders", Pending: "pending", "On hold": "hold", Scheduled: "sched", Dispatched: "dispatched", Cancelled: "cancelled" }[st] }, "list");
   const rows = filtered(all).slice().reverse();
   const bags = rows.filter(o=>o.status!=="Cancelled").reduce((s,o)=>s+(+o.bags||0),0);
@@ -684,7 +716,11 @@ function kpiHTML(c, scope){
     + B("sched", " sch", `<span>${T("Scheduled")}</span><b>${c.sched.length}</b><small>${T("coming days")} · ${inr(bagsOf(c.sched))} ${T("bags")}</small>`)
     + B("dispatched", "", `<span>${T("Dispatched")}</span><b>${v(c.disp)}</b><small>${c.period}</small>`)
     + B("cancelled", " cxl", `<span>${T("Cancelled")}</span><b>${v(c.cx)}</b><small>${c.period}${c.cbags != null ? ` · ${inr(c.cbags)} ${T("bags")}` : ""}</small>`)
-    + `<div class="kpi"><span>${T("Bags")}</span><b>${v(c.bags)}</b><small>${c.bags != null ? `≈ ${tonnes(c.bags)} t` : c.period}</small></div>`
+    // Bags, one ordinary-size card no taller than the others: ordered (every order except cancelled) above dispatched;
+    // the tonnes are in the card's tooltip
+    + `<div class="kpi bags2"${c.bags != null ? ` title="${inr(c.bags)} bags ordered (${tonnes(c.bags)} t) · ${inr(c.dbags || 0)} bags dispatched (${tonnes(c.dbags || 0)} t)"` : ""}><span>${T("Bags")}</span>
+        <div class="brow"><b>${v(c.bags)}</b><small>${T("ordered")}</small></div>
+        <div class="brow"><b>${v(c.dbags)}</b><small>${T("dispatched")}</small></div></div>`
     + `<div class="kpi"><span>${T("Avg time taken")}</span><b>${c.avg != null ? hm(c.avg) : "–"}</b><small>${T("order → dispatch")}</small></div>`;
 }
 
@@ -720,7 +756,7 @@ function renderSummary(){
   const avg = total.tn ? total.tsum / total.tn : null;
   const now = S.all || [], pendNow = now.filter(o => o.status === "Pending"), heldNow = now.filter(o => o.status === "On hold");
   $("kpis").innerHTML = kpiHTML({ n: total.n, pend: pendNow, held: heldNow, sched: now.filter(o => o.status === "Scheduled"), disp: total.Dispatched, cx: total.Cancelled, cbags: total.cbags || 0,
-    bags: total.bags, avg, period: T("this month") });
+    bags: total.bags, dbags: Math.max(0, total.bags - total.pbags - (total.hbags || 0)), avg, period: T("this month") });   // received = dispatched + pending (incl. scheduled) + on hold
   renderEtaBox();
   const names = S.dealers.map(d => d.name).filter(Boolean);
   const extra = [...dealers.keys()].filter(d => d && !names.includes(d));
@@ -765,7 +801,7 @@ function excelRowAll(o){
 // Time taken (per order and the averages) goes only into the Admin's Excel files.
 function excelRow(o){
   const r = excelRowAll(o);
-  if (!S.isAdmin) { delete r["Time Taken (h:mm)"]; delete r["Time Taken (minutes)"]; }
+  if (!S.canExcelTime) { delete r["Time Taken (h:mm)"]; delete r["Time Taken (minutes)"]; }
   return r;
 }
 async function fetchOrders(from, to){
@@ -775,7 +811,7 @@ async function fetchOrders(from, to){
   return list;
 }
 function summaryAoa(title, from, to, list){
-  const withTime = S.isAdmin;   // the average time column is for the Admin's files only
+  const withTime = S.canExcelTime;   // the average time column: the Admin's files (and staff's, if the Admin switches it on)
   const head = (first) => [first, "Orders", "Pending", "On hold", "Dispatched", "Cancelled", "Bags", "Pending bags", "Cancelled bags", ...(withTime ? ["Avg time (h:mm)"] : [])];
   const line = (label, a) => [label, a.n, a.Pending, a.Hold, a.Dispatched, a.Cancelled, a.bags, a.pbags, a.cbags, ...(withTime ? [a.tn ? hm(a.tsum / a.tn) : ""] : [])];
   const by = (key) => { const g = new Map(); for (const o of list){ const k = key(o); if (!g.has(k)) g.set(k, []); g.get(k).push(o); } return [...g.entries()].sort((a, b) => String(a[0]).localeCompare(String(b[0]))); };
@@ -900,6 +936,45 @@ function renderReport(){
     <div class="repgrid">${repCard("daily", d, r)}${repCard("weekly", w, r)}${repCard("monthly", m, r)}</div>
     <p class="hint">${r.lastCheckedAt ? `The email job last checked ${esc(fmtDT(r.lastCheckedAt))}.` : "The email job hasn't run yet. Set it up on GitHub once (see README); after that it checks every 30 minutes."}${r.lastError ? " Last problem: " + esc(r.lastError) : ""}</p></div>`;
 }
+// Admin: a red note at the top when the report email job has stopped (GitHub switches scheduled jobs off on public
+// repositories after 60 days without an upload) or its last run failed. The job records every run in config/report.
+const JOB_STALE = 3 * 3600e3;
+function renderJobWarn(){
+  const el = $("jobWarn"); if (!el) return;
+  const r = S.isAdmin ? S.report : null, at = r && r.lastCheckedAt;
+  let msg = "";
+  if (at && Date.now() - at > JOB_STALE) msg = `<b>Report emails have stopped.</b> The email job last ran ${esc(fmtDT(at))}. GitHub switches it off after 60 days without an upload: open GitHub → DHS-Demo → Actions → Report emails and tap <b>Enable workflow</b>. This note goes away within an hour of it running again.`;
+  else if (at && r.lastError) msg = `<b>The last report email check failed.</b> ${esc(r.lastError)} It tries again every 30 minutes. If this note stays, see "Report emails" in the README.`;
+  el.innerHTML = msg; el.hidden = !msg;
+}
+// ---------- Maintenance: the Admin pauses the dashboard for everyone else (config/maintenance) ----------
+// Staff get a full-screen "Under maintenance" message (it goes away by itself when switched off), and the database
+// refuses any change from anyone but the Admin while it's on. The Admin keeps working and sees a red bar.
+const MAINT_MSG = "The dashboard is under maintenance. Please check again after some time.";
+function renderMaint(){
+  const on = !!(S.maint && S.maint.on), staff = on && !!S.me && !S.isAdmin, ov = $("maint");
+  if (ov) {
+    const was = !ov.hidden; ov.hidden = !staff; document.body.classList.toggle("paused", staff);
+    if (staff) { $("maintMsg").textContent = String(S.maint.msg || "").trim() || MAINT_MSG; if (!was) { const ms = $("menu"); if (ms && !ms.hidden) setMenu(false); $("maintRetry").focus(); } }
+  }
+  if ($("maintBar")) $("maintBar").hidden = !(on && S.isAdmin);
+  const box = $("maintBox"); if (!box) return;
+  box.hidden = !S.isAdmin; if (!S.isAdmin) return;
+  $("maintOn").checked = on;
+  $("maintLine").innerHTML = on ? `<b class="no">Paused.</b> Staff see the maintenance message and can't make changes.` : `<b class="yes">Open.</b> Everyone can use the dashboard as usual.`;
+  if (document.activeElement !== $("maintText")) $("maintText").value = (S.maint && S.maint.msg) || "";
+}
+async function setMaint(on){
+  try {
+    await setDoc(fsDoc(fdb, "config", "maintenance"), { on, msg: $("maintText").value.trim(), by: S.me, at: Date.now() });
+    toast(on ? "Dashboard paused for staff. Switch it off when you're done." : "Dashboard open again for everyone.");
+  } catch(ex){ toast(failMsg(ex)); renderMaint(); }
+}
+$("maintOn").addEventListener("change", e => setMaint(e.target.checked));
+$("maintOff").addEventListener("click", () => setMaint(false));
+$("maintText").addEventListener("change", () => { if (S.maint && S.maint.on) setMaint(true); });   // edit the message while paused
+$("maintRetry").addEventListener("click", () => refreshNow());
+$("maintSignout").addEventListener("click", () => { stop(); signOut(auth).catch(() => {}); });
 async function saveRep(kind, patch, msg){
   const next = { ...repOf(kind), ...patch };
   try { await setDoc(fsDoc(fdb, "config", "report"), { ...(S.report || {}), [kind]: next }); if (msg) toast(msg); }
@@ -932,7 +1007,8 @@ document.addEventListener("click", async e => {
 
 /* ---------- Dealers ---------- */
 function renderDealers(){
-  const box = $("dealerEditor");
+  const box = $("dealerEditor"), cnt = $("dealerCount");
+  if (cnt) { cnt.textContent = "(" + S.dealers.length + ")"; cnt.hidden = !S.dealers.length; }   // "Authorised dealers (42)"
   if (box.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
   // Edit / Remove sit next to the name, so they're visible on phones without scrolling the table sideways.
   const rows = S.dealers.map((d,i) => `<tr><td><div class="dlrow"><b>${esc(d.name)}</b>${S.canEditDealer ? `<span class="dlacts"><button class="btn sm" data-act="dl-edit" data-i="${i}">Edit</button>${S.isAdmin ? `<button class="btn sm danger" data-act="dl-del" data-i="${i}">Remove</button>` : ""}</span>` : ""}</div></td>
@@ -1014,13 +1090,13 @@ function openEdit(id){
       ${fixTime ? `<div class="fld"><label for="e-exec">${T("Dispatched at")}</label><input type="datetime-local" id="e-exec" value="${toLocalInput(o.executedAt)}"></div>` : ""}
       ${o.status==="Dispatched" && !fixTime ? `<div class="fld"><label>${T("Dispatched at")}</label><div class="ro">${esc(fmtDT(o.executedAt))}</div></div>` : ""}
       <div class="fld h"><label for="e-depot">${T("Dispatch depot")}</label>${depotSelect("e-depot", o.depot)}</div>
-      <div class="fld h"><label for="e-vehicle">${T("Vehicle no.")}</label><input id="e-vehicle" list="vehicleList" value="${esc(o.vehicle)}" style="text-transform:uppercase"></div>
+      <div class="fld h combo"><label for="e-vehicle">${T("Vehicle no.")}</label><input id="e-vehicle" data-kind="vehicle" role="combobox" aria-expanded="false" aria-controls="e-vehicle-list" autocomplete="off" value="${esc(o.vehicle)}" style="text-transform:uppercase"><div class="combo-list" id="e-vehicle-list" role="listbox" hidden></div></div>
       <div class="fld h"><label for="e-driver">${T("Driver")}</label><input id="e-driver" value="${esc(o.driver)}"></div>
 <div class="fld h"><label for="e-driverPhone">${T("Driver's phone")}</label><input id="e-driverPhone" inputmode="tel" value="${esc(o.driverPhone)}"></div>
       <div class="fld wide"><label for="e-remarks">${T("Remarks")}</label><textarea id="e-remarks" rows="1">${esc(o.remarks)}</textarea></div>
       <div class="actions wide fld" style="justify-content:space-between">
         <div class="actions">${!block || fixTime ? '<button class="btn primary" type="submit">Save changes</button>' : ""}<button class="btn" type="button" data-act="close">Close</button></div>
-        <div class="actions">${o.status === "On hold" && S.canEdit ? `<button class="btn go sm" type="button" data-act="release" data-id="${esc(o.id)}">Release to queue</button>` : ""}${o.status === "Pending" && S.canEdit ? `<button class="btn sm" type="button" data-act="hold" data-id="${esc(o.id)}">Put on hold</button>` : ""}${["Pending", "On hold", "Scheduled"].includes(o.status) && S.canEdit ? `<button class="btn sm" type="button" data-act="resched" data-id="${esc(o.id)}">Change date</button>` : ""}${o.status === "Scheduled" && S.canEdit ? `<button class="btn go sm" type="button" data-act="send-today" data-id="${esc(o.id)}">Send today</button>` : ""}${waBtn(o, o.status === "Dispatched" ? "WhatsApp dispatch update" : o.status === "Scheduled" ? "WhatsApp booking" : "WhatsApp place in line")}${o.status==="Dispatched" && S.canEdit ? `<button class="btn sm" type="button" data-act="undeliver" data-id="${esc(o.id)}">Undo dispatch</button>`:""}
+        <div class="actions">${o.status === "On hold" && S.canHold ? `<button class="btn go sm" type="button" data-act="release" data-id="${esc(o.id)}">Release to queue</button>` : ""}${o.status === "Pending" && S.canHold ? `<button class="btn sm" type="button" data-act="hold" data-id="${esc(o.id)}">Put on hold</button>` : ""}${["Pending", "On hold", "Scheduled"].includes(o.status) && S.canHold ? `<button class="btn sm" type="button" data-act="resched" data-id="${esc(o.id)}">Change date</button>` : ""}${o.status === "Scheduled" && S.canHold ? `<button class="btn go sm" type="button" data-act="send-today" data-id="${esc(o.id)}">Send today</button>` : ""}${waBtn(o, o.status === "Dispatched" ? "WhatsApp dispatch update" : o.status === "Scheduled" ? "WhatsApp booking" : "WhatsApp place in line")}${o.status==="Dispatched" && S.canMark ? `<button class="btn sm" type="button" data-act="undeliver" data-id="${esc(o.id)}">Undo dispatch</button>`:""}
         ${S.isAdmin ? `<button class="btn sm danger" type="button" data-act="delete" data-id="${esc(o.id)}">Delete order</button>` : ""}</div>
       </div>
     </form>`;
@@ -1034,7 +1110,7 @@ function closeSheet(){ $("sheet").hidden = true; }
 function readForm(p){
   const v = id => $(p+id).value.trim();
   return { orderAt: fromLocalInput($(p+"orderAt").value), dealer: $(p+"dealer").value, party: v("party"), phone: v("phone"), location: v("location"),
-    items: readItems(p), vehicle: v("vehicle").toUpperCase(), driver: v("driver"), driverPhone: $(p+"driverPhone") ? v("driverPhone") : "", depot: $(p+"depot") ? $(p+"depot").value : "", remarks: v("remarks") };
+    items: readItems(p), vehicle: isSelf(v("vehicle")) ? SELF : v("vehicle").toUpperCase(), driver: v("driver"), driverPhone: $(p+"driverPhone") ? v("driverPhone") : "", depot: $(p+"depot") ? $(p+"depot").value : "", remarks: v("remarks") };
 }
 function validate(d, keepDealer){
   d.dealer = (d.dealer || "").trim();
@@ -1104,7 +1180,7 @@ function openOrdersList(kind, keep){
   if (!["Pending", "On hold", "Scheduled"].includes(st) && !rangeCovered(from, to)) { loadRange(); return; }
   renderOrders(all);
 }
-$("tabs").addEventListener("click", e => { const b = e.target.closest(".tab"); if (b) showView(b.dataset.v); });
+$("tabs").addEventListener("click", e => { const b = e.target.closest(".tab"); if (!b) return; if (b.dataset.v === "stock") { location.href = "stock.html"; return; } showView(b.dataset.v); });
 
 /* ---------- language switch ---------- */
 function applyLang(){
@@ -1138,8 +1214,20 @@ document.addEventListener("click", e => {
   const item = e.target.closest("#menu .mi");
   if (item || !e.target.closest("#menu")) setMenu(false, item && item.id === "langBtn");
 });
+// The depot stock ledger (stock.html) opens from a small "s" at the foot of the name menu and, for everyone allowed
+// except DMOs, also from a "Stock" heading next to Summary. Both are there only for the Admin and the people on the
+// ledger's access list (one read when the dashboard opens); for everyone else they don't exist, and the database
+// refuses them anyway.
+async function checkStock(){
+  const b = $("stockBtn"), t = $("stockTab"); if (!b) return;
+  let ok = S.isAdmin;
+  if (!ok) { try { const a = await getDoc(fsDoc(fdb, "stockConfig", "access")); ok = a.exists() && Array.isArray(a.data().emails) && a.data().emails.includes(S.me); } catch(e){ ok = false; } }
+  b.hidden = !ok;
+  if (t) t.hidden = !ok || S.isDmo;
+}
+$("stockBtn").addEventListener("click", () => { location.href = "stock.html"; });
 $("menu").addEventListener("keydown", e => {
-  const items = [...$("menu").querySelectorAll(".mi")], i = items.indexOf(document.activeElement);
+  const items = [...$("menu").querySelectorAll(".mi:not([hidden])")], i = items.indexOf(document.activeElement);
   if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus(); }
   if (e.key === "Escape") { e.stopPropagation(); setMenu(false, true); }
   if (e.key === "Tab") setMenu(false);
@@ -1227,8 +1315,8 @@ function showTicket(){
     ${o.status === "Scheduled" ? `<div class="stub s"><span>${T("Scheduled")}</span><b>${esc(fmtDay(o.day))}</b><span>${esc(longDay(o.day).split(",")[0])}</span></div>`
       : o.queue ? `<div class="stub q"><span>${T("In line")}</span><b>${ordHTML(o.queue)}</b><span>${T("for dispatch")}</span></div>`
       : o.status === "On hold" ? `<div class="stub h"><span>${T("On hold")}</span><b>${PAUSE}</b><span>${T("out of queue")}</span></div>` : ""}
-    <div class="body"><strong>Saved: ${esc(o.party)}</strong><span class="hint">${o.bags} bags${o.dealer?" · "+esc(o.dealer):""} · ${ahead}</span>${o.status === "Pending" && S.canEdit ? `<div class="actions" style="margin-top:6px">${waBtn(o, "Send on WhatsApp")}<button class="btn sm" type="button" data-act="hold" data-id="${esc(o.id)}">Put on hold</button></div>`
-      : o.status === "On hold" && S.canEdit ? `<div class="actions" style="margin-top:6px">${waBtn(o, "Send on WhatsApp")}<button class="btn go sm" type="button" data-act="release" data-id="${esc(o.id)}">Release to queue</button></div>`
+    <div class="body"><strong>Saved: ${esc(o.party)}</strong><span class="hint">${o.bags} bags${o.dealer?" · "+esc(o.dealer):""} · ${ahead}</span>${o.status === "Pending" && S.canHold ? `<div class="actions" style="margin-top:6px">${waBtn(o, "Send on WhatsApp")}<button class="btn sm" type="button" data-act="hold" data-id="${esc(o.id)}">Put on hold</button></div>`
+      : o.status === "On hold" && S.canHold ? `<div class="actions" style="margin-top:6px">${waBtn(o, "Send on WhatsApp")}<button class="btn go sm" type="button" data-act="release" data-id="${esc(o.id)}">Release to queue</button></div>`
       : waBtn(o, "Send on WhatsApp")}</div></div>`;
 }
 
@@ -1252,6 +1340,8 @@ document.addEventListener("click", async e => {
   if (act === "load-range") return loadRange();
   if (act === "kpi") return openOrdersList(b.dataset.kpi, b.dataset.scope === "list");
   if (act === "deliver") { if (o && o.status === "On hold") return toast("Release it from hold first."); if (o && o.status === "Scheduled") return toast("This order is for " + longDay(o.day) + ". Tap Send today first."); if (o && (!hasVehicle(o) || !hasDepot(o) || !hasPhone(o))) return openDispatch(id); S.confirmId = id; render(); return; }
+  if (["hold", "release", "resched", "send-today"].includes(act) && !S.canHold) return toast("Only a Supervisor or the Admin can do this.");
+  if (["deliver", "undeliver"].includes(act) && !S.canMark) return toast("Only a Supervisor or the Admin marks orders dispatched.");
   if (act === "resched") return openResched(id);
   if (act === "send-today") { setDay(o, S.today); if (!$("sheet").hidden) closeSheet(); return; }
   if (act === "deliver-tomorrow") { $("f-deliver").value = dayKey(Date.parse(S.today + "T12:00:00") + 864e5); return; }
@@ -1334,10 +1424,11 @@ document.addEventListener("submit", async e => {
       upd.phone = ph;
     }
     if ($("dp-vehicle")) {
-      const vehicle = $("dp-vehicle").value.trim().toUpperCase().replace(/\s+/g, " ");
+      const raw = $("dp-vehicle").value.trim(), vehicle = isSelf(raw) ? SELF : raw.toUpperCase().replace(/\s+/g, " ");
       if (normV(vehicle).length < 4) { $("dp-vehicle").classList.add("bad"); $("dp-vehicle").focus(); return toast("Enter the vehicle number. The order can't be dispatched without it."); }
-      upd.vehicle = vehicle; upd.driver = $("dp-driver").value.trim() || ((vehicleOf(vehicle) || {}).driver || "");
-      upd.driverPhone = $("dp-driverPhone").value.trim() || ((vehicleOf(vehicle) || {}).driverPhone || "");
+      const x = isSelf(vehicle) ? {} : vehicleOf(vehicle) || {};
+      upd.vehicle = vehicle; upd.driver = $("dp-driver").value.trim() || (x.driver || "");
+      upd.driverPhone = $("dp-driverPhone").value.trim() || (x.driverPhone || "");
     }
     if ($("dp-depot")) {
       if (!DEPOTS.includes($("dp-depot").value)) { $("dp-depot").classList.add("bad"); $("dp-depot").focus(); return toast("Select the dispatch depot. The order can't be dispatched without it."); }
@@ -1402,19 +1493,29 @@ function itemsTotal(box){
 }
 document.addEventListener("input", e => { const box = e.target.closest(".items"); if (box) itemsTotal(box); });
 
-/* ---------- dealer type-or-pick box ---------- */
+/* ---------- type-or-pick boxes: Dealer, and Vehicle (saved trucks, with Self always at the bottom) ---------- */
 function comboNames(){ return S.dealers.map(d => d.name).filter(Boolean); }
+function vehicleOptions(q){
+  const k = normV(q);
+  const nos = S.vehicles.map(x => x.no).filter(n => !k || normV(n).includes(k)).sort((a, b) => normV(a).localeCompare(normV(b)));
+  return nos.map(n => `<div class="opt" role="option" data-v="${esc(n)}">${esc(n)}</div>`).join("")
+    + (k && !nos.length && !"SELF".startsWith(k) ? `<div class="opt none">Not a saved vehicle. Keep typing, or pick Self.</div>` : "")
+    + `<div class="opt self" role="option" data-v="${SELF}">Self <span class="hint">customer's own vehicle</span></div>`;
+}
 function comboOpen(inp){
   const list = inp.nextElementSibling; const q = inp.value.trim().toLowerCase();
-  const names = comboNames().filter(n => !q || n.toLowerCase().includes(q));
-  list.innerHTML = (names.length ? names.map(n => `<div class="opt" role="option" data-v="${esc(n)}">${esc(n)}</div>`).join("")
+  if (inp.dataset.kind === "vehicle") list.innerHTML = vehicleOptions(q);
+  else {
+    const names = comboNames().filter(n => !q || n.toLowerCase().includes(q));
+    list.innerHTML = (names.length ? names.map(n => `<div class="opt" role="option" data-v="${esc(n)}">${esc(n)}</div>`).join("")
       : `<div class="opt none">${comboNames().length ? "No dealer matches" : "No dealers yet. Add them on the Dealers tab."}</div>`);
+  }
   list.hidden = false; inp.setAttribute("aria-expanded", "true"); list.dataset.on = "-1";
 }
 function comboClose(inp){ const list = inp.nextElementSibling; list.hidden = true; inp.setAttribute("aria-expanded", "false"); }
-function comboPick(inp, v){ inp.value = v; comboClose(inp); }
+function comboPick(inp, v){ inp.value = v; comboClose(inp); if (inp.dataset.kind === "vehicle") fillDriver(inp); }
 document.addEventListener("focusin", e => { if (e.target.matches(".combo input")) comboOpen(e.target); });
-document.addEventListener("focusout", e => { if (e.target.matches(".combo input")) setTimeout(() => comboClose(e.target), 120); });
+document.addEventListener("focusout", e => { if (e.target.matches(".combo input")) setTimeout(() => { if (document.activeElement !== e.target) comboClose(e.target); }, 120); });
 document.addEventListener("input", e => { if (e.target.matches(".combo input")) comboOpen(e.target); });
 document.addEventListener("mousedown", e => {
   const o = e.target.closest(".combo-list .opt[data-v]"); if (!o) return;
@@ -1524,11 +1625,15 @@ try { S.navSaved = JSON.parse(localStorage.getItem("cod.nav") || "null"); } catc
 if (S.navSaved && S.navSaved.sub) Object.assign(S.sub, S.navSaved.sub);
 showView(S.navSaved ? S.navSaved.view : "new");
 render();
+S.afterSix = Date.now() >= midnight(Date.now()) + SCHED_START;
 setInterval(() => {
   if (onPage("orders", "queue") && !S.confirmId) renderQueue(S.all||[]);
   if ($("f-orderAt").disabled) $("f-orderAt").value = toLocalInput(Date.now());
   const t = dayKey(Date.now());
   if (t !== S.today && S.me) { S.today = t; if ($("f-deliver").value < t) $("f-deliver").value = t; $("f-deliver").min = t; updateLiveDays(true); render(); loadEta(); }   // past midnight: today's list starts fresh
+  const six = Date.now() >= midnight(Date.now()) + SCHED_START;   // 6 am: the day's advance orders join the queue
+  if (six !== S.afterSix) { S.afterSix = six; if (S.me) { render(); loadEta(); } }
+  renderJobWarn();
 }, 60000);
 setInterval(() => { if (onPage("settings", "vehicles")) renderVehicles(); }, 3600000);
 
@@ -1618,7 +1723,7 @@ function updateLiveDays(force){
   }, onErr);
 }
 function stop(){ unsubs.forEach(f => { try { f(); } catch(e){} }); unsubs = []; if (daysUnsub){ daysUnsub(); daysUnsub = null; }
-  Object.assign(S, { report: null, pending: [], live: new Map(), liveDays: new Set(), liveKey: "", members: [], vehicles: [], range: { from:null, to:null, map:new Map(), at:null }, sums: new Map(), sumAt: {} }); }
+  Object.assign(S, { report: null, usage: null, maint: null, pending: [], live: new Map(), liveDays: new Set(), liveKey: "", members: [], vehicles: [], range: { from:null, to:null, map:new Map(), at:null }, sums: new Map(), sumAt: {} });  renderMaint(); }
 
 // Saves many records: 400 at a time in one go. Firebase's rules may refuse a large group (they can look up only
 // a limited number of records per request); then that group is saved one record at a time instead.
@@ -1706,14 +1811,10 @@ async function boot(u){
   }
   S.myAt = at;
   S.role = m.data().role; S.myName = m.data().name || u.displayName || email;
-  S.isAdmin = S.role === "admin"; S.isSup = S.role === "dispatch"; S.isDesk = S.role === "desk"; S.isViewer = S.role === "viewer";
+  S.isAdmin = S.role === "admin"; S.isSup = S.role === "dispatch" || S.role === "dmo"; S.isDmo = S.role === "dmo"; S.isDesk = S.role === "desk"; S.isViewer = S.role === "viewer";
   S.canWrite = !S.isViewer;                 // add, change and cancel orders (with the limits in changeBlock), WhatsApp
-  S.canEdit = !S.isViewer;                  // mark dispatched and undo dispatch
-  S.canFixTime = S.isAdmin || S.isSup;      // correct the dispatch time of a dispatched order
+  applyRights();
   S.canBackdate = S.isAdmin;                // enter or change an order's date and time
-  S.canAddDealer = S.isAdmin || S.isSup;    // add dealers (renaming and removing: Admin)
-  S.canEditDealer = !S.isViewer;            // change a dealer's contact person, phone and area
-  S.canVehicles = !S.isViewer;              // add vehicles, paste tracking links (removing: Admin)
   S.canRefresh = S.isAdmin || S.isSup;      // Summary: refresh older days' totals
   $("who").innerHTML = `<b>${esc(S.myName)}</b><span>${esc(S.me)}</span><span>${ROLE_LABEL[S.role]}</span>`;
   $("menuName").textContent = S.myName;
@@ -1728,12 +1829,18 @@ async function boot(u){
   gate("ok"); banner("");
   if (S.devWarn) { banner("This device couldn't be registered as your one signed-in device (" + S.devWarn + "). Tell your Admin."); S.devWarn = null; }
   try { await upgradeData(); } catch(e){ banner("Upgrade didn't finish: " + failMsg(e) + " Reload the page to try again."); }
+  listen(email);
+  setTimeout(loadEta, 1500);   // after today's orders have arrived
+  checkStock();
+  if (S.view === "summary") loadSums($("s-month").value);
+}
+// The live lists: open orders (and the days they're on), vehicles, team, dealers, settings. Also used by Refresh.
+function listen(email){
   $("conn").textContent = "Live"; $("conn").classList.add("ok");
   S.today = dayKey(Date.now());
   unsubs.push(onSnapshot(query(fsCollection(fdb, "orders"), where("open", "==", true)), s => {
     S.pending = s.docs.map(d => ({ id: d.id, ...d.data() })); updateLiveDays(); render();
   }, onErr));
-  setTimeout(loadEta, 1500);   // after today's orders have arrived
   if (!S.isViewer) unsubs.push(onSnapshot(fsDoc(fdb, "config", "vehicles"), s => { S.vehicles = s.exists() && Array.isArray(s.data().list) ? s.data().list : []; render(); }, onErr));
   else S.vehicles = [];
   unsubs.push(onSnapshot(fsCollection(fdb, "members"), s => { S.members = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, onErr));
@@ -1746,8 +1853,109 @@ async function boot(u){
     S.dealerInfo = dd.info && typeof dd.info === "object" ? dd.info : {};
     S.dealers = S.dealerList.map(d => ({ ...d, ...(S.dealerInfo[d.name] || {}), name: d.name })); render();
   }, onErr));
-  if (S.isAdmin) unsubs.push(onSnapshot(fsDoc(fdb, "config", "report"), s => { S.report = s.exists() ? s.data() : null; renderReport(); }, onErr));
-  if (S.view === "summary") loadSums($("s-month").value);
+  if (S.isAdmin) unsubs.push(onSnapshot(fsDoc(fdb, "config", "report"), s => { S.report = s.exists() ? s.data() : null; renderReport(); renderJobWarn(); }, onErr));
+  unsubs.push(onSnapshot(fsDoc(fdb, "config", "perms"), s => { S.perms = { ...PERM_DEFAULTS, ...(s.exists() ? s.data() : {}) }; applyRights(); render(); renderPerms(); }, onErr));
+  unsubs.push(onSnapshot(fsDoc(fdb, "config", "maintenance"), s => { S.maint = s.exists() ? s.data() : null; renderMaint(); }, () => {}));
+  renderPerms();
+  // Admin: total database reads by everyone since Google's daily reset (posted every 30 minutes by the email job)
+  renderReads();
+  if (S.isAdmin) unsubs.push(onSnapshot(fsDoc(fdb, "config", "usage"), s => { S.usage = s.exists() ? s.data() : null; renderReads(); }, () => {}));
 }
+function renderReads(){
+  const b = $("readsBox"), u = S.isAdmin ? S.usage : null;
+  if (!u || (u.reads == null && !u.error)) { b.hidden = true; return; }
+  const n = u.reads;
+  b.textContent = "Reads : " + (n == null ? "–" : Number(n).toLocaleString("en-IN"));
+  b.className = "reads" + (n == null ? " off" : n > 45000 ? " red" : n > 30000 ? " amber" : "");
+  b.title = u.error && n == null ? u.error : "Database reads by everyone since Google's daily reset (12:30 or 1:30 pm IST). Updated " + fmtDT(u.at) + ".";
+  b.hidden = false;
+}
+
+/* ---------- Staff permissions: switches the Admin sets under Settings → Team & emails ----------
+   Stored in config/perms; the database rules read the same switches, so a switched-off right is refused there too
+   (except the Excel time-taken columns, which are only a screen setting). Missing = the usual setting below. */
+const PERM_DEFAULTS = { dispMark: true, dispCancelAny: true, dispHold: true, supFixTime: true, supAddDealer: true, staffDealerEdit: true, staffVehicles: true, staffExcelTime: false };
+// [key, switch label, line shown while ticked, line shown while unticked]
+const PERMS = [
+  ["Dispatch staff", [
+    ["dispMark", "Mark orders dispatched, and undo",
+      "Dispatch staff can mark orders dispatched.",
+      "Dispatch staff can't mark orders dispatched. Only a Supervisor or the Admin can."],
+    ["dispCancelAny", "Cancel any order not yet dispatched",
+      "Dispatch staff can cancel any order that hasn't been dispatched.",
+      "Dispatch staff can cancel only orders they entered themselves today. Anything else needs a Supervisor or the Admin."],
+    ["dispHold", "Put on hold, release, change date and send today",
+      "Dispatch staff can do all four.",
+      "Dispatch staff can't do these. Only a Supervisor or the Admin can."]]],
+  ["Supervisor and DMO", [
+    ["supFixTime", "Correct the dispatch time of a dispatched order",
+      "Supervisors and DMOs can fix a wrong dispatch time.",
+      "Supervisors and DMOs can't fix it. Only the Admin can."],
+    ["supAddDealer", "Add dealers",
+      "Supervisors and DMOs can add new dealers.",
+      "Supervisors and DMOs can't add dealers. Only the Admin can."]]],
+  ["Supervisor, DMO and Dispatch staff", [
+    ["staffDealerEdit", "Edit a dealer's contact person, phone and area",
+      "Supervisors, DMOs and Dispatch staff can edit these. Renaming a dealer stays with the Admin.",
+      "Supervisors, DMOs and Dispatch staff can't edit dealer details. Only the Admin can."],
+    ["staffVehicles", "Add vehicles and paste tracking links",
+      "Supervisors, DMOs and Dispatch staff can add trucks and tracking links.",
+      "Supervisors, DMOs and Dispatch staff can't add trucks or links. Only the Admin can."],
+    ["staffExcelTime", "Time-taken columns in their Excel downloads",
+      "Their Excel files show how long each order took.",
+      "Their Excel files leave out time taken. Only the Admin's files show it."]]],
+];
+const permItem = k => PERMS.flatMap(g => g[1]).find(x => x[0] === k);
+function permLine(k, on){
+  const it = permItem(k); if (!it) return "";
+  return `<b class="${on ? "yes" : "no"}">${on ? "Allowed." : "Not allowed."}</b> ${esc(on ? it[2] : it[3])}`;
+}
+S.perms = { ...PERM_DEFAULTS };
+function applyRights(){
+  const p = S.perms, staff = S.isSup || S.isDesk;
+  S.canMark = S.isAdmin || S.isSup || (S.isDesk && p.dispMark);          // mark dispatched and undo dispatch
+  S.canHold = S.isAdmin || S.isSup || (S.isDesk && p.dispHold);          // hold, release, change date, send today
+  S.canCancelAny = S.isAdmin || S.isSup || (S.isDesk && p.dispCancelAny);
+  S.canFixTime = S.isAdmin || (S.isSup && p.supFixTime);                  // correct the dispatch time of a dispatched order
+  S.canAddDealer = S.isAdmin || (S.isSup && p.supAddDealer);              // add dealers (renaming and removing: Admin)
+  S.canEditDealer = S.isAdmin || (staff && p.staffDealerEdit);            // a dealer's contact person, phone and area
+  S.canVehicles = S.isAdmin || (staff && p.staffVehicles);                // add vehicles, paste tracking links (removing: Admin)
+  S.canExcelTime = S.isAdmin || (staff && p.staffExcelTime);              // time-taken columns in downloaded Excel files
+}
+function renderPerms(){
+  const box = $("permBox"); if (!box) return;
+  box.hidden = !S.isAdmin; if (!S.isAdmin) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="head"><div><h3>${T("Staff permissions")}</h3><p class="sub">Tick a box to allow it, untick to stop it. It applies to everyone with that designation straight away, and the line under each box says what's allowed right now. The Admin can always do everything.</p></div></div>
+    ${PERMS.map(([group, list]) => `<div class="permgrp"><b>${esc(group)}</b>${list.map(([k, label]) => `<label class="perm"><input type="checkbox" id="perm-${k}" data-perm="${k}" ${S.perms[k] ? "checked" : ""}><span>${esc(label)}<small id="permline-${k}">${permLine(k, !!S.perms[k])}</small></span></label>`).join("")}</div>`).join("")}`;
+}
+document.addEventListener("change", async e => {
+  const k = e.target.dataset && e.target.dataset.perm; if (!k || !S.isAdmin) return;
+  const on = e.target.checked, label = (permItem(k) || [])[1] || k;
+  const line = on => { const el = $("permline-" + k); if (el) el.innerHTML = permLine(k, on); };
+  line(on);                                   // the line changes the moment the box is ticked or unticked
+  try { await setDoc(fsDoc(fdb, "config", "perms"), { [k]: on, updatedBy: S.me, updatedAt: Date.now() }, { merge: true }); toast((on ? "Allowed: " : "Not allowed: ") + label); }
+  catch(ex){ e.target.checked = !on; line(!on); toast(failMsg(ex)); }
+});
+
+/* ---------- Refresh (next to "Live") ----------
+   Loads the newer version if one has been uploaded since this page opened; otherwise reconnects every live list
+   and reloads the Summary totals, without reloading the page. Change APP_VERSION with every upload. */
+const APP_VERSION = "2026-11-06";
+async function refreshNow(){
+  const b = $("refreshBtn"); if (!b || b.disabled || !S.me) return;
+  b.disabled = true; b.classList.add("spin");
+  try {
+    const r = await fetch("app.js", { cache: "no-store" });
+    const m = r.ok ? /const APP_VERSION = "([^"]+)"/.exec(await r.text()) : null;
+    if (m && m[1] !== APP_VERSION) { toast("Loading the new version…"); setTimeout(() => location.reload(), 300); return; }
+  } catch(e){}
+  unsubs.forEach(f => { try { f(); } catch(e){} }); unsubs = [];
+  if (daysUnsub){ daysUnsub(); daysUnsub = null; } S.liveKey = "";
+  banner(""); listen(S.me);
+  S.sumAt = {}; if (S.view === "summary") loadSums($("s-month").value, true);
+  toast("Refreshed");
+  setTimeout(() => { b.disabled = false; b.classList.remove("spin"); }, 600);
+}
+$("refreshBtn").addEventListener("click", refreshNow);
 if (!configured) gate("setup");
 else { gate("loading"); onAuthStateChanged(auth, u => boot(u)); }
