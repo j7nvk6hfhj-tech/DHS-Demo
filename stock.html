@@ -608,10 +608,9 @@ body { margin: 0; }
       <div class="row">
         <div class="field" style="flex: 2 1 22rem;">
           <span class="lbl">Dealer sheet</span>
-          <div class="seg four" role="group" aria-label="Dealer sheet" id="d-godown">
-            <button type="button" data-g="TPH" aria-pressed="true">TP + Harrawala</button>
-            <button type="button" data-g="TPN" aria-pressed="false"><span class="lg">Transport Nagar only</span><span class="sh">TPN only</span></button>
-            <button type="button" data-g="HAR" aria-pressed="false">Harrawala only</button>
+          <div class="seg" role="group" aria-label="Dealer sheet" id="d-godown">
+            <button type="button" data-g="TPN" aria-pressed="true">Transport Nagar</button>
+            <button type="button" data-g="HAR" aria-pressed="false">Harrawala</button>
             <button type="button" data-g="DOI" aria-pressed="false">Doiwala</button>
           </div>
         </div>
@@ -666,7 +665,8 @@ body { margin: 0; }
         <div class="field">
           <span class="lbl">Dealer sheet</span>
           <div class="seg" role="group" aria-label="Dealer sheet" id="o-book">
-            <button type="button" data-b="TPH" aria-pressed="true">TP + Harrawala</button>
+            <button type="button" data-b="TPN" aria-pressed="true">Transport Nagar</button>
+            <button type="button" data-b="HAR" aria-pressed="false">Harrawala</button>
             <button type="button" data-b="DOI" aria-pressed="false">Doiwala</button>
           </div>
         </div>
@@ -1067,13 +1067,16 @@ $("#impFile").addEventListener("change", importFile);
     { k: 'DOI', label: 'Doiwala', sheet: 'STOCK DOIWALA', short: 'DOIWALA' },
   ];
   // each dealer sheet ("book") covers one or more godowns
+  // 18 Nov 2026: each depot has its own dealer sheet. Billing counts at the depot billed, dispatch at the depot it left
+  // from, so a dealer billed at one and lifted from the other shows advance at one and pendency at the other.
   const BOOKS = [
-    { k: 'TPH', label: 'TP+Harrawala', godowns: ['TPN', 'HAR'] },
-    { k: 'DOI', label: 'Doiwala', godowns: ['DOI'] },
+    { k: 'TPN', label: 'Transport Nagar', short: 'TPN', godowns: ['TPN'] },
+    { k: 'HAR', label: 'Harrawala', short: 'HARRAWALA', godowns: ['HAR'] },
+    { k: 'DOI', label: 'Doiwala', short: 'DOIWALA', godowns: ['DOI'] },
   ];
-  const bookOf = (g) => (g === 'DOI' ? 'DOI' : 'TPH');
+  const bookOf = (g) => (g === 'HAR' || g === 'DOI' ? g : 'TPN');
   const GLABEL = { TPN: 'Transport Nagar', HAR: 'Harrawala', DOI: 'Doiwala', TPH: 'TP+Harrawala' };
-  const openingBook = (b) => (opening && opening.books ? opening.books[b] : b === 'TPH' && opening ? opening.dealers : null) || {};
+  const openingBook = (b) => (opening && opening.books ? opening.books[b] : null) || {};
   const TYPES = {
     billing: { label: 'Billing', hint: 'Invoice raised in SAP. SAP stock goes down; dealer balance goes up (advance).' },
     dispatch: { label: 'Dispatch', hint: 'Material lifted from the godown. Physical stock goes down; dealer balance goes down (pendency). Orders marked dispatched on the dashboard are entered here by themselves: use this only for a dispatch that has no dashboard order.' },
@@ -1111,7 +1114,7 @@ $("#impFile").addEventListener("change", importFile);
   const monthName = (ym) => new Date(ym + '-01T00:00:00').toLocaleString('en-IN', { month: 'long', year: 'numeric' });
   // the first day on screen: the 1st of last month (or the ledger's start, if later)
   function windowStart() { const w = shiftMonth(monthOf(todayISO()), -1) + '-01'; const s = origOpening ? origOpening.date : ''; return s > w ? s : w; }
-  const state = { view: 'entry', type: 'billing', godown: 'TPN', dGodown: 'TPH', dMode: 'sheet', confirmId: null };
+  const state = { view: 'entry', type: 'billing', godown: 'TPN', dGodown: 'TPN', dMode: 'sheet', confirmId: null };
 
   let toastTimer;
   const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); };
@@ -1302,7 +1305,7 @@ $("#impFile").addEventListener("change", importFile);
     // scope: a dealer book (TPH, DOI) with its opening balances, or one godown (TPN, HAR) showing only its movements
     const dealers = {};
     const touch = (n) => (dealers[n] = dealers[n] || emptyItems());
-    const isBook = scope === 'TPH' || scope === 'DOI';
+    const isBook = BOOKS.some((b) => b.k === scope);
     // a depot on its own (TPN, Harrawala) starts from its billing − dispatch carried forward by the month-end closes
     Object.entries(isBook ? openingBook(scope) : ((opening.rolled && opening.moves && opening.moves[scope]) || {})).forEach(([n, it]) => { const d = touch(n); KEYS.forEach((k) => { d[k] += Number(it[k] || 0); }); });
     const used = entries.filter((e) => e.date >= opening.date && e.date <= asOf);
@@ -1346,6 +1349,7 @@ $("#impFile").addEventListener("change", importFile);
   $('#s-asof').addEventListener('change', renderStock);
   $('#s-copy').addEventListener('click', () => copyText($('#s-wa'), stockText()));
 
+  const recsAt = (asOf) => Object.fromEntries(BOOKS.map((b) => [b.k, reconOf(compute(asOf, b.k), b.k)]));
   function reconOf(r, book) {
     const c = stockFor(r.stock, book);
     const dealerNet = emptyItems();
@@ -1360,10 +1364,8 @@ $("#impFile").addEventListener("change", importFile);
     if (!opening) { $('#s-sub').textContent = 'Loading balances…'; $('#s-status').hidden = true; return; }
     if (olderView('stock', $('#s-asof').value || todayISO())) { $('#s-sub').textContent = ''; $('#s-status').hidden = true; return; }
     const asOf = $('#s-asof').value || todayISO();
-    const r = compute(asOf, 'TPH');
-    const rd = compute(asOf, 'DOI');
-    const recs = { TPH: reconOf(r, 'TPH'), DOI: reconOf(rd, 'DOI') };
-    const rc = recs.TPH;
+    const r = compute(asOf, 'TPN');
+    const recs = recsAt(asOf);
     $('#s-title').textContent = toDMY(asOf) + ' GODOWN STOCK';
     $('#s-sub').textContent = 'Closing position: ' + (opening.rolled ? 'stock carried forward to ' : 'SAP opening stock of ') + toDMY(opening.date) + ' + ' + r.count + ' entries up to ' + toDMY(asOf) + '. Difference = physical − SAP.';
 
@@ -1397,17 +1399,17 @@ $("#impFile").addEventListener("change", importFile);
     };
     const G = Object.fromEntries(GODOWNS.map((g) => [g.k, g]));
     block(G.TPN); spacer(); block(G.HAR); spacer();
-    line('TOTAL OF COMBINE STOCK IN BAGS', 'TP+H DIFF BAGS', (k) => recs.TPH.stockGap[k], { signed: true, rowCls: 'comb' });
-    line('TOTAL OF COMBINE STOCK IN MT', 'TP+H DIFF MT', (k) => recs.TPH.stockGap[k], { unit: 'mt', signed: true, rowCls: 'comb' });
+    line('TOTAL OF COMBINE STOCK IN BAGS', 'TP+H DIFF BAGS', (k) => recs.TPN.stockGap[k] + recs.HAR.stockGap[k], { signed: true, rowCls: 'comb' });
+    line('TOTAL OF COMBINE STOCK IN MT', 'TP+H DIFF MT', (k) => recs.TPN.stockGap[k] + recs.HAR.stockGap[k], { unit: 'mt', signed: true, rowCls: 'comb' });
     spacer(); block(G.DOI); spacer();
-    const allGap = (k) => recs.TPH.stockGap[k] + recs.DOI.stockGap[k];
+    const allGap = (k) => BOOKS.reduce((a, b) => a + recs[b.k].stockGap[k], 0);
     line('TOTAL OF ALL 3 DEPOTS IN BAGS', 'ALL 3 DIFF BAGS', allGap, { signed: true, rowCls: 'comb' });
     line('TOTAL OF ALL 3 DEPOTS IN MT', 'ALL 3 DIFF MT', allGap, { unit: 'mt', signed: true, rowCls: 'comb' });
     BOOKS.forEach((b) => {
       const x = recs[b.k];
       const off = KEYS.some((k) => x.gap[k] !== 0) ? ' gap' : '';
       spacer();
-      sec('DEALER CHECK (' + b.label.toUpperCase() + ')', 'DEALER CHECK ' + (b.k === 'TPH' ? 'TP+H' : 'DOIWALA'));
+      sec('DEALER CHECK (' + b.label.toUpperCase() + ')', 'DEALER CHECK ' + b.short);
       line('DEALER BALANCE IN BAGS', 'DEALER BAGS', (k) => x.dealerNet[k], { signed: true, rowCls: 'diff' });
       line('DEALER BALANCE IN MT', 'DEALER MT', (k) => x.dealerNet[k], { unit: 'mt', signed: true, rowCls: 'diff' });
       line('UNRECONCILED IN BAGS', 'UNREC. BAGS', (k) => x.gap[k], { flag: true, rowCls: 'diff' + off });
@@ -1431,8 +1433,8 @@ $("#impFile").addEventListener("change", importFile);
   function stockText() {
     if (!opening) return '';
     const asOf = $('#s-asof').value || todayISO();
-    const r = compute(asOf, 'TPH'); const rd = compute(asOf, 'DOI');
-    const recs = { TPH: reconOf(r, 'TPH'), DOI: reconOf(rd, 'DOI') };
+    const r = compute(asOf, 'TPN');
+    const recs = recsAt(asOf);
     const L = ['*' + toDMY(asOf) + ' GODOWN STOCK*', '(MT / bags)'];
     GODOWNS.forEach((g) => {
       const s = stockFor(r.stock, g.k);
@@ -1583,7 +1585,7 @@ $("#impFile").addEventListener("change", importFile);
     if (olderView('dealers', $('#d-asof').value || todayISO())) { $('#d-note').textContent = ''; return; }
     const asOf = $('#d-asof').value || todayISO();
     $('#d-title').textContent = GLABEL[state.dGodown].toUpperCase() + ' · ' + toDMY(asOf);
-    $('#d-note').textContent = (state.dGodown === 'TPH' || state.dGodown === 'DOI')
+    $('#d-note').textContent = BOOKS.some((b) => b.k === state.dGodown)
       ? 'Closing balance: balances ' + (opening.rolled ? 'carried forward to ' : 'of ') + toDMY(opening.date) + ' + billing − dispatch from then up to ' + toDMY(asOf) + '. Minus = pendency, plus = advance. Bags, with MT below.'
       : 'TP+Harrawala opening balances are kept combined, so this shows only ' + GLABEL[state.dGodown] + ' billing − dispatch since ' + toDMY(opening.startDate || opening.date) + '.';
     const all = dealerRows();
@@ -1741,7 +1743,7 @@ $("#impFile").addEventListener("change", importFile);
   }
 
   // ---------- opening dealer balances (admin) ----------
-  const ost = { book: 'TPH', unit: 'bags', draft: null, confirm: false };
+  const ost = { book: 'TPN', unit: 'bags', draft: null, confirm: false };
   try { const u = localStorage.getItem('ounit'); if (u === 'mt' || u === 'bags') ost.unit = u; } catch {}
   let oid = 0;
   const oToBags = (v) => (v === '' || v == null || isNaN(Number(String(v).replace(/,/g, ''))) ? 0 : Math.round((ost.unit === 'mt' ? 20 : 1) * Number(String(v).replace(/,/g, ''))));
@@ -1810,7 +1812,7 @@ $("#impFile").addEventListener("change", importFile);
   }
   function renderODTot() {
     const rows = ost.draft.rows[ost.book];
-    $('#o-dtot-label').textContent = (ost.book === 'TPH' ? 'TP + Harrawala' : 'Doiwala') + ' sheet total · ' + plural(rows.length);
+    $('#o-dtot-label').textContent = (BOOKS.find((b) => b.k === ost.book) || BOOKS[0]).label + ' sheet total · ' + plural(rows.length);
     const tbl = $('#o-dtot'); tbl.replaceChildren();
     const thead = el('thead'); const hr = el('tr'); hr.append(el('th', '', ''), ...DEALER_ORDER.map((k) => el('th', '', DEALER_LABEL[k])), el('th', '', 'TOTAL')); thead.appendChild(hr);
     const body = el('tbody'); const tr = el('tr', 'tot'); tr.appendChild(el('td', 'lab', 'TOTAL'));
@@ -1820,7 +1822,7 @@ $("#impFile").addEventListener("change", importFile);
   // dealer balances against the start day's stock difference, per dealer sheet
   function renderOCheck() {
     if (!ost.draft || !opening) return;
-    const stk = compute(prevDay(opening.date), 'TPH').stock;
+    const stk = compute(prevDay(opening.date), 'TPN').stock;
     const st = $('#o-check'); st.replaceChildren();
     const res = BOOKS.map((b) => {
       const gap = {}; KEYS.forEach((k) => { gap[k] = ost.draft.rows[b.k].reduce((a, r) => a + r.it[k], 0) - b.godowns.reduce((a, g) => a + stk[g][k].phys - stk[g][k].sap, 0); });
@@ -1854,7 +1856,7 @@ $("#impFile").addEventListener("change", importFile);
   function setOUnit() { $$('#o-unit button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.u === ost.unit))); oInputsMode(); }
   function openSetup() {
     if (!opening || !isAdmin || Object.keys(closes).length) return;
-    ost.draft = newDraft(); ost.book = state.dGodown === 'DOI' ? 'DOI' : 'TPH';
+    ost.draft = newDraft(); ost.book = BOOKS.some((b) => b.k === state.dGodown) ? state.dGodown : 'TPN';
     $('#o-start').textContent = toDMY(opening.date); $('#o-start2').textContent = toDMY(opening.date);
     $('#o-err').hidden = true; setDirty(false);
     $('#o-paste-note').hidden = true; $('#o-paste').value = '';
@@ -1902,7 +1904,7 @@ $("#impFile").addEventListener("change", importFile);
   function ledgerNamesStrict() {
     const s = new Set();
     const op = origOpening;
-    if (op) BOOKS.forEach((b) => Object.keys((op.books ? op.books[b.k] : b.k === 'TPH' ? op.dealers : null) || {}).forEach((n) => s.add(n)));
+    if (op) [...BOOKS.map((b) => b.k), 'TPH'].forEach((k) => Object.keys((op.books ? op.books[k] : k === 'TPH' ? op.dealers : null) || {}).forEach((n) => s.add(n)));
     rawEntries.forEach((e) => { if (e.dealer && e.src !== 'order') s.add(e.dealer); });
     Object.values(links).forEach((n) => { if (n) s.add(n); });
     return s;
@@ -2587,7 +2589,7 @@ $("#impFile").addEventListener("change", importFile);
     const keep = [opening, entries, reports];
     try {
       opening = base; entries = ents; reports = Object.fromEntries(reps.map((r) => [r.id, r]));
-      return { tph: compute(date, 'TPH'), doi: compute(date, 'DOI') };
+      return { stock: compute(date, 'TPN').stock, books: BOOKS.map((b) => [b.k, compute(date, b.k)]) };
     } finally { [opening, entries, reports] = keep; }
   }
   async function excelBalances(date) {
@@ -2596,11 +2598,11 @@ $("#impFile").addEventListener("change", importFile);
     const rows = [];
     GODOWNS.forEach((g) => {
       let ts = 0, tp = 0;
-      STOCK_ORDER.forEach((k) => { const s = r.tph.stock[g.k][k]; ts += s.sap; tp += s.phys; rows.push([g.label, P[k], s.sap, s.phys, s.phys - s.sap, s.sap / 20, s.phys / 20]); });
+      STOCK_ORDER.forEach((k) => { const s = r.stock[g.k][k]; ts += s.sap; tp += s.phys; rows.push([g.label, P[k], s.sap, s.phys, s.phys - s.sap, s.sap / 20, s.phys / 20]); });
       rows.push([g.label, 'TOTAL', ts, tp, tp - ts, ts / 20, tp / 20]);
     });
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([['Depot Stock Ledger · depot stock at the end of ' + toDMY(date)], [], head, ...rows]), 'Depot stock');
-    [['TPH', r.tph], ['DOI', r.doi]].forEach(([b, res]) => {
+    r.books.forEach(([b, res]) => {
       const dh = ['Dealer', ...DEALER_ORDER.map((k) => DEALER_LABEL[k]), 'Total bags', 'Total MT'];
       const list = Object.entries(res.dealers).filter(([, it]) => KEYS.some((k) => it[k])).sort((x, y) => x[0].localeCompare(y[0]));
       const tot = emptyItems();
@@ -2728,8 +2730,8 @@ $("#impFile").addEventListener("change", importFile);
     const compact = (dl) => Object.fromEntries(Object.entries(dl).map(([n, it]) => [n, Object.fromEntries(KEYS.filter((k) => it[k]).map((k) => [k, it[k]]))]));
     // the close of month m, worked out from what is loaded (the opening must start on or before m's first day)
     function closeOf(m, final) {
-      const end = lastDayOf(m), a = compute(end, 'TPH'), b = compute(end, 'DOI');
-      return { month: m, date: end, from: opening.date, final, stock: a.stock, books: { TPH: compact(a.dealers), DOI: compact(b.dealers) },
+      const end = lastDayOf(m), a = compute(end, 'TPN');
+      return { month: m, date: end, from: opening.date, final, stock: a.stock, books: Object.fromEntries(BOOKS.map((bk) => [bk.k, compact(bk.k === 'TPN' ? a.dealers : compute(end, bk.k).dealers)])),
         moves: { TPN: compact(compute(end, 'TPN').dealers), HAR: compact(compute(end, 'HAR').dealers) }, entries: a.count, at: new Date().toISOString(), by: myId || '' };
     }
     // On or after the 1st: every month that has ended gets its close; a month that has left the two months gets its
@@ -2782,10 +2784,10 @@ $("#impFile").addEventListener("change", importFile);
     // Saved by anyone who can make changes while the ledger is open, when the figures change (at most every 20 seconds).
     let briefSent = '', briefTimer = null;
     function briefData() {
-      const today = todayISO(), r = compute(today, 'TPH'), rd = compute(today, 'DOI');
+      const today = todayISO(), r = compute(today, 'TPN');
       const stock = {}; GODOWNS.forEach((g) => { stock[g.k] = {}; KEYS.forEach((k) => { stock[g.k][k] = { sap: r.stock[g.k][k].sap, phys: r.stock[g.k][k].phys }; }); });
       const recon = {}, pend = {};
-      [['TPH', r], ['DOI', rd]].forEach(([bk, rr]) => {
+      BOOKS.map((b) => [b.k, b.k === 'TPN' ? r : compute(today, b.k)]).forEach(([bk, rr]) => {
         const gap = reconOf(rr, bk).gap; recon[bk] = {}; KEYS.forEach((k) => { if (gap[k]) recon[bk][k] = gap[k]; });
         pend[bk] = {}; Object.entries(rr.dealers).forEach(([n, it]) => { const p = KEYS.reduce((a, k) => a + Math.min(0, it[k]), 0); if (p < 0) pend[bk][n] = p; });
       });

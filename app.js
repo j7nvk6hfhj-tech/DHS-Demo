@@ -407,7 +407,7 @@ function orderWrite(id, before, upd){
    it. Reads: the summary and the limits (2, then only when they change), yesterday's totals (1), this month's deleted
    stock entries (one per entry) when the page is opened. */
 const BRIEF_DEFAULTS = { pendingHours: 4, pendencyBags: 1000, reportBy: 11 };
-const GNAME = { TPN: "Transport Nagar", HAR: "Harrawala", DOI: "Doiwala" }, BNAME = { TPH: "TP + Harrawala", DOI: "Doiwala" };
+const GNAME = { TPN: "Transport Nagar", HAR: "Harrawala", DOI: "Doiwala" }, BNAME = { TPN: "Transport Nagar", HAR: "Harrawala", DOI: "Doiwala", TPH: "TP + Harrawala" };
 const PNAME = { PPC: "PPC", BLACK: "PPC Black", OPC43: "OPC 43", OPC53: "OPC 53", SS: "Super Strong", WSS: "Weather Protect" };
 const PORDER = ["PPC", "BLACK", "OPC43", "OPC53", "SS", "WSS"];
 S.brief = { cfg: { ...BRIEF_DEFAULTS }, snap: undefined, yday: undefined, deleted: undefined };
@@ -2272,7 +2272,7 @@ document.addEventListener("change", async e => {
 /* ---------- Refresh (next to "Live") ----------
    Loads the newer version if one has been uploaded since this page opened; otherwise reconnects every live list
    and reloads the Summary totals, without reloading the page. Change APP_VERSION with every upload. */
-const APP_VERSION = "2026-11-18";
+const APP_VERSION = "2026-11-18b";
 async function refreshNow(){
   const b = $("refreshBtn"); if (!b || b.disabled || !S.me) return;
   b.disabled = true; b.classList.add("spin");
