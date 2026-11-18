@@ -25,6 +25,12 @@ rules_version = '2';
 // Depot stock ledger (stockEntries, stockReports, stockCloses, stockConfig): the Admin and the people on its access list only.
 // Month-end closes (stockCloses): made by the ledger itself on the 1st. Entries only for this month and last month.
 // Maintenance switch (config/maintenance): while on, only the Admin can change anything.
+// 16 Nov 2026: marking an order dispatched also writes its line in the stock ledger (stockEntries/ord_<order id>), in the
+// same write, by whoever marks it; they need not be on the ledger's list and still can't read anything there. The line
+// must match the order. Each dispatch also updates that day's dispatched bags by depot (dispday). Taking any entry off the
+// ledger keeps a copy for the Admin (stockDeleted); corrections need a reason. The Admin's Brief reads stockBrief/latest,
+// which the ledger saves. config/brief (the Brief's alert limits) is the Admin's only. config/stockLink holds when the
+// link started (set by the Admin's first visit to that version; every config record is changed by the Admin only).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -164,7 +170,7 @@ service cloud.firestore {
     // Vehicles: Admin changes freely; Supervisor and Dispatch may add or update, but the list can't get shorter.
     // "perms" (the staff permission switches) is changed by the Admin only; everyone on the team reads it.
     match /config/{docId} {
-      allow read: if isMember() && (!(docId in ['report', 'usage']) || isAdmin()) && (docId != 'vehicles' || !isViewer());
+      allow read: if isMember() && (!(docId in ['report', 'usage', 'brief']) || isAdmin()) && (docId != 'vehicles' || !isViewer());
       allow write: if isAdmin()
         || (docId == 'dealers' && isSup() && perm('supAddDealer') && resource != null
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['list', 'info'])
@@ -237,13 +243,64 @@ service cloud.firestore {
     function stockMonthNo(ym) { return int(ym.split('-')[0]) * 12 + int(ym.split('-')[1]); }
     function stockNowNo() { return request.time.year() * 12 + request.time.month(); }
     function stockOpenMonth(day) { return day is string && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && stockMonthNo(day) >= stockNowNo() - 1; }
+    // Dashboard dispatches (16 Nov 2026). stockEntries/ord_<order id>: written in the same write as the order by whoever marks
+    // it dispatched, undoes it, changes it or deletes it. The line has to match the order as it is after that write.
+    function orderPath(id) { return /databases/$(database)/documents/orders/$(id); }
+    function orderLineOk(entryId) {
+      let d = request.resource.data;
+      let o = getAfter(orderPath(d.get('orderId', '-'))).data;
+      return canOrder() && entryId == 'ord_' + d.get('orderId', '')
+        && d.keys().hasOnly(['type', 'src', 'orderId', 'date', 'godown', 'dealer', 'items', 'target', 'ref', 'at', 'by', 'fixed'])
+        && d.get('type', '') == 'dispatch' && d.get('src', '') == 'order' && d.get('by', '') == myEmail()
+        && stockOpenMonth(d.get('date', null)) && d.get('items', null) is map
+        && o.get('dispatchedAt', null) != null && o.get('mark', '') != 'Cancelled'
+        && d.get('godown', '') == {'Transport Nagar': 'TPN', 'Harrawala': 'HAR', 'Doiwala': 'DOI'}.get(o.get('depot', ''), '-')
+        && d.get('dealer', '') == o.get('dealer', '');
+    }
+    // taken off when the order is deleted, its dispatch undone or it is cancelled (in the same write)
+    function orderLineGone() {
+      let oid = resource.data.get('orderId', '-');
+      return canOrder() && resource.data.get('src', '') == 'order' && stockOpenMonth(resource.data.get('date', null))
+        && (!existsAfter(orderPath(oid)) || getAfter(orderPath(oid)).data.get('dispatchedAt', null) == null
+            || getAfter(orderPath(oid)).data.get('mark', '') == 'Cancelled');
+    }
+    function deletedPath(id) { return /databases/$(database)/documents/stockDeleted/$(id); }
     match /stockEntries/{entryId} {
       allow read: if stockUser();
-      allow create: if stockEditor() && (isAdmin() || (request.resource.data.get('by', '') == myEmail()
-        && request.resource.data.get('type', '') in ['billing', 'dispatch', 'arrival', 'correction']
-        && stockOpenMonth(request.resource.data.get('date', null)) && request.resource.data.get('items', null) is map));
-      allow update: if isAdmin();   // entries aren't edited in the ledger; the Admin's one-time import may overwrite
-      allow delete: if stockEditor() && (isAdmin() || stockOpenMonth(resource.data.get('date', null)));
+      allow create: if (stockEditor() && (isAdmin() || (request.resource.data.get('by', '') == myEmail()
+          && request.resource.data.get('type', '') in ['billing', 'dispatch', 'arrival', 'correction']
+          && stockOpenMonth(request.resource.data.get('date', null)) && request.resource.data.get('items', null) is map
+          // a correction needs its reason (16 Nov 2026)
+          && (request.resource.data.type != 'correction' || (request.resource.data.get('reason', '') is string && request.resource.data.get('reason', '').size() >= 3)))))
+        || orderLineOk(entryId);
+      allow update: if isAdmin() || (resource.data.get('src', '') == 'order' && orderLineOk(entryId));   // ledger entries aren't edited; dashboard lines follow their order
+      // an entry typed in the ledger can be taken off only with a copy kept for the Admin (stockDeleted/<entry id>, same write)
+      allow delete: if isAdmin()
+        || (stockEditor() && !entryId.matches('^ord_.*') && stockOpenMonth(resource.data.get('date', null)) && existsAfter(deletedPath(entryId)))
+        || orderLineGone();
+    }
+    // copies of entries taken off the ledger, with who and when: written by whoever takes one off; read by the Admin only
+    match /stockDeleted/{id} {
+      allow read: if isAdmin();
+      allow create: if canOrder() && request.resource.data.get('deletedBy', '') == myEmail() && request.resource.data.get('deletedAt', null) is string;
+      allow update, delete: if isAdmin();
+    }
+    // a month to close again (a dashboard dispatch dated in a month that already has its close, or dealer names re-paired)
+    match /stockMarks/{month} {
+      allow read: if stockUser();
+      allow write: if canOrder() && month.matches('^[0-9]{4}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(['at', 'by']) && request.resource.data.get('by', '') == myEmail();
+    }
+    // bags dispatched in orders each day, by depot and product (kept by the dashboard with each dispatch)
+    match /dispday/{day} {
+      allow read: if stockUser();
+      allow write: if canOrder() && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && request.resource.data.get('date', '') == day
+        && request.resource.data.keys().hasOnly(['date', 'TPN', 'HAR', 'DOI', 'at', 'by', 'fixed']) && request.resource.data.get('by', '') == myEmail();
+    }
+    // the Admin's Brief: a summary the ledger saves while someone who can make changes has it open
+    match /stockBrief/{id} {
+      allow read: if isAdmin();
+      allow write: if stockEditor() && id == 'latest' && request.resource.data.get('by', '') == myEmail();
     }
     match /stockReports/{reportId} {
       allow read: if stockUser();

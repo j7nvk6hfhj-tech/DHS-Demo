@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
+<script>if (window.top !== window.self) document.documentElement.classList.add("embedded");</script>
 <title>DHS Stock</title>
 <link rel="icon" href="icons/logo.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -396,6 +397,25 @@ body { margin: 0; }
 .accrow input { margin-top: 3px; flex: none; }
 .accrow span { display: grid; min-width: 0; }
 .accrow small { color: var(--muted); font-size: var(--t-xs); overflow-wrap: anywhere; }
+/* opened inside the dashboard as its Stock heading: no title bar of its own (the dashboard's is right above);
+   the Admin's Access button sits quietly at the foot of the ledger */
+.embedded header.top { display: none !important; }
+.accfoot { display: flex; justify-content: flex-end; padding: var(--s2) var(--s4) var(--s5); }
+.embedded .gate { min-height: 55vh; }
+/* 16 Nov 2026: dashboard dispatches, dealer names, orders vs ledger, corrections and deleted entries */
+.chip.order { color: var(--muted); background: var(--void-soft); }
+.entry.fromorder .entry-who > span:first-child::after { content: ""; }
+.banner.unl { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; }
+.links { display: grid; gap: var(--s2); }
+.linkrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--s2) var(--s3); align-items: center; padding: var(--s2) 0; border-top: 1px solid var(--line); }
+.linkrow .nm { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.linkrow .nm small { color: var(--muted); font-size: var(--t-sm); }
+.linkrow .pick { display: grid; gap: 4px; min-width: 0; }
+.linkrow select { width: 100%; min-width: 0; }
+.linkrow .sug { justify-self: start; }
+@media (max-width: 560px) { .linkrow { grid-template-columns: minmax(0, 1fr); } }
+#x-table td.gap, #l-admbox td.gap { color: var(--bad); font-weight: 700; }
+#l-admbox td { white-space: normal; }
 </style>
 </head>
 <body>
@@ -487,6 +507,7 @@ body { margin: 0; }
           <datalist id="dealer-list"></datalist>
         </div>
         <div class="field"><label for="f-ref">Invoice / vehicle no. (optional)</label><input id="f-ref" autocomplete="off"></div>
+        <div class="field" id="wrap-reason" hidden><label for="f-reason">Reason for the correction</label><input id="f-reason" autocomplete="off" maxlength="120" placeholder="e.g. 10 torn bags found in the count"></div>
       </div>
       <p class="hint" id="dealer-hint" hidden></p>
     </div>
@@ -503,6 +524,7 @@ body { margin: 0; }
 
     <p class="err" id="f-err" hidden></p>
     <div class="capwarn" id="f-capwarn" hidden></div>
+    <div class="capwarn" id="f-dupwarn" hidden></div>
     <div class="savebar" role="status">
       <div class="savebar-msg" id="f-summary">—</div>
       <div class="actions">
@@ -557,6 +579,18 @@ body { margin: 0; }
       <div class="tbl-wrap"><table class="sheet" id="s-table"></table></div>
       <pre class="wa" id="s-wa" hidden></pre>
     </div>
+    <div class="panel" id="xcheck" hidden>
+      <div class="phead">
+        <div>
+          <h3>Orders vs ledger</h3>
+          <p class="sub">Each day this month, by depot: bags dispatched in dashboard orders against bags dispatched in this ledger. Any gap shows in red. Only the Admin sees this.</p>
+        </div>
+        <div class="actions"><button class="btn ghost small" id="x-all" type="button">Show every day</button><button class="btn ghost small" id="x-fix" type="button">Fix from orders</button></div>
+      </div>
+      <div class="status ok" id="x-status"></div>
+      <p class="hint" id="x-msg" hidden></p>
+      <div class="tbl-wrap"><table class="sheet" id="x-table"></table></div>
+    </div>
   </section>
 
   <!-- DEALER STOCK -->
@@ -591,11 +625,15 @@ body { margin: 0; }
       <div class="tile"><span class="lbl">Net</span><div class="v" id="d-net">—</div><div class="u">bags</div><div class="m" id="d-net-mt"></div><div class="m" id="d-net-n"></div></div>
     </div>
 
+    <div class="banner unl" id="d-unlinked" hidden></div>
+    <div class="panel" id="linksPanel" hidden></div>
+
     <div class="panel">
       <div class="phead">
         <h3 id="d-title">TP+Harrawala</h3>
         <div class="actions">
           <button class="btn ghost small" id="d-open-edit" type="button" hidden>Opening dealer balances</button>
+          <button class="btn ghost small" id="d-links" type="button" hidden>Dashboard names</button>
           <div class="seg compact" role="group" aria-label="View as" id="d-mode">
             <button type="button" data-m="sheet" aria-pressed="true">Sheet</button>
             <button type="button" data-m="list" aria-pressed="false">List</button>
@@ -643,7 +681,7 @@ body { margin: 0; }
       <p class="hint">Use the dealer sheet of <b id="o-start2">—</b>. For a later day’s sheet, first move the ledger start on Opening Balance. Minus = pendency, plus = advance. Blank = 0.</p>
       <details class="paste" id="o-pastebox">
         <summary>Paste from your Excel dealer sheet</summary>
-        <p class="hint">Copy the dealer rows from Excel: the name, then Black, PPC, OPC 53, OPC 43, W.S, S.S (the total is optional). Dealers already in the list are updated; new ones are added.</p>
+        <p class="hint" id="o-paste-hint">Copy the dealer rows from Excel: the name, then Black, PPC, OPC 53, OPC 43, W.S, S.S (the total is optional). Dealers already in the list are updated; new ones are added.</p>
         <textarea id="o-paste" aria-label="Pasted dealer rows" placeholder="SAMPLE TRADERS	0	-100	0	0	0	0	-100"></textarea>
         <div class="row"><button class="btn ghost small" id="o-paste-go" type="button">Add pasted rows</button></div>
         <p class="hint" id="o-paste-note" hidden></p>
@@ -761,6 +799,19 @@ body { margin: 0; }
       </div>
     </div>
     <div class="panel olderbox" id="log-older" hidden></div>
+    <div class="panel" id="l-admin" hidden>
+      <div class="phead">
+        <div>
+          <h3>For the Admin</h3>
+          <p class="sub">This month's corrections with their reasons, and every entry taken off the ledger, with who did it and when.</p>
+        </div>
+        <div class="actions"><div class="seg compact" role="group" aria-label="Show" id="l-adm">
+          <button type="button" data-a="cor" aria-pressed="true">Corrections</button>
+          <button type="button" data-a="del" aria-pressed="false">Deleted entries</button>
+        </div></div>
+      </div>
+      <div class="tbl-wrap" id="l-admbox"></div>
+    </div>
     <p class="hint" id="l-count"></p>
     <div class="log" id="l-list"><div class="empty">Loading entries…</div></div>
   </section>
@@ -789,7 +840,8 @@ import { initializeFirestore, memoryLocalCache, doc, collection, getDoc, getDocs
 import { firebaseConfig } from "./firebase-config.js";
 
 const $ = s => document.querySelector(s);
-const COL = { entries: "stockEntries", sapReports: "stockReports", config: "stockConfig", closes: "stockCloses" };
+const COL = { entries: "stockEntries", sapReports: "stockReports", config: "stockConfig", closes: "stockCloses",
+  marks: "stockMarks", deleted: "stockDeleted", brief: "stockBrief", dispday: "dispday" };   // 16 Nov 2026
 let fdb, me = "", isAdmin = false, canEdit = false, done = false;
 
 function gate(mode){
@@ -839,6 +891,33 @@ function makeDb(){
         args.push("at", new Date().toISOString(), "by", me);
         b.update(doc(fdb, COL.closes, close), ...args);
         await b.commit(); return { id };
+      } catch (e) { throw tr(e); }
+    },
+    // taking an entry off the ledger keeps a copy for the Admin (stockDeleted) with who and when, in the same write
+    removeEntry: async ({ id, log, close, deltas }) => {
+      try {
+        const b = writeBatch(fdb);
+        b.delete(doc(fdb, COL.entries, String(id)));
+        b.set(doc(fdb, COL.deleted, String(id)), log);   // the database checks this copy is made when an entry is taken off
+        if (close) {
+          const args = [];
+          for (const [segs, v] of deltas) args.push(new FieldPath(...segs.map(String)), increment(v));
+          args.push("at", new Date().toISOString(), "by", me);
+          b.update(doc(fdb, COL.closes, close), ...args);
+        }
+        await b.commit();
+      } catch (e) { throw tr(e); }
+    },
+    // the Admin's "Fix from orders": many writes, in groups the database accepts (one by one if a group is refused)
+    writeMany: async (ops, progress) => {
+      const one = ([k, p, d]) => k === "del" ? deleteDoc(ref(p)) : setDoc(ref(p), d);
+      try {
+        for (let i = 0; i < ops.length; i += 300) {
+          const part = ops.slice(i, i + 300);
+          try { const b = writeBatch(fdb); for (const [k, p, d] of part) { if (k === "del") b.delete(ref(p)); else b.set(ref(p), d); } await b.commit(); }
+          catch (e) { if (!e || e.code !== "permission-denied") throw e; for (let j = 0; j < part.length; j += 10) await Promise.all(part.slice(j, j + 10).map(one)); }
+          if (progress) progress(Math.min(ops.length, i + 300), ops.length);
+        }
       } catch (e) { throw tr(e); }
     },
     collection: c => ({
@@ -918,6 +997,7 @@ async function importFile(e){
 }
 
 // ---------- start: who is this, and are they allowed in? ----------
+if (document.documentElement.classList.contains("embedded")) $("#gateBack").target = "_top";   // inside the dashboard: back = the whole page
 gate("checking");
 let app, auth;
 try {
@@ -941,6 +1021,9 @@ if (auth) onAuthStateChanged(auth, async user => {
   }
   $("#whoName").textContent = md.name || me;
   $("#accBtn").hidden = !isAdmin;
+  if (isAdmin && document.documentElement.classList.contains("embedded")) {   // inside the dashboard: Access at the foot of the ledger
+    const foot = document.createElement("div"); foot.className = "accfoot wrap"; foot.appendChild($("#accBtn")); $("#ledgerApp").appendChild(foot);
+  }
   done = true; gate("ok");
   // Maintenance (switched by the Admin on the dashboard): everyone else sees the message; when it's switched off, the page reloads.
   let paused = false;
@@ -949,7 +1032,18 @@ if (auth) onAuthStateChanged(auth, async user => {
     if (d.on) { paused = true; gate("maint"); if (String(d.msg || "").trim()) $("#gateText").textContent = String(d.msg).trim(); }
     else if (paused) location.reload();
   }, () => {});
-  window.__stock.resolve({ db: makeDb(), user: { id: async () => me, can: async () => canEdit, canEdit: async () => isAdmin } });
+  // the dashboard's own records the ledger needs: the dealer list (to pair names) and, for the Admin's "Fix from orders",
+  // the dispatched orders (readable by everyone on the team; nothing from the ledger is ever written to them)
+  const dash = {
+    dealers: async () => { const d = await getDoc(doc(fdb, "config", "dealers")); return d.exists() && Array.isArray(d.data().list) ? d.data().list.map(x => x && x.name).filter(Boolean) : []; },
+    ordersSince: async ms => (await getDocsFromServer(query(collection(fdb, "orders"), where("dispatchedAt", ">=", ms)))).docs.map(d => ({ id: d.id, ...d.data() })),
+    order: async id => { const d = await getDoc(doc(fdb, "orders", String(id))); return d.exists() ? { id: d.id, ...d.data() } : null; },
+    // when the link with the dashboard started (the Admin's first visit to that version): dispatches before it were typed here by hand
+    // the products the Admin keeps on the dashboard (config/products); the ledger adds a column for each one it doesn't have
+    products: async () => { const d = await getDoc(doc(fdb, "config", "products")); return d.exists() && Array.isArray(d.data().list) ? d.data().list : []; },
+    linkFrom: async () => { const d = await getDoc(doc(fdb, "config", "stockLink")); return d.exists() && typeof d.data().from === "number" ? d.data().from : null; },
+  };
+  window.__stock.resolve({ db: makeDb(), dash, user: { id: async () => me, can: async () => canEdit, canEdit: async () => isAdmin } });
 });
 $("#accBtn").addEventListener("click", () => { const p = $("#accessPanel"); p.hidden = !p.hidden; if (!p.hidden) { renderAccess(); p.scrollIntoView({ block: "start" }); } });
 $("#accClose").addEventListener("click", () => { $("#accessPanel").hidden = true; });
@@ -982,9 +1076,9 @@ $("#impFile").addEventListener("change", importFile);
   const openingBook = (b) => (opening && opening.books ? opening.books[b] : b === 'TPH' && opening ? opening.dealers : null) || {};
   const TYPES = {
     billing: { label: 'Billing', hint: 'Invoice raised in SAP. SAP stock goes down; dealer balance goes up (advance).' },
-    dispatch: { label: 'Dispatch', hint: 'Material lifted from the godown. Physical stock goes down; dealer balance goes down (pendency).' },
+    dispatch: { label: 'Dispatch', hint: 'Material lifted from the godown. Physical stock goes down; dealer balance goes down (pendency). Orders marked dispatched on the dashboard are entered here by themselves: use this only for a dispatch that has no dashboard order.' },
     arrival: { label: 'Arrival', hint: 'Trailer received. Adds to both SAP and physical stock.' },
-    correction: { label: 'Correction', hint: 'Fix a balance after checking. Use + or − to add or remove. The depot decides which dealer sheet a dealer correction goes to. Corrections stay in the Entries log.' },
+    correction: { label: 'Correction', hint: 'Fix a balance after checking. Use + or − to add or remove. The depot decides which dealer sheet a dealer correction goes to. A reason is needed; the Admin sees every correction with its reason.' },
   };
 
   const $ = (s) => document.querySelector(s);
@@ -1002,6 +1096,10 @@ $("#impFile").addEventListener("change", importFile);
 
   let db = null, user = null, myId = null, canWrite = true;
   let opening = null, entries = [], entriesLoaded = false;
+  // 16 Nov 2026: dispatches marked on the dashboard arrive as entries with src "order" (id ord_<order id>) under the
+  // dashboard's dealer name; config/dealerLinks (Admin) says which dealer on this ledger each such name is. rawEntries
+  // are the entries as stored; `entries` are the same with those names turned into this ledger's names.
+  let rawEntries = [], links = {}, marks = {}, dispDays = {}, dash = null, dashNames = null, deletedList, xAll = false, linkFrom = null;
   let capacity = null, isAdmin = false, capConfirmKey = null;
   let reports = {}; // `${date}_${godown}` -> {date, godown, sap:{k:bags}, phys:{k:bags}}
 
@@ -1033,7 +1131,7 @@ $("#impFile").addEventListener("change", importFile);
 
   // ---------- entry form: bags and MT linked ----------
   const qty = $('#qty');
-  STOCK_ORDER.forEach((k) => {
+  function addQtyInput(k) {
     const p = document.createElement('div'); p.className = 'qp'; p.textContent = P[k];
     const bw = document.createElement('div'); const b = document.createElement('input');
     b.type = 'number'; b.id = 'fb-' + k; b.inputMode = 'numeric'; b.step = '1'; b.placeholder = '0'; b.setAttribute('aria-label', P[k] + ' bags');
@@ -1043,9 +1141,10 @@ $("#impFile").addEventListener("change", importFile);
     m.addEventListener('input', () => { const v = m.value === '' ? '' : Number(m.value); b.value = v === '' || isNaN(v) ? '' : String(Math.round(v * 20)); updateTotal(); });
     m.addEventListener('blur', () => { if (b.value !== '') m.value = (Number(b.value) / 20).toFixed(2); });
     bw.appendChild(b); mw.appendChild(m);
-    qty.append(p, bw, mw);
-  });
-  const tl = document.createElement('div'); tl.className = 'qt first'; tl.textContent = 'TOTAL';
+    [p, bw, mw].forEach((x) => qty.insertBefore(x, document.getElementById('f-total-l')));
+  }
+  STOCK_ORDER.forEach(addQtyInput);
+  const tl = document.createElement('div'); tl.className = 'qt first'; tl.id = 'f-total-l'; tl.textContent = 'TOTAL';
   const tb = document.createElement('div'); tb.className = 'qt'; tb.id = 'f-total-b'; tb.textContent = '0';
   const tm = document.createElement('div'); tm.className = 'qt'; tm.id = 'f-total-m'; tm.textContent = '0.00';
   qty.append(tl, tb, tm);
@@ -1084,13 +1183,14 @@ $("#impFile").addEventListener("change", importFile);
   }
   const needsDealer = () => state.type === 'billing' || state.type === 'dispatch' || (state.type === 'correction' && $('#f-target').value === 'dealer');
   const needsGodown = () => true;
-  function resetCapWarn() { if (capConfirmKey) { capConfirmKey = null; $('#f-capwarn').hidden = true; } }
+  function resetCapWarn() { if (capConfirmKey) { capConfirmKey = null; $('#f-capwarn').hidden = true; $('#f-dupwarn').hidden = true; } }
   ['#view-entry'].forEach((s) => { const v = $(s); v.addEventListener('input', resetCapWarn); v.addEventListener('click', (e) => { if (e.target.closest('.seg')) resetCapWarn(); }); });
   function renderForm() {
     $$('.seg.types button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.type === state.type)));
     $$('#f-godown button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.g === state.godown)));
     $('#type-hint').textContent = TYPES[state.type].hint;
     $('#wrap-target').hidden = state.type !== 'correction';
+    $('#wrap-reason').hidden = state.type !== 'correction';
     $('#wrap-dealer').hidden = !needsDealer();
     $('#wrap-godown').hidden = !needsGodown();
     $('#qty-hint').textContent = state.type === 'correction' ? 'Type bags or MT, with − to remove. The other fills in.' : 'Type bags or MT. The other fills in.';
@@ -1115,7 +1215,7 @@ $("#impFile").addEventListener("change", importFile);
   }
   function clearForm(all) {
     KEYS.forEach((k) => { $('#fb-' + k).value = ''; $('#fm-' + k).value = ''; });
-    $('#f-ref').value = '';
+    $('#f-ref').value = ''; $('#f-reason').value = '';
     if (all) $('#f-dealer').value = '';
     $('#f-err').hidden = true; updateTotal(); renderDealerHint();
   }
@@ -1133,6 +1233,8 @@ $("#impFile").addEventListener("change", importFile);
     if (state.type !== 'correction' && Object.values(items).some((v) => v < 0)) return err('Quantities can’t be negative here. Use a Correction to reduce a balance.');
     const dealer = needsDealer() ? normDealer($('#f-dealer').value) : '';
     if (needsDealer() && !dealer) return err('Enter the dealer name.');
+    const reason = state.type === 'correction' ? $('#f-reason').value.trim().replace(/\s+/g, ' ').slice(0, 120) : '';
+    if (state.type === 'correction' && reason.length < 3) { $('#f-reason').focus(); return err('Write the reason for this correction. The Admin sees every correction with its reason.'); }
     const doc = {
       type: state.type, date, items,
       godown: needsGodown() ? state.godown : '',
@@ -1140,6 +1242,21 @@ $("#impFile").addEventListener("change", importFile);
       ref: $('#f-ref').value.trim().slice(0, 80),
       at: new Date().toISOString(), by: myId || '',
     };
+    if (reason) doc.reason = reason;
+    // a dispatch typed here that a dashboard order has already put in the ledger (same day, depot, dealer and bags)
+    if (doc.type === 'dispatch') {
+      const same = (a, b) => KEYS.every((k) => Number(a[k] || 0) === Number(b[k] || 0));
+      const twin = entries.find((x) => x.src === 'order' && x.date === date && x.godown === doc.godown && x.dealer === dealer && same(x.items || {}, items));
+      const key = JSON.stringify(['dup', doc.godown, date, dealer, items]);
+      if (twin && capConfirmKey !== key) {
+        const w = $('#f-dupwarn'); w.replaceChildren();
+        w.append(el('strong', '', 'Already in the ledger from a dashboard order'),
+          el('span', '', 'A dispatch of the same bags to ' + dealer + ' from ' + GLABEL[doc.godown] + ' on ' + toDMY(date) + ' came in from the dashboard' + (twin.ref ? ' (vehicle ' + twin.ref + ')' : '') + '. Saving this would count it twice.'),
+          el('span', '', 'Press Save anyway only if this is a second, separate dispatch.'));
+        w.hidden = false; capConfirmKey = key; $('#f-save').textContent = 'Save anyway';
+        return;
+      }
+    }
     // capacity check: arrivals and upward SAP corrections raise SAP stock
     const raisesSap = doc.godown && (doc.type === 'arrival' || (doc.type === 'correction' && doc.target === 'sap'));
     const capB = capacity && Number(capacity[doc.godown] || 0);
@@ -1159,7 +1276,7 @@ $("#impFile").addEventListener("change", importFile);
     const btn = $('#f-save'); btn.disabled = true;
     try {
       await addEntry(doc);
-      capConfirmKey = null; $('#f-capwarn').hidden = true;
+      capConfirmKey = null; $('#f-capwarn').hidden = true; $('#f-dupwarn').hidden = true;
       const tot = Object.values(items).reduce((a, b) => a + b, 0);
       toast(TYPES[state.type].label + ' saved' + (dealer ? ': ' + dealer : '') + ', ' + bm(tot));
       clearForm(false);
@@ -1573,13 +1690,16 @@ $("#impFile").addEventListener("change", importFile);
     $('#l-count').textContent = list.length + ' of ' + entries.length + ' entries';
     if (!list.length) { box.appendChild(el('div', 'empty', entries.length ? 'No entries match these filters.' : 'No entries yet. Add the first one from New Entry.')); return; }
     list.slice(0, 300).forEach((e) => {
-      const card = el('div', 'entry');
+      const fromOrder = e.src === 'order';
+      const card = el('div', 'entry' + (fromOrder ? ' fromorder' : ''));
       const top = el('div', 'entry-top');
       const left = el('div', 'entry-who');
       left.append(el('span', 'chip ' + e.type, (TYPES[e.type] || {}).label || e.type),
         el('span', '', e.dealer || (e.type === 'arrival' ? 'Trailer arrival' : e.target === 'sap' ? 'SAP stock' : e.target === 'phys' ? 'Physical stock' : '')));
+      if (fromOrder) left.append(el('span', 'chip order', 'From order'));
       const right = el('div');
-      if (state.confirmId === e.id) {
+      if (fromOrder) right.append(el('span', 'hint', 'Change it on the dashboard order'));
+      else if (state.confirmId === e.id) {
         right.className = 'confirm';
         const y = el('button', 'btn danger small', 'Delete');
         y.addEventListener('click', async () => { try { await removeEntry(e); toast('Entry deleted'); } catch { toast('Couldn’t delete. Try again.'); } state.confirmId = null; renderLog(); });
@@ -1603,7 +1723,8 @@ $("#impFile").addEventListener("change", importFile);
       keys.forEach((k) => { const v = Number(e.items[k]); tot += v; rb.appendChild(el('td', '', sgn(v))); rm.appendChild(el('td', '', mt(v))); });
       rb.appendChild(el('td', '', sgn(tot))).style.fontWeight = '700'; rm.appendChild(el('td', '', mt(tot))).style.fontWeight = '700';
       tbd.append(rb, rm); t.appendChild(tbd); wrap.appendChild(t);
-      const meta = el('div', 'entry-meta', [toDMY(e.date), e.godown ? GLABEL[e.godown] : 'TP+Harrawala', e.ref ? 'Ref ' + e.ref : ''].filter(Boolean).join(' · '));
+      const meta = el('div', 'entry-meta', [toDMY(e.date), e.godown ? GLABEL[e.godown] : 'TP+Harrawala', e.ref ? (fromOrder ? 'Vehicle ' : 'Ref ') + e.ref : '',
+        fromOrder && e.dashDealer && normDealer(e.dashDealer) !== e.dealer ? 'dashboard name ' + e.dashDealer : '', e.reason ? 'Reason: ' + e.reason : ''].filter(Boolean).join(' · '));
       card.append(top, wrap, meta); box.appendChild(card);
     });
   }
@@ -1611,9 +1732,9 @@ $("#impFile").addEventListener("change", importFile);
   function renderAll() {
     renderForm();
     renderCapAlert();
-    if (state.view === 'stock') renderStock();
-    if (state.view === 'dealers') renderDealers();
-    if (state.view === 'log') renderLog();
+    if (state.view === 'stock') { renderStock(); renderXcheck(); }
+    if (state.view === 'dealers') { renderDealers(); renderUnlinked(); }
+    if (state.view === 'log') { renderLog(); renderLogAdmin(); }
     if (state.view === 'tally') renderTally();
     if (state.view === 'setup') renderSetupLive();
     renderSetupBanner();
@@ -1745,6 +1866,7 @@ $("#impFile").addEventListener("change", importFile);
   function renderSetupLive() { if (!ost.draft) { if (opening) openSetup(); else closeSetup(); return; } renderOCheck(); }
   function renderSetupBanner() {
     $('#d-open-edit').hidden = !isAdmin || !opening || Object.keys(closes).length > 0;
+    $('#d-links').hidden = !isAdmin || !opening;
     const b = $('#setup-banner');
     if (opening || !db) { b.hidden = true; return; }
     b.hidden = false; b.replaceChildren();
@@ -1756,6 +1878,250 @@ $("#impFile").addEventListener("change", importFile);
     } else b.textContent = 'The ledger hasn’t been started yet. An admin needs to start it from Opening Balance.';
   }
   $('#d-open-edit').addEventListener('click', openSetup);
+
+  // ---------- products added on the dashboard (18 Nov 2026): a column for each, after the six from the start ----------
+  function applyProducts(list) {
+    let added = false;
+    (Array.isArray(list) ? list : []).forEach((p) => {
+      if (!p || typeof p.name !== 'string' || !p.name || typeof p.key !== 'string' || !/^[A-Z0-9]{2,12}$/.test(p.key)) return;
+      DASH_PRODUCT[p.name] = p.key;
+      if (P[p.key]) return;
+      P[p.key] = p.name.slice(0, 40); KEYS.push(p.key); STOCK_ORDER.push(p.key); DEALER_ORDER.push(p.key);
+      DEALER_LABEL[p.key] = String(p.label || p.name).toUpperCase().slice(0, 14);
+      addQtyInput(p.key); addTallyInput(p.key); added = true;
+    });
+    const h = $('#o-paste-hint');
+    if (h) h.textContent = 'Copy the dealer rows from Excel: the name, then ' + DEALER_ORDER.map((k) => DEALER_LABEL[k]).join(', ') + ' (the total is optional)' + (DEALER_ORDER.length > 6 ? '; a sheet with only the first six columns works too' : '') + '. Dealers already in the list are updated; new ones are added.';
+    if (added) { setUnitInputs(); renderAll(); }
+  }
+
+  // ---------- dashboard dispatches: dealer names (16 Nov 2026) ----------
+  const keyOf = (n) => normDealer(n).replace(/[^A-Z0-9]/g, '');
+  let ledgerKeys = new Map();
+  // the dealers of this ledger: its opening sheets and every dealer entered here (not names that came in from the dashboard)
+  function ledgerNamesStrict() {
+    const s = new Set();
+    const op = origOpening;
+    if (op) BOOKS.forEach((b) => Object.keys((op.books ? op.books[b.k] : b.k === 'TPH' ? op.dealers : null) || {}).forEach((n) => s.add(n)));
+    rawEntries.forEach((e) => { if (e.dealer && e.src !== 'order') s.add(e.dealer); });
+    Object.values(links).forEach((n) => { if (n) s.add(n); });
+    return s;
+  }
+  // a dashboard dealer name → this ledger's dealer: the Admin's pairing, else the dealer spelt the same here (spaces,
+  // capitals, dots and dashes aside), else the dashboard name itself (a dealer new to this ledger)
+  function ledgerName(n) {
+    if (Object.prototype.hasOwnProperty.call(links, n)) return links[n] || normDealer(n);
+    return ledgerKeys.get(keyOf(n)) || normDealer(n);
+  }
+  function fixEntry(e) { return e.src === 'order' ? { ...e, dashDealer: e.dealer, dealer: ledgerName(e.dealer) } : e; }
+  function remap() {
+    ledgerKeys = new Map([...ledgerNamesStrict()].map((n) => [keyOf(n), n]));
+    entries = rawEntries.map(fixEntry);
+  }
+  function unlinkedNames() {
+    const keys = new Set([...ledgerNamesStrict()].map(keyOf)), out = new Map();
+    rawEntries.forEach((e) => { if (e.src === 'order' && e.dealer && !Object.prototype.hasOwnProperty.call(links, e.dealer) && !keys.has(keyOf(e.dealer))) out.set(e.dealer, (out.get(e.dealer) || 0) + 1); });
+    return out;
+  }
+  function renderUnlinked() {
+    const b = $('#d-unlinked'), u = unlinkedNames();
+    if (!u.size || !opening || !$('#linksPanel').hidden) { b.hidden = true; return; }
+    b.hidden = false; b.replaceChildren(el('span', '', (u.size === 1 ? '1 dealer' : u.size + ' dealers') + ' came in from dashboard dispatches under a name that isn’t on this ledger: ' + [...u.keys()].join(', ') + '. If it is a dealer you already have here under another spelling, pair the names so the balances join.'));
+    if (isAdmin) { const go = el('button', 'btn small', 'Pair names'); go.type = 'button'; go.addEventListener('click', openLinks); b.append(go); }
+    else b.append(el('span', '', 'The Admin can pair them.'));
+  }
+  const GENERIC = new Set(['TRADERS', 'TRADER', 'TRADING', 'STORE', 'STORES', 'AGENCY', 'AGENCIES', 'HARDWARE', 'BUILDING', 'BUILDERS', 'BUILD', 'CEMENT', 'ENTERPRISES', 'ENTERPRISE', 'SUPPLY', 'SUPPLIERS', 'CO', 'AND', 'MS', 'M', 'S', 'THE', 'SONS', 'ASSOCIATES', 'ASSOCIATE', 'MART', 'CENTRE', 'CENTER', 'HOME', 'SOLUTIONS', 'MATERIAL', 'MATERIALS', 'BROTHERS', 'BROS']);
+  const words = (n) => normDealer(n).split(/[^A-Z0-9]+/).filter((w) => w && !GENERIC.has(w));
+  function suggestFor(n, names) {
+    const mine = new Set(words(n)); if (!mine.size) return '';
+    let best = '', score = 0, tie = false;
+    names.forEach((x) => { const sc = words(x).filter((w) => mine.has(w)).length; if (sc > score) { best = x; score = sc; tie = false; } else if (sc && sc === score) tie = true; });
+    return score && !tie ? best : '';
+  }
+  async function openLinks() {
+    const p = $('#linksPanel'); p.hidden = false; $('#d-unlinked').hidden = true;
+    p.replaceChildren(el('p', 'hint', 'Loading the dashboard’s dealer list…'));
+    p.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (!dashNames) {
+      try { dashNames = dash ? await dash.dealers() : []; }
+      catch { p.replaceChildren(el('p', 'err', 'Couldn’t load the dashboard’s dealers. Check your connection and try again.')); return; }
+    }
+    renderLinks();
+  }
+  function renderLinks() {
+    const p = $('#linksPanel'); p.replaceChildren();
+    const names = [...ledgerNamesStrict()].sort();
+    const keys = new Set([...ledgerNamesStrict()].map(keyOf));
+    const withDisp = new Set(rawEntries.filter((e) => e.src === 'order').map((e) => e.dealer));
+    const all = [...new Set([...(dashNames || []), ...withDisp])];
+    const auto = all.filter((n) => !Object.prototype.hasOwnProperty.call(links, n) && keys.has(keyOf(n)));
+    const rows = all.filter((n) => !auto.includes(n)).sort((a, b) => (withDisp.has(b) - withDisp.has(a)) || a.localeCompare(b));
+    const head = el('div', 'phead'); const ht = el('div');
+    ht.append(el('h3', '', 'Dashboard dealer names'),
+      el('p', 'sub', 'Dispatches marked on the dashboard come in under the dashboard’s dealer name. ' + (auto.length === 1 ? '1 name is' : auto.length + ' names are') + ' spelt the same as a dealer here and join by themselves. For each name below, pick the dealer it is on this ledger, or keep it as a dealer of its own. You do this once; new dealers show up here when they are first dispatched.'));
+    head.append(ht); p.append(head);
+    const box = el('div', 'links');
+    if (!rows.length) box.append(el('p', 'hint', 'Every dashboard dealer name matches a dealer on this ledger. Nothing to pair.'));
+    rows.forEach((n) => {
+      const r = el('div', 'linkrow'); const nm = el('div', 'nm'); nm.append(el('b', '', n));
+      nm.append(el('small', '', withDisp.has(n) ? 'Has dispatches on this ledger' : 'No dispatches yet'));
+      const pick = el('div', 'pick'); const sel = document.createElement('select'); sel.dataset.name = n; sel.setAttribute('aria-label', 'Dealer on this ledger for ' + n);
+      const own = document.createElement('option'); own.value = ''; own.textContent = 'Its own dealer: ' + normDealer(n); sel.append(own);
+      names.forEach((x) => { const o = document.createElement('option'); o.value = x; o.textContent = x; sel.append(o); });
+      sel.value = Object.prototype.hasOwnProperty.call(links, n) ? links[n] : '';
+      pick.append(sel);
+      const sug = suggestFor(n, names);
+      if (sug && !Object.prototype.hasOwnProperty.call(links, n)) { const sb = el('button', 'btn ghost small sug', 'Looks like ' + sug + '?'); sb.type = 'button'; sb.addEventListener('click', () => { sel.value = sug; sb.remove(); }); pick.append(sb); }
+      r.append(nm, pick); box.append(r);
+    });
+    p.append(box);
+    const err = el('p', 'err'); err.hidden = true;
+    const row = el('div', 'row');
+    const close = el('button', 'btn ghost', 'Close'); close.type = 'button'; close.addEventListener('click', () => { p.hidden = true; renderUnlinked(); });
+    const save = el('button', 'btn', 'Save names'); save.type = 'button'; save.hidden = !rows.length;
+    save.addEventListener('click', async () => {
+      const map = { ...links };
+      p.querySelectorAll('select[data-name]').forEach((s) => { map[s.dataset.name] = s.value; });
+      save.disabled = true;
+      try {
+        await db.doc('config/dealerLinks').set({ map, at: new Date().toISOString(), by: myId || '' });
+        // last month's close was worked out with the old names: work it out again
+        const lm = shiftMonth(monthOf(todayISO()), -1);
+        if (closes[lm] && !closes[lm].final) { try { await db.doc('marks/' + lm).set({ at: Date.now(), by: myId || '' }); } catch {} }
+        p.hidden = true; toast('Dealer names saved'); renderAll();
+      } catch (e) { err.textContent = 'Couldn’t save. Only the Admin can change this. Check your connection and try again.'; err.hidden = false; }
+      finally { save.disabled = false; }
+    });
+    row.append(close, save); p.append(err, row);
+  }
+  $('#d-links').addEventListener('click', openLinks);
+
+  // ---------- orders vs ledger (Admin): each day's dispatched bags by depot ----------
+  // dispday/<date> holds the bags dispatched in dashboard orders that day, by depot and product, kept by the dashboard
+  // in the same write as each dispatch. The ledger's own side: every dispatch entry (from orders and by hand).
+  const sumIt = (it) => KEYS.reduce((a, k) => a + Number((it || {})[k] || 0), 0);
+  function dispatchCheck() {
+    if (!opening || !origOpening || linkFrom == null) return [];
+    const m0 = monthOf(todayISO()) + '-01', lf = istDay(linkFrom), to = todayISO();
+    const from = [origOpening.date, m0, lf].sort().pop();
+    const rows = new Map(), row = (d, g) => { const k = d + '|' + g; if (!rows.has(k)) rows.set(k, { date: d, g, orders: 0, fromOrders: 0, manual: 0 }); return rows.get(k); };
+    Object.values(dispDays).forEach((x) => { if (x.date >= from && x.date <= to) GODOWNS.forEach((g) => { const n = sumIt(x[g.k]); if (n) row(x.date, g.k).orders += n; }); });
+    // hand-typed dispatches saved before the link started belong to the old way of working: left out
+    entries.forEach((e) => { if (e.type === 'dispatch' && e.godown && e.date >= from && e.date <= to && (e.src === 'order' || !(Date.parse(e.at) < linkFrom))) { const r = row(e.date, e.godown); if (e.src === 'order') r.fromOrders += sumIt(e.items); else r.manual += sumIt(e.items); } });
+    return [...rows.values()].map((r) => ({ ...r, ledger: r.fromOrders + r.manual })).sort((a, b) => b.date.localeCompare(a.date) || a.g.localeCompare(b.g));
+  }
+  function renderXcheck() {
+    const p = $('#xcheck'); p.hidden = !isAdmin || !opening; if (p.hidden) return;
+    if (linkFrom == null) { const st = $('#x-status'); st.className = 'status none'; st.replaceChildren('NOT STARTED YET', el('small', '', 'The link with dashboard orders starts when the Admin first opens the new dashboard. This check starts then.')); $('#x-table').replaceChildren(); $('#x-all').hidden = true; $('#x-fix').hidden = true; return; }
+    $('#x-fix').hidden = false;
+    const all = dispatchCheck(), gaps = all.filter((r) => r.ledger !== r.orders);
+    const st = $('#x-status'); st.className = 'status ' + (gaps.length ? 'bad' : 'ok'); st.replaceChildren();
+    st.append(gaps.length ? 'ORDERS AND LEDGER DIFFER ON ' + gaps.length + (gaps.length === 1 ? ' DEPOT-DAY' : ' DEPOT-DAYS') : 'ORDERS AND LEDGER MATCH ✓');
+    st.append(el('small', '', gaps.length ? 'A dispatch typed in the ledger by hand shows here as a gap, and so does an order whose ledger line didn’t save. Fix from orders adds missing order lines; check the hand-typed ones.'
+      : all.length ? 'Every depot-day this month: bags dispatched in orders = bags dispatched in the ledger.' : 'No dispatches this month yet.'));
+    $('#x-all').hidden = !all.length;
+    $('#x-all').textContent = xAll ? 'Show gaps only' : 'Show every day';
+    const list = xAll ? all : gaps;
+    const t = $('#x-table'); t.replaceChildren();
+    if (!list.length) return;
+    const th = el('thead'), hr = el('tr');
+    ['Date', 'Depot', 'Orders', 'Ledger from orders', 'Ledger by hand', 'Gap'].forEach((h) => hr.append(el('th', '', h))); th.append(hr); t.append(th);
+    const tb = el('tbody');
+    list.forEach((r) => {
+      const tr = el('tr'), gap = r.ledger - r.orders;
+      tr.append(el('td', 'lab', toDMY(r.date)), el('td', 'lab', GLABEL[r.g]), el('td', '', sgn(r.orders)), el('td', '', sgn(r.fromOrders)), el('td', r.manual ? 'gap' : '', sgn(r.manual)), el('td', gap ? 'gap' : '', gap ? (gap > 0 ? '+' : '') + sgn(gap) : '0'));
+      tb.append(tr);
+    });
+    t.append(tb);
+  }
+  $('#x-all').addEventListener('click', () => { xAll = !xAll; renderXcheck(); });
+  // "Fix from orders": reads the dashboard's dispatched orders (one read each) and puts the ledger's order lines and the
+  // day counts right for this month and last month. Hand-typed dispatches are left as they are.
+  const DASH_GODOWN = { 'Transport Nagar': 'TPN', 'Harrawala': 'HAR', 'Doiwala': 'DOI' };
+  const DASH_PRODUCT = { 'PPC': 'PPC', 'PPC Black': 'BLACK', 'OPC 43': 'OPC43', 'OPC 53': 'OPC53', 'Super Strong (SS)': 'SS', 'Weather Protect (WSP)': 'WSS' };
+  const istDay = (ms) => new Date(ms + 19800000).toISOString().slice(0, 10);
+  function lineOf(o) {   // the same as stockLineOf in the dashboard's app.js
+    if (!o || o.dispatchedAt == null || o.mark === 'Cancelled') return null;
+    const godown = DASH_GODOWN[o.depot]; if (!godown) return null;
+    const list = o.items && o.items.length ? o.items : o.brand ? [{ product: o.brand, bags: o.bags }] : [];
+    const items = {};
+    list.forEach((it) => { const k = DASH_PRODUCT[it.product], n = Math.round(Number(it.bags) || 0); if (k && n > 0) items[k] = (items[k] || 0) + n; });
+    if (!Object.keys(items).length) return null;
+    const v = String(o.vehicle || ''); const self = v.toUpperCase().replace(/[^A-Z0-9]/g, '') === 'SELF';
+    return { type: 'dispatch', src: 'order', orderId: o.id, date: istDay(o.dispatchedAt), godown, dealer: String(o.dealer || ''), items, target: '', ref: (self ? 'Self' : v).slice(0, 80) };
+  }
+  const lineKey = (l) => JSON.stringify([l.date, l.godown, l.dealer, KEYS.map((k) => Number((l.items || {})[k] || 0)), l.ref || '']);
+  $('#x-fix').addEventListener('click', async () => {
+    const b = $('#x-fix'), msg = $('#x-msg'); if (!dash || !origOpening) return;
+    if (linkFrom == null) return;
+    const from = [origOpening.date, windowStart(), istDay(linkFrom)].sort().pop();
+    if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Tap again to fix'; msg.hidden = false; msg.textContent = 'This reads every order dispatched since ' + toDMY(from) + ' (one read per order) and puts the ledger’s order lines and day counts right. Hand-typed dispatches stay as they are.'; setTimeout(() => { if (b.dataset.armed === '1') { b.dataset.armed = ''; b.textContent = 'Fix from orders'; } }, 6000); return; }
+    b.dataset.armed = ''; b.textContent = 'Fix from orders'; b.disabled = true;
+    try {
+      msg.hidden = false; msg.textContent = 'Reading dashboard orders since ' + toDMY(from) + '…';
+      const orders = await dash.ordersSince(Math.max(Date.parse(from + 'T00:00:00+05:30'), linkFrom));
+      const want = new Map(); orders.forEach((o) => { const l = lineOf(o); if (l && l.date >= from) want.set('ord_' + o.id, l); });
+      const have = new Map((await fetchRaw('entries', [['date', '>=', from]])).filter((e) => e.src === 'order').map((e) => [e.id, e]));
+      const ops = [], at = new Date().toISOString(), by = myId || '', cm = monthOf(todayISO()), touched = new Set();
+      let added = 0, fixed = 0, removed = 0;
+      for (const [id, l] of want) {
+        const h = have.get(id);
+        if (!h) { ops.push(['set', 'entries/' + id, { ...l, at, by, fixed: true }]); added++; touched.add(l.date.slice(0, 7)); }
+        else if (lineKey(h) !== lineKey(l)) { ops.push(['set', 'entries/' + id, { ...l, at, by, fixed: true }]); fixed++; touched.add(l.date.slice(0, 7)); touched.add(h.date.slice(0, 7)); }
+      }
+      for (const [id, h] of have) {
+        if (want.has(id)) continue;
+        const o = dash ? await dash.order(h.orderId || id.slice(4)) : null, l = lineOf(o);
+        if (l && l.date < from) continue;   // moved to before the checked dates: leave it
+        const { id: _x, ...raw } = h;
+        ops.push(['del', 'entries/' + id]); ops.push(['set', 'deleted/' + id + '_' + Date.now(), { ...raw, deletedAt: at, deletedBy: by, why: 'Order no longer dispatched (Fix from orders)' }]);
+        removed++; touched.add(h.date.slice(0, 7));
+      }
+      // the day counts, worked out again from the orders
+      const days = {};
+      for (const l of want.values()) { const d = days[l.date] || (days[l.date] = {}); const g = d[l.godown] || (d[l.godown] = {}); Object.entries(l.items).forEach(([k, n]) => { g[k] = (g[k] || 0) + n; }); }
+      const known = new Set([...Object.keys(days), ...Object.values(dispDays).map((x) => x.date).filter((d) => d >= from)]);
+      known.forEach((d) => { const want0 = { date: d, ...(days[d] || {}) }; const cur = dispDays[d] || {}; if (JSON.stringify(GODOWNS.map((g) => KEYS.map((k) => Number(((want0[g.k]) || {})[k] || 0)))) !== JSON.stringify(GODOWNS.map((g) => KEYS.map((k) => Number(((cur[g.k]) || {})[k] || 0))))) ops.push(['set', 'dispday/' + d, { ...want0, at: Date.now(), by, fixed: true }]); });
+      touched.forEach((m) => { if (m < cm) ops.push(['set', 'marks/' + m, { at: Date.now(), by }]); });
+      if (!ops.length) { msg.textContent = 'Checked ' + orders.length + ' dispatched orders since ' + toDMY(from) + ': the ledger already matches them. Nothing to fix.'; return; }
+      await db.writeMany(ops, (n, t) => { msg.textContent = 'Saving… ' + n + ' of ' + t; });
+      msg.textContent = 'Checked ' + orders.length + ' dispatched orders since ' + toDMY(from) + ': ' + [added ? added + ' added' : '', fixed ? fixed + ' corrected' : '', removed ? removed + ' removed' : ''].filter(Boolean).join(', ') + (added || fixed || removed ? '' : 'order lines already right') + '; day counts brought up to date.';
+    } catch (e) { msg.hidden = false; msg.textContent = 'Couldn’t finish: ' + ((e && e.code) || 'error') + '. Nothing is lost; try again.'; }
+    finally { b.disabled = false; }
+  });
+
+  // ---------- Get Report, for the Admin: corrections with their reasons; deleted entries ----------
+  let admView = 'cor';
+  $$('#l-adm button').forEach((b) => b.addEventListener('click', () => { admView = b.dataset.a; renderLogAdmin(); }));
+  async function loadDeleted() {
+    try {
+      const since = new Date(windowStart() + 'T00:00:00').toISOString();
+      deletedList = (await fetchRaw('deleted', [['deletedAt', '>=', since]])).sort((a, b) => String(b.deletedAt).localeCompare(String(a.deletedAt)));
+    } catch { deletedList = null; }
+    renderLogAdmin();
+  }
+  function renderLogAdmin() {
+    const p = $('#l-admin'); p.hidden = !isAdmin || !db; if (p.hidden) return;
+    $$('#l-adm button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.a === admView)));
+    const box = $('#l-admbox'); box.replaceChildren();
+    const table = (head, rows) => { const t = el('table', 'sheet'); const th = el('thead'), hr = el('tr'); head.forEach((h) => hr.append(el('th', '', h))); th.append(hr); const tb = el('tbody'); rows.forEach((r) => tb.append(r)); t.append(th, tb); return t; };
+    const td = (txt, cls) => el('td', cls || '', txt);
+    if (admView === 'cor') {
+      const m0 = monthOf(todayISO()) + '-01';
+      const list = entries.filter((e) => e.type === 'correction' && e.date >= m0).sort((a, b) => (b.date + b.at).localeCompare(a.date + a.at));
+      if (!list.length) { box.append(el('p', 'hint', 'No corrections in ' + monthName(monthOf(todayISO())) + '.')); return; }
+      box.append(el('p', 'hint', list.length + (list.length === 1 ? ' correction' : ' corrections') + ' in ' + monthName(monthOf(todayISO())) + '. For other months, download the entries as Excel (Correction type): the reason is a column.'));
+      box.append(table(['Date', 'Depot', 'Corrected', 'Bags', 'Reason', 'Saved by'], list.map((e) => { const tr = el('tr');
+        tr.append(td(toDMY(e.date), 'lab'), td(e.godown ? GLABEL[e.godown] : ''), td(e.target === 'dealer' ? 'Dealer balance · ' + e.dealer : e.target === 'sap' ? 'SAP stock' : 'Physical stock'), td(sgn(sumIt(e.items))), td(e.reason || '(no reason: before reasons were needed)', e.reason ? '' : 'gap'), td(e.by || '')); return tr; })));
+    } else {
+      if (deletedList === undefined) { box.append(el('p', 'hint', 'Loading…')); loadDeleted(); return; }
+      if (deletedList === null) { box.append(el('p', 'err', 'Couldn’t load the deleted entries. Check your connection.')); return; }
+      if (!deletedList.length) { box.append(el('p', 'hint', 'No entries taken off the ledger since ' + toDMY(windowStart()) + '.')); return; }
+      box.append(el('p', 'hint', deletedList.length + (deletedList.length === 1 ? ' entry' : ' entries') + ' taken off the ledger since ' + toDMY(windowStart()) + ', newest first.'));
+      box.append(table(['Entry date', 'Type', 'Depot', 'Dealer', 'Bags', 'Saved by', 'Taken off by', 'When', 'Why'], deletedList.map((e) => { const tr = el('tr');
+        tr.append(td(toDMY(e.date), 'lab'), td((TYPES[e.type] || {}).label || e.type || ''), td(e.godown ? GLABEL[e.godown] : ''), td(e.dealer || ''), td(sgn(sumIt(e.items))), td(e.by || ''), td(e.deletedBy || ''), td(String(e.deletedAt || '').replace('T', ' ').slice(0, 16)), td(e.why || 'Deleted in the ledger')); return tr; })));
+    }
+  }
   $('#setup-back').addEventListener('click', () => leaveSetup());
   $('#o-cancel').addEventListener('click', () => {
     if (ost.dirty && ost.discardArmed) { const then = ost.pendingLeave; setDirty(false); closeSetup(); if (then) then(); return; }
@@ -1776,7 +2142,7 @@ $("#impFile").addEventListener("change", importFile);
   });
   // paste from Excel: name, then Black, PPC, OPC 53, OPC 43, W.S, S.S (and optionally the total)
   function parseDealerPaste(text) {
-    const rows = [], skipped = [];
+    const rows = [], skipped = [], lines = [];
     const isNum = (t) => /^[-+−]?[\d,]*\.?\d+$/.test(t);
     const num = (t) => Number(t.replace(/,/g, '').replace('−', '-'));
     text.split(/\r?\n/).forEach((line) => {
@@ -1787,12 +2153,31 @@ $("#impFile").addEventListener("change", importFile);
       let nums = toks.slice(i).map(num); let nameToks = toks.slice(0, i);
       const name = normDealer(nameToks.join(' '));
       if (!name || /^(TOTAL|DEALERS?|DATE)\b/.test(name)) { skipped.push(raw); return; }
-      let total = null;
-      if (nums.length >= 7) { const last7 = nums.slice(-7); const s6 = last7.slice(0, 6).reduce((a, b) => a + b, 0); if (Math.abs(s6 - last7[6]) < 0.001) { total = last7[6]; nums = last7.slice(0, 6); } else nums = nums.slice(-6); }
-      if (nums.length !== 6) { skipped.push(raw); return; }
+      lines.push({ raw, name, nums });
+    });
+    // Which columns the sheet has, decided for the whole paste: every product (with or without a total at the end), or,
+    // when products were added on the dashboard, possibly only the first six (an older sheet, with or without its total).
+    const N = DEALER_ORDER.length, sum = (a) => a.reduce((x, y) => x + y, 0), same = (a, b) => Math.abs(a - b) < 0.001;
+    const withTotal = (v, n) => v.length === n + 1 && same(sum(v.slice(0, n)), v[n]);
+    const fits = (n, tot) => lines.length > 0 && lines.every((l) => (tot ? withTotal(l.nums, n) : l.nums.length === n));
+    const someNonZero = lines.some((l) => l.nums.some((x) => x));
+    let cols = null, tot = false;
+    if (fits(N, true)) { cols = N; tot = true; }
+    else if (N > 6 && fits(6, true) && someNonZero) { cols = 6; tot = true; }   // an older sheet: six products and its total
+    else if (fits(N, false)) { cols = N; }
+    else if (N > 6 && fits(6, false)) { cols = 6; }
+    lines.forEach((l) => {
+      // rows that don't all look alike: each row on its own, preferring every product
+      let n = cols, v = l.nums;
+      if (n == null) {
+        if (withTotal(v, N) || v.length === N) n = N; else if (N > 6 && (withTotal(v, 6) || v.length === 6)) n = 6;
+        else if (v.length > N + 1 && withTotal(v.slice(-(N + 1)), N)) { n = N; v = v.slice(-(N + 1)); }
+        else if (v.length > N) { n = N; v = v.slice(-N); }
+      } else if (v.length > n + (tot ? 1 : 0)) v = v.slice(-(n + (tot ? 1 : 0)));
+      if (n == null || v.length < n) { skipped.push(l.raw); return; }
       const it = Object.fromEntries(KEYS.map((k) => [k, 0]));
-      DEALER_ORDER.forEach((k, j) => { it[k] = Math.round(nums[j] * (ost.unit === 'mt' ? 20 : 1)); });
-      rows.push({ name, it });
+      DEALER_ORDER.slice(0, n).forEach((k, j) => { it[k] = Math.round(v[j] * (ost.unit === 'mt' ? 20 : 1)); });
+      rows.push({ name: l.name, it });
     });
     return { rows, skipped };
   }
@@ -1845,8 +2230,8 @@ $("#impFile").addEventListener("change", importFile);
   const toBags = (v) => (v === '' || isNaN(Number(v)) ? null : Math.round(tstate.unit === 'mt' ? Number(v) * 20 : Number(v)));
   const fromBags = (b) => (b == null ? '' : tstate.unit === 'mt' ? (b / 20).toFixed(2) : String(b));
   const convText = (b) => (b == null ? '' : tstate.unit === 'mt' ? fmt.format(b) + ' bags' : mt(b) + ' MT');
-  STOCK_ORDER.forEach((k) => {
-    tq.appendChild(el('div', 'qp', P[k]));
+  function addTallyInput(k) {
+    tq.insertBefore(el('div', 'qp', P[k]), document.getElementById('t-tot-l'));
     ['s', 'p'].forEach((c) => {
       const cell = el('div', 'stack');
       const i = el('input'); i.type = 'number'; i.id = 't' + c + '-' + k; i.min = '0';
@@ -1854,11 +2239,12 @@ $("#impFile").addEventListener("change", importFile);
       const cv = el('span', 'conv'); cv.id = 'tc' + c + '-' + k;
       i.addEventListener('input', () => { cv.textContent = convText(toBags(i.value)); tTotals(); });
       i.addEventListener('blur', () => { const b = toBags(i.value); if (b != null) i.value = fromBags(b); });
-      cell.append(i, cv); tq.appendChild(cell);
+      cell.append(i, cv); tq.insertBefore(cell, document.getElementById('t-tot-l'));
     });
-  });
+  }
+  STOCK_ORDER.forEach(addTallyInput);
   const tt = [el('div', 'qt first', 'TOTAL'), el('div', 'qt'), el('div', 'qt')];
-  tt[1].id = 't-tot-s'; tt[2].id = 't-tot-p'; tq.append(...tt);
+  tt[0].id = 't-tot-l'; tt[1].id = 't-tot-s'; tt[2].id = 't-tot-p'; tq.append(...tt);
   function setUnitInputs() {
     STOCK_ORDER.forEach((k) => ['s', 'p'].forEach((c) => {
       const i = $('#t' + c + '-' + k);
@@ -2161,7 +2547,10 @@ $("#impFile").addEventListener("change", importFile);
   }
   async function removeEntry(e) {
     const c = closeFor(e.date);
-    return c ? db.entryWithClose({ del: e.id, close: c.month, deltas: deltasOf(e, -1) }) : db.doc('entries/' + e.id).delete();
+    const { id, ...raw } = rawEntries.find((x) => x.id === e.id) || e;
+    const log = { ...raw, deletedAt: new Date().toISOString(), deletedBy: myId || '' };
+    await db.removeEntry({ id: e.id, log, close: c ? c.month : null, deltas: c ? deltasOf(e, -1) : [] });
+    deletedList = undefined;
   }
   // a close's figures in a fixed order (zero balances left out), to tell whether two closes say the same
   const canon = (x) => (x && typeof x === 'object' ? '{' + Object.keys(x).sort().map((k) => JSON.stringify(k) + ':' + canon(x[k])).join(',') + '}' : JSON.stringify(Number(x) || 0));
@@ -2181,7 +2570,8 @@ $("#impFile").addEventListener("change", importFile);
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
   }
-  const fetchDocs = async (c, conds) => (await db.collection(c).query(conds).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+  const fetchRaw = async (c, conds) => (await db.collection(c).query(conds).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+  const fetchDocs = async (c, conds) => { const l = await fetchRaw(c, conds); return c === 'entries' ? l.map(fixEntry) : l; };
   // a month's first and last day, kept inside the ledger (not before its start, not into the two months on screen)
   function monthRange(date) {
     const m = monthOf(date), a = m + '-01', b = lastDayOf(m), s = origOpening.date, w = prevDay(windowStart());
@@ -2230,12 +2620,12 @@ $("#impFile").addEventListener("change", importFile);
     const span = from === to ? toDMY(from) : toDMY(from) + ' to ' + toDMY(to);
     if (!list.length) return 'No entries' + (type || q ? ' match these filters' : '') + ' for ' + span + '.';
     const X = await loadXLSX(); const wb = X.utils.book_new();
-    const head = ['Date', 'Type', 'Depot', 'Dealer', 'Correction of', 'Invoice / vehicle no.', ...STOCK_ORDER.map((k) => P[k] + ' bags'), 'Total bags', 'Total MT', 'Saved by', 'Saved at'];
+    const head = ['Date', 'Type', 'Depot', 'Dealer', 'Correction of', 'Reason', 'Invoice / vehicle no.', ...STOCK_ORDER.map((k) => P[k] + ' bags'), 'Total bags', 'Total MT', 'From', 'Saved by', 'Saved at'];
     const rows = list.map((e) => {
       const it = e.items || {}; const t = KEYS.reduce((a, k) => a + Number(it[k] || 0), 0);
       return [toDMY(e.date), (TYPES[e.type] || {}).label || e.type, e.godown ? GLABEL[e.godown] : '', e.dealer || '',
-        e.type === 'correction' ? ({ sap: 'SAP stock', phys: 'Physical stock', dealer: 'Dealer balance' }[e.target] || e.target || '') : '',
-        e.ref || '', ...STOCK_ORDER.map((k) => Number(it[k] || 0)), t, t / 20, e.by || '', e.at ? String(e.at).replace('T', ' ').slice(0, 16) : ''];
+        e.type === 'correction' ? ({ sap: 'SAP stock', phys: 'Physical stock', dealer: 'Dealer balance' }[e.target] || e.target || '') : '', e.reason || '',
+        e.ref || '', ...STOCK_ORDER.map((k) => Number(it[k] || 0)), t, t / 20, e.src === 'order' ? 'Dashboard order' : 'Ledger', e.by || '', e.at ? String(e.at).replace('T', ' ').slice(0, 16) : ''];
     });
     const title = 'Depot Stock Ledger · entries ' + span + (type ? ' · ' + TYPES[type].label : '') + (q ? ' · "' + q + '"' : '');
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([[title], [], head, ...rows]), 'Entries');
@@ -2283,6 +2673,9 @@ $("#impFile").addEventListener("change", importFile);
   (async () => {
     db = await claude.use('db');
     user = await claude.use('user');
+    dash = await claude.use('dash');
+    if (dash) { try { applyProducts(await dash.products()); } catch { /* the six from the start */ } }
+    if (dash) { try { linkFrom = await dash.linkFrom(); } catch { linkFrom = null; } }
     if (!db) {
       const b = $('#banner'); b.hidden = false; b.textContent = 'Couldn’t connect to the database. Check your connection and reload the page.';
       canWrite = false; renderAll(); return;
@@ -2317,15 +2710,15 @@ $("#impFile").addEventListener("change", importFile);
       // the opening and its entries are switched in together, so figures never mix two starting points
       const apply = () => {
         if (e === null || r === null) return;
-        entries = e; reports = r; opening = want; entriesLoaded = true; freshLoad = fe && fr;
-        renderDealerList(); renderAll(); heal();
+        rawEntries = e; remap(); reports = r; opening = want; entriesLoaded = true; freshLoad = fe && fr;
+        renderDealerList(); renderAll(); heal(); queueBrief();
       };
       unsubR = db.collection('sapReports').query([['date', '>=', from]]).onSnapshot((snap) => { r = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()])); fr = !snap.fromCache; apply(); }, () => { r = r || {}; apply(); });
       unsubE = db.collection('entries').query([['date', '>=', from]]).onSnapshot((snap) => { e = snap.docs.map((d) => ({ id: d.id, ...d.data() })); fe = !snap.fromCache; apply(); }, () => { e = e || []; apply(); });
     }
     function refreshOpening() {
       if (!gotOpen || !gotCloses) return;
-      want = effectiveOpening();
+      want = effectiveOpening(); remap();
       const from = want ? want.date : '0000-01-01';
       if (from !== base) subscribe(from); else if (entriesLoaded) opening = want;
       $('#f-date').min = windowStart();
@@ -2349,7 +2742,9 @@ $("#impFile").addEventListener("change", importFile);
       const months = []; for (let m = monthOf(origOpening.date); lastDayOf(m) < W1; m = shiftMonth(m, 1)) months.push(m);
       // the month the ledger starts in is closed only once, for good (until then the Admin can still change the start)
       const sm = monthOf(origOpening.date);
-      const need = months.filter((m) => (!closes[m] && (lastDayOf(m) < W || m !== sm)) || (closes[m] && lastDayOf(m) < W && !closes[m].final));
+      const need = months.filter((m) => (!closes[m] && (lastDayOf(m) < W || m !== sm)) || (closes[m] && lastDayOf(m) < W && !closes[m].final)
+        // a dashboard dispatch (or a change of dealer names) dated in a month that is already closed: work its close out again
+        || (closes[m] && !closes[m].final && marks[m] && Number(marks[m].at) > Date.parse(closes[m].at || 0)));
       if (!need.length) return;
       closing = true;
       try {
@@ -2379,6 +2774,45 @@ $("#impFile").addEventListener("change", importFile);
       const d = closeOf(m, false);
       if (!sameClose(c, d)) { try { await db.doc('closes/' + m).set(d); } catch (e) { /* tried again on the next 1st */ } }
     }
+    // 16 Nov 2026: dealer-name pairings, months to close again, and this month's dispatched bags from orders
+    db.doc('config/dealerLinks').onSnapshot((snap) => { links = snap.exists && snap.data().map && typeof snap.data().map === 'object' ? snap.data().map : {}; remap(); renderAll(); queueBrief(); }, () => {});
+    db.collection('marks').onSnapshot((snap) => { marks = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()])); refreshOpening(); }, () => {});
+    db.collection('dispday').query([['date', '>=', shiftMonth(monthOf(todayISO()), -1) + '-01']]).onSnapshot((snap) => { dispDays = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()])); if (state.view === 'stock') renderXcheck(); queueBrief(); }, () => {});
+    // ---------- the Admin's Brief on the dashboard: a small summary only the Admin can read (stockBrief/latest) ----------
+    // Saved by anyone who can make changes while the ledger is open, when the figures change (at most every 20 seconds).
+    let briefSent = '', briefTimer = null;
+    function briefData() {
+      const today = todayISO(), r = compute(today, 'TPH'), rd = compute(today, 'DOI');
+      const stock = {}; GODOWNS.forEach((g) => { stock[g.k] = {}; KEYS.forEach((k) => { stock[g.k][k] = { sap: r.stock[g.k][k].sap, phys: r.stock[g.k][k].phys }; }); });
+      const recon = {}, pend = {};
+      [['TPH', r], ['DOI', rd]].forEach(([bk, rr]) => {
+        const gap = reconOf(rr, bk).gap; recon[bk] = {}; KEYS.forEach((k) => { if (gap[k]) recon[bk][k] = gap[k]; });
+        pend[bk] = {}; Object.entries(rr.dealers).forEach(([n, it]) => { const p = KEYS.reduce((a, k) => a + Math.min(0, it[k]), 0); if (p < 0) pend[bk][n] = p; });
+      });
+      const latest = {}, tally = {};
+      GODOWNS.forEach((g) => {
+        const ds = Object.values(reports).filter((x) => x.godown === g.k && x.date <= today).map((x) => x.date).sort(), d = ds[ds.length - 1];
+        if (!d) return; latest[g.k] = d;
+        const t = tallyOf(d, g.k); if (!t || !t.rep || t.start) return;
+        const so = {}, po = {}; KEYS.forEach((k) => { if (t.sapOff[k]) so[k] = t.sapOff[k]; if (t.hasPhys && t.phyOff[k]) po[k] = t.phyOff[k]; });
+        if (Object.keys(so).length || Object.keys(po).length) tally[g.k] = { date: d, sap: so, phys: po };
+      });
+      const gaps = dispatchCheck().filter((x) => x.ledger !== x.orders).map((x) => ({ date: x.date, g: x.g, orders: x.orders, ledger: x.ledger, manual: x.manual }));
+      const m0 = monthOf(today) + '-01';
+      const corrections = entries.filter((e) => e.type === 'correction' && e.date >= m0).sort((a, b) => (b.date + b.at).localeCompare(a.date + a.at)).slice(0, 200)
+        .map((e) => ({ date: e.date, godown: e.godown || '', what: e.target === 'dealer' ? 'Dealer balance · ' + e.dealer : e.target === 'sap' ? 'SAP stock' : 'Physical stock', bags: sumIt(e.items), reason: e.reason || '', by: e.by || '' }));
+      return { today, start: origOpening ? origOpening.date : '', stock, recon, pend, reports: latest, tally, gaps, corrections };
+    }
+    function queueBrief() {
+      if (!canWrite || !db || !opening || !entriesLoaded || !freshLoad) return;
+      clearTimeout(briefTimer);
+      briefTimer = setTimeout(async () => {
+        let data; try { data = briefData(); } catch { return; }
+        const j = JSON.stringify(data); if (j === briefSent) return;
+        try { await db.doc('brief/latest').set({ ...data, at: Date.now(), by: myId || '' }); briefSent = j; } catch { /* not allowed (view only) or offline */ }
+      }, briefSent ? 20000 : 1500);
+    }
+    setInterval(queueBrief, 600e3);
     if (window.__STOCK_TEST) window.__STOCK_TEST.api = { compute: (d, s) => compute(d, s), state: () => ({ base, span, opening, entries: entries.length, closes: Object.keys(closes).sort(), windowStart: windowStart() }) };
     db.doc('config/opening').onSnapshot((snap) => { origOpening = snap.exists ? snap.data() : null; gotOpen = true; refreshOpening(); }, () => {});
     db.collection('closes').onSnapshot((snap) => { closes = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()])); gotCloses = true; freshC = !snap.fromCache; refreshOpening(); },

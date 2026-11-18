@@ -98,19 +98,29 @@ label.perm small b{font-weight:600}
 label.perm small b.yes{color:var(--done)}
 label.perm small b.no{color:var(--pending)}
 @media (prefers-reduced-motion:no-preference){.refbtn.spin svg{animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}}
-nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
+/* headings (18 Nov 2026): outlined, evenly spaced. One row on a computer; on a phone an even grid, 3 to a row */
+nav.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px 0 12px}
 nav.tabs::-webkit-scrollbar{display:none}
-.tab{appearance:none;border:0;background:none;color:var(--muted);font:600 15px var(--f-body);padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center}
-.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab{appearance:none;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--muted);font:600 15px var(--f-body);padding:7px 18px;min-height:38px;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center;justify-content:center}
+.tab:hover{color:var(--ink);border-color:var(--muted)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tab[aria-selected="true"]{color:var(--accent-ink);background:var(--accent-soft);border-color:var(--accent)}
 .tab .n{font:600 12px var(--f-body);background:var(--pending-soft);color:var(--pending);border-radius:99px;padding:1px 7px}
 .tab .n:empty{display:none}
 [lang="hi"]{font-family:system-ui,-apple-system,"Noto Sans Devanagari","Nirmala UI","Kohinoor Devanagari",sans-serif}
 label [lang="hi"],th[lang="hi"],th [lang="hi"],.kpi span[lang="hi"],.ticket .stub [lang="hi"],.qpos [lang="hi"]{font-size:14px;letter-spacing:0;text-transform:none}
-@media (max-width:520px){nav.tabs{gap:0}.tab{padding:10px 7px;font-size:14px}}
-@media (max-width:430px){.tab{padding:10px 5px;font-size:13.5px;gap:4px}.tab .n{padding:1px 5px}}
-@media (max-width:370px){.tab{padding:10px 4px;font-size:13px}}
+@media (max-width:600px){
+  nav.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;overflow:visible;padding:4px 0 10px}
+  .tab{grid-column:span var(--span,2);min-width:0;padding:6px 4px;min-height:36px;font-size:14px;gap:4px}
+  .tab .n{padding:1px 5px}
+}
+@media (max-width:370px){.tab{font-size:13px}}
 main{padding-block:20px 60px}
 section.view{display:grid;gap:18px}
+@media (max-width:600px){.sumbar{width:100%;display:flex;flex-wrap:wrap;gap:10px}.sumbar .fld{flex:1 1 100%;min-width:0!important}.sumbar .btn{flex:1 1 140px;justify-content:center}}
+/* the stock ledger, opened like the other headings: full width, filling the screen below the tabs */
+body.stockon main{padding-block:0}
+.stockframe{display:block;border:0;width:calc(100% + 2 * max(16px, env(safe-area-inset-left, 0px)));margin:0 calc(-1 * max(16px, env(safe-area-inset-left, 0px)));min-height:420px;background:transparent}
 h2{font-family:var(--f-display);font-weight:600;font-size:26px;margin:0;text-wrap:balance;letter-spacing:.01em}
 h3{font-family:var(--f-display);font-weight:600;font-size:19px;margin:0;letter-spacing:.02em}
 .sub{color:var(--muted);margin:2px 0 0;max-width:68ch}
@@ -213,7 +223,7 @@ button.kpi:hover,button.kpi:focus-visible{border-color:var(--accent);box-shadow:
 button.kpi > span::after{content:" ›";color:var(--muted)}
 .kpi.on{border-color:var(--accent);background:var(--accent-soft)}
 .kpis.compact .kpi{padding:9px 12px}.kpis.compact .kpi b{font-size:22px}
-@media (max-width:600px){.kpis.compact{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:4px}.kpis.compact .kpi{flex:0 0 136px;scroll-snap-align:start}}
+@media (max-width:600px){.kpis.compact{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi .brow{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 5px;margin-top:2px;line-height:1}
 .kpi .brow b{display:inline;font-size:19px;line-height:1.05}
 .kpis.compact .kpi .brow b{font-size:16px}
@@ -312,6 +322,12 @@ h2{font-size:24px}
 .panel{padding:16px}
 .cols{gap:16px}
 input:not([type=checkbox]):not([type=radio]),select{height:42px}
+/* iPhone (10 Nov): Safari draws date, time and month boxes its own way (taller, centred, wider than their column).
+   Draw them like every other box: same height, text on the left, never wider than the column. */
+input[type=date],input[type=datetime-local],input[type=month],input[type=time]{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;text-align:left;line-height:1.2}
+input::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.2em}
+/* iPhone zooms the page in when a box with text under 16px is tapped: 16px there only */
+@supports (-webkit-touch-callout:none){input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px}}
 textarea{min-height:42px}
 .fld{gap:6px;align-content:start}
 label{font-size:11.5px;letter-spacing:.07em}
@@ -340,6 +356,7 @@ label{font-size:11.5px;letter-spacing:.07em}
 }
 /* product lines */
 .item{grid-template-columns:minmax(0,232px) 92px 36px;justify-content:start}
+@media (max-width:520px){.item{grid-template-columns:minmax(0,1fr) 92px 36px;justify-content:stretch}.item:not(:has(.xbtn)) .it-bags{grid-column:span 2}.item > span:empty{display:none}}
 .xbtn{width:36px;height:42px;padding:0!important;justify-content:center;font-size:20px;line-height:1;color:var(--muted)}
 .items-foot{min-height:30px}
 /* queue, on-hold and scheduled cards: details left, buttons in a column on the right */
@@ -389,6 +406,29 @@ form.grid{gap:12px 14px}
 .eta.small{font-size:12px;white-space:nowrap}
 .vform .btn{height:42px}
 @media (max-width:520px){form#editForm{grid-template-columns:repeat(2,minmax(0,1fr))}#editForm > *{grid-column:1 / -1}#editForm > .fld.h{grid-column:span 1}}
+/* Brief (16 Nov 2026): the Admin's alerts and checks */
+.balert{display:grid;gap:4px;padding:12px 14px;border:1px solid var(--line);border-left:4px solid var(--pending);border-radius:var(--r);background:var(--surface)}
+.balert.amber{border-left-color:var(--accent)}
+.balert.ok{border-left-color:var(--done)}
+.balert b{font-size:15px}
+.balert ul{margin:2px 0 0;padding-left:18px;display:grid;gap:2px;font-size:14px;color:var(--muted)}
+.balert .actions{margin-top:4px}
+.kpis.bk{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:600px){.kpis.bk{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pform{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:12px 14px;align-items:end}
+.pform .pnote{grid-column:1/-1;margin:0}
+@media (max-width:640px){.pform{grid-template-columns:minmax(0,1fr)}.pform .btn{width:100%}}
+.prow .meta .off{color:var(--pending);font-weight:600}
+.prow .pnum{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 13px var(--f-body);color:var(--muted);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.prow .main b{white-space:normal;overflow:visible}
+@media (max-width:600px){.prow{grid-template-columns:auto minmax(0,1fr)}.prow > .btn{grid-column:2;justify-self:start}}
+.bchecks{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+.bchecks>div{min-width:0}
+.bchecks h4{margin:0 0 6px;font:600 15px var(--f-body)}
+.bchecks .tscroll td{white-space:normal;min-width:80px}
+td.okc{color:var(--done);font-weight:600}
+.blimits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px 14px;align-items:end}
+@media (max-width:640px){.blimits{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -416,6 +456,8 @@ form.grid{gap:12px 14px}
       </div>
     </div>
     <nav class="tabs" role="tablist" id="tabs">
+      <!-- Brief: the Admin only, first from the left -->
+      <button class="tab" role="tab" data-v="brief" id="briefTab" aria-selected="false" hidden><span data-t>Brief</span> <span class="n" id="bn"></span></button>
       <button class="tab" role="tab" data-v="new" aria-selected="true"><span data-t>New Order</span></button>
       <button class="tab" role="tab" data-v="orders" aria-selected="false"><span data-t>Orders</span> <span class="n" id="qn"></span></button>
       <button class="tab" role="tab" data-v="summary" aria-selected="false"><span data-t>Summary</span></button>
@@ -510,7 +552,7 @@ form.grid{gap:12px 14px}
   <!-- SUMMARY -->
   <section class="view" id="v-summary" hidden>
     <div class="head"><div><h2 data-t>Summary</h2><p class="sub">The month you pick, by dealer and by day. Time taken is order time to dispatch time; averages leave out Self vehicles.</p></div>
-      <div class="actions" style="align-items:flex-end"><div class="fld" style="min-width:170px"><label for="s-month"><span data-t>Month</span></label><input type="month" id="s-month"></div>
+      <div class="actions sumbar" style="align-items:flex-end"><div class="fld" style="min-width:170px"><label for="s-month"><span data-t>Month</span></label><input type="month" id="s-month"></div>
       <button class="btn sm" id="sumRefresh" type="button">Refresh</button><button class="btn sm" id="sumMaster" type="button" hidden>Download master file</button><button class="btn sm" id="sumRecalc" type="button" hidden>Recalculate month</button></div></div>
     <div class="hint" id="sumNote"></div>
     <div class="kpis" id="kpis"></div>
@@ -524,17 +566,51 @@ form.grid{gap:12px 14px}
     <div class="tscroll pin pinfirst"><table><thead><tr><th data-t>Date</th><th class="num" data-t>Orders</th><th class="num" data-t>Pending</th><th class="num" data-t>On hold</th><th class="num" data-t>Dispatched</th><th class="num" data-t>Cancelled</th><th class="num" data-t>Bags</th><th class="num" data-t>Pending bags</th><th class="num" data-t>Avg time</th></tr></thead><tbody id="dayBody"></tbody></table></div>
   </section>
 
+  <!-- BRIEF: the Admin's own page (16 Nov 2026): what needs attention, yesterday at a glance, stock by depot, this month's checks -->
+  <section class="view" id="v-brief" hidden>
+    <div class="head"><div><h2 data-t>Brief</h2><p class="sub">What needs your attention now, and the day at a glance. Only the Admin sees this page.</p></div>
+      <button class="btn sm" id="briefLimitsBtn" type="button">Alert limits</button></div>
+    <form class="panel blimits" id="briefLimits" hidden></form>
+    <div class="list" id="briefAlerts"></div>
+    <h3 id="briefYdayTitle">Yesterday</h3>
+    <div class="kpis compact bk" id="briefYday"></div>
+    <h3>Pending now</h3>
+    <div class="kpis compact bk" id="briefPend"></div>
+    <div class="head"><h3>Stock by depot</h3><button class="btn sm" id="briefStockBtn" type="button">Bring up to date</button></div>
+    <p class="hint" id="briefStockNote"></p>
+    <div class="tscroll"><table><thead><tr><th>Depot</th><th class="num">SAP stock</th><th class="num">Physical stock</th><th class="num">Pending orders</th><th>Last SAP report</th></tr></thead><tbody id="briefStock"></tbody></table></div>
+    <h3>This month's checks</h3>
+    <div id="briefChecks" class="bchecks"></div>
+  </section>
+
+  <!-- STOCK: the depot stock ledger (stock.html), for the Admin and the people on its access list -->
+  <section class="view" id="v-stock" hidden>
+    <iframe id="stockFrame" class="stockframe" title="Depot stock ledger"></iframe>
+  </section>
   <!-- SETTINGS: Dealers | Vehicles | Team -->
   <div class="topview" id="t-settings" hidden>
-  <div class="seg" role="tablist" aria-label="Settings section">
+  <div class="seg seg4" role="tablist" aria-label="Settings section">
     <button class="segb" type="button" role="tab" data-top="settings" data-sub="dealers" aria-selected="true"><span data-t>Dealers</span></button>
     <button class="segb" type="button" role="tab" data-top="settings" data-sub="vehicles" aria-selected="false"><span data-t>Vehicles</span></button>
+    <button class="segb" type="button" role="tab" data-top="settings" data-sub="products" aria-selected="false" hidden><span data-t>Products</span></button>
     <button class="segb" type="button" role="tab" data-top="settings" data-sub="team" aria-selected="false" hidden><span data-t>Team &amp; emails</span></button>
   </div>
   <!-- DEALERS -->
   <section class="view" id="v-dealers" hidden>
     <div class="head"><div><h2><span data-t>Authorised dealers</span> <span class="hcount" id="dealerCount" hidden></span></h2><p class="sub">These names fill the Dealer list on every order.</p></div></div>
     <div class="panel" id="dealerEditor"></div>
+  </section>
+
+  <!-- PRODUCTS (18 Nov 2026): the Admin adds products; they appear everywhere products do -->
+  <section class="view" id="v-products" hidden>
+    <div class="head"><div><h2><span data-t>Products</span> <span class="hcount" id="productCount"></span></h2><p class="sub">These fill the Product list on every order, and the product columns of the stock ledger and the Brief. Only the Admin can change them.</p></div></div>
+    <form class="panel pform" id="productForm" autocomplete="off">
+      <div class="fld"><label for="pr-name">New product name</label><input id="pr-name" maxlength="40" placeholder="e.g. PPC Premium" required></div>
+      <div class="fld"><label for="pr-label">Column heading on the dealer sheet <span class="lblnote">(optional)</span></label><input id="pr-label" maxlength="14" placeholder="as on your Excel"></div>
+      <div class="fld"><button class="btn primary" type="submit">Add product</button></div>
+      <p class="hint pnote">A new product goes at the end of the Product list on orders, and at the end of the stock ledger's columns: Opening Balance, Dealer Stock, the dealer-sheet paste and the Excel files. Orders already saved keep their products.</p>
+    </form>
+    <div class="list" id="productList"></div>
   </section>
 
   <!-- VEHICLES -->

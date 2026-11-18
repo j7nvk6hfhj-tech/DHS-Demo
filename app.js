@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc as fsDoc, collection as fsCollection,
-  getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 /* =====================================================================
@@ -169,7 +169,9 @@ function daySummary(day, list){
     depots: Object.entries(dg).map(([depot, l]) => ({ depot, ...aggOf(l) })),
     // [order time, dispatch time, cancelled (time, or -1 if not known)] for each order: used by the dispatch estimate
     // (Self orders are left out: they go when the customer's own vehicle arrives, which says nothing about the yard's pace)
-    flow: list.filter(o => !isSelf(o.vehicle)).map(o => [o.qAt ?? qAt(o), o.executedAt ?? null, o.status === "Cancelled" ? (o.cancelledAt || -1) : null]), updatedAt: Date.now() };
+    // 15 Nov fix: the database can't store a list inside a list, so each order is a small record {q, d, c}. Before this,
+    // every day's totals were refused (silently), so past days were missing from Summary and the estimate learned nothing.
+    flow: list.filter(o => !isSelf(o.vehicle)).map(o => ({ q: o.qAt ?? qAt(o), d: o.executedAt ?? null, c: o.status === "Cancelled" ? (o.cancelledAt || -1) : null })), updatedAt: Date.now() };
 }
 function addAgg(t, a){ for (const k of ["n","Pending","Hold","Dispatched","Cancelled","bags","pbags","hbags","cbags","tsum","tn"]) t[k] += a[k] || 0; if (a.last != null && (t.last == null || a.last > t.last)) t.last = a.last; return t; }
 const emptyAgg = () => ({ n:0, Pending:0, Hold:0, Dispatched:0, Cancelled:0, bags:0, pbags:0, hbags:0, cbags:0, tsum:0, tn:0, last:null });
@@ -221,7 +223,7 @@ function etaFit(days, todayMs, firstDay, byDay, hl){
   const ws = days.map(d => hl ? Math.pow(0.5, (todayMs - d.at) / 864e5 / hl) : 1);
   const recentFrom = dayKey(todayMs - ETA_CLOSED_DAYS * 864e5), seen = Array(7).fill(0), worked = Array(7).fill(0);
   for (const k of daysBetween(firstDay > recentFrom ? firstDay : recentFrom, dayKey(todayMs - 864e5))) { const w = new Date(k + "T12:00:00").getDay(); seen[w]++; if ((byDay.get(k) || []).length) worked[w]++; }
-  return { v: 2, ready: true, days: days.length, from: firstDay, hl,
+  return { v: 3, ready: true, days: days.length, from: firstDay, hl,
     m: wq(days.map(d => d.gap), ws, 0.5), lo: wq(days.map(d => d.gap), ws, 0.25), hi: wq(days.map(d => d.gap), ws, 0.75),
     start: wq(days.map(d => d.first), ws, 0.5), end: wq(days.map(d => d.last), ws, 0.5),
     // weekdays with no dispatching, judged on the last 8 weeks (so a change in the weekly off-day is picked up)
@@ -240,7 +242,7 @@ function etaModel(flows, todayKey){
     days.push({ at: Date.parse(k + "T12:00:00"), first: f, last: z, gap: busy.length >= 3 ? median(busy) : (z - f) / (l.length - 1) });
   }
   const firstDay = [...byDay.keys()].sort()[0] || todayKey;
-  if (days.length < ETA_MIN_DAYS) return { v: 2, ready: false, days: days.length, from: firstDay };
+  if (days.length < ETA_MIN_DAYS) return { v: 3, ready: false, days: days.length, from: firstDay };
   // The check: orders from the last 60 days. Place in line = orders still waiting when it came in (10-day look-back).
   const os = flows.filter(f => f[0] != null && f[2] !== -1).sort((a, b) => a[0] - b[0]);
   const checkFrom = Math.max(todayMs - ETA_CHECK_DAYS * 864e5, Date.parse(firstDay + "T00:00:00") + 3 * 864e5);
@@ -263,11 +265,11 @@ function etaModel(flows, todayKey){
 }
 async function loadEta(){
   if (!fdb || !S.today) return;
-  try { const c = JSON.parse(localStorage.getItem("dhs.eta") || "null"); if (c && c.day === S.today && c.model && c.model.v === 2) { S.eta = c.model; return; } } catch(e){}
+  try { const c = JSON.parse(localStorage.getItem("dhs.eta") || "null"); if (c && c.day === S.today && c.model && c.model.v === 3) { S.eta = c.model; return; } } catch(e){}
   try {
     const from = dayKey(Date.parse(S.today + "T12:00:00") - ETA_HISTORY_DAYS * 864e5);
     const snap = await getDocs(query(fsCollection(fdb, "daysum"), where("day", ">=", from), where("day", "<", S.today)));   // the last 6 months
-    const flows = []; for (const d of snap.docs) flows.push(...(d.data().flow || []));
+    const flows = []; for (const d of snap.docs) flows.push(...(d.data().flow || []).map(x => Array.isArray(x) ? x : [x.q ?? null, x.d ?? null, x.c ?? null]));
     for (const o of (S.all || [])) if (o.day === S.today && !isSelf(o.vehicle)) flows.push([o.qAt ?? qAt(o), o.executedAt ?? null, o.status === "Cancelled" ? (o.cancelledAt || -1) : null]);
     S.eta = etaModel(flows, S.today);
     try { localStorage.setItem("dhs.eta", JSON.stringify({ day: S.today, model: S.eta })); } catch(e){}
@@ -291,7 +293,7 @@ const etaSpan = o => { const t = etaFor(o); return t ? `<span class="eta" title=
 function renderEtaBox(){
   const box = $("etaBox"); if (!box) return; const md = S.eta;
   if (!md) { box.innerHTML = `<b>Dispatch time estimate</b><span class="hint">Loading…</span>`; return; }
-  if (!md.ready) { box.innerHTML = `<b>Dispatch time estimate</b><span class="hint">Starts once there are ${ETA_MIN_DAYS} working days with dispatches (now: ${md.days}). Until then, no estimate is shown.</span>`; return; }
+  if (!md.ready) { box.innerHTML = `<b>Dispatch time estimate</b><span class="hint">Starts once there are ${ETA_MIN_DAYS} working days with dispatches (now: ${md.days}; a working day has at least 3 dispatches spread over an hour or more). If this stays at 0, the Admin runs Recalculate month for this month and last. Until then, no estimate is shown.</span>`; return; }
   const closed = md.closed.map((c, i) => c ? ["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"][i] : "").filter(Boolean);
   box.innerHTML = `<b>Dispatch time estimate</b>
     <span>About <b>${Math.round(md.m / 60000)} min</b> per order (usually ${Math.round(md.lo / 60000)}–${Math.round(md.hi / 60000)}), dispatching ${fmtTime(midnight(Date.now()) + md.start)}–${fmtTime(midnight(Date.now()) + md.end)}${closed.length ? ", none on " + closed.join(", ") : ""}. Learned from ${md.days} working days since ${esc(fmtDay(md.from))}${md.from.slice(0, 4) !== S.today.slice(0, 4) ? " " + md.from.slice(0, 4) : ""}${md.hl ? `, recent weeks counting more (a day ${md.hl} days back counts half)` : ", every day counting the same"}.</span>
@@ -315,12 +317,270 @@ async function syncDay(day){
     const s = daySummary(day, list); S.sums.set(day, s);
     await setDoc(fsDoc(fdb, "daysum", day), s);
     render();
-  } catch(e){ /* totals can be rebuilt with Recalculate month */ }
+  } catch(e){ console.warn("Day totals not saved:", day, e && (e.code || e.message)); /* totals can be rebuilt with Recalculate month */ }
 }
 // Fire a write without blocking the screen (works offline too), then refresh the affected days' totals.
 function commit(promise, days, okMsg){
   if (okMsg) toast(okMsg);
   promise.then(() => { for (const d of new Set(days.filter(Boolean))) syncDay(d); }).catch(e => toast(failMsg(e)));
+}
+
+/* ---------- the stock ledger link (16 Nov 2026) ----------
+   Marking an order dispatched also records that dispatch in the depot stock ledger, in the same write, so the two can
+   never disagree: the depot's physical stock and the dealer's balance go down. Undoing the dispatch, changing a dispatched
+   order or deleting it changes or removes that line too (a removed line is kept for the Admin, with who and when).
+   The line is stockEntries/ord_<order id>. Staff who aren't on the ledger's list can write it (the database rules check it
+   matches the order) but can't read anything in the ledger. Each dispatch also adds its bags to a per-day count by depot
+   (dispday/<date>); the ledger checks its own dispatch lines against these counts and shows any gap in red.
+   The link starts when the Admin first opens this version (config/stockLink = {from: that time}). Orders dispatched before
+   that were entered in the ledger by hand, so changing or undoing them later doesn't touch the ledger.
+   The same mapping is in stock.html (the Admin's "Fix from orders"): keep the two the same. */
+const STOCK_GODOWN = { "Transport Nagar": "TPN", "Harrawala": "HAR", "Doiwala": "DOI" };
+const STOCK_PRODUCT = { "PPC": "PPC", "PPC Black": "BLACK", "OPC 43": "OPC43", "OPC 53": "OPC53", "Super Strong (SS)": "SS", "Weather Protect (WSP)": "WSS" };
+const istDay = ms => new Date(ms + 19800000).toISOString().slice(0, 10);   // the date in India
+const monthNoOf = d => +d.slice(0, 4) * 12 + +d.slice(5, 7);
+const stockOpen = d => monthNoOf(d) >= monthNoOf(istDay(Date.now())) - 1;   // the ledger takes lines for this month and last month only
+function stockLineOf(o){
+  if (!o || o.dispatchedAt == null || o.mark === "Cancelled") return null;
+  const godown = STOCK_GODOWN[o.depot]; if (!godown) return null;
+  const items = {};
+  for (const it of itemsOf(o)) { const k = STOCK_PRODUCT[it.product], n = Math.round(Number(it.bags) || 0); if (k && n > 0) items[k] = (items[k] || 0) + n; }
+  if (!Object.keys(items).length) return null;
+  return { type: "dispatch", src: "order", orderId: o.id, date: istDay(o.dispatchedAt), godown, dealer: String(o.dealer || ""), items, target: "",
+    ref: (isSelf(o.vehicle) ? "Self" : String(o.vehicle || "")).slice(0, 80) };
+}
+// One write for an order and its stock line (plus the day counts). before: the order as it is now; upd: the change
+// (null = delete the order). If the ledger part is refused (for example the new database rules aren't published yet),
+// the order change still goes through on its own: dispatching never waits for the ledger. The Admin's "Fix from orders"
+// in the ledger adds whatever is missing.
+function orderWrite(id, before, upd){
+  const ref = fsDoc(fdb, "orders", id);
+  const plain = () => upd === null ? deleteDoc(ref) : updateDoc(ref, upd);
+  if (S.linkFrom == null || (before && before.dispatchedAt != null && before.dispatchedAt < S.linkFrom)) return plain();
+  const was = stockLineOf(before && { ...before, id });
+  const now = upd === null ? null : stockLineOf({ ...(before || {}), ...upd, id });
+  if (JSON.stringify(was) === JSON.stringify(now)) return plain();
+  const at = new Date().toISOString(), by = S.me || "", month = istDay(Date.now()).slice(0, 7);
+  const build = withLine => {
+    const b = writeBatch(fdb);
+    if (upd === null) b.delete(ref); else b.update(ref, upd);
+    let extra = 0;
+    const lref = fsDoc(fdb, "stockEntries", "ord_" + id);
+    if (withLine) {
+      if (now && stockOpen(now.date)) { b.set(lref, { ...now, at, by }); extra++; }
+      else if (was && stockOpen(was.date)) { b.delete(lref); extra++; }
+      // a line dated in a month the ledger has already closed: the ledger works that month's close out again
+      for (const m of new Set([was, now].filter(l => l && stockOpen(l.date) && l.date.slice(0, 7) < month).map(l => l.date.slice(0, 7))))
+        b.set(fsDoc(fdb, "stockMarks", m), { at: Date.now(), by });
+      // a dispatch taken off the ledger is kept for the Admin: what it was, who took it off and why
+      if (was && stockOpen(was.date) && !(now && stockOpen(now.date)))
+        b.set(fsDoc(fdb, "stockDeleted", "ord_" + id + "_" + Date.now()), { ...was, by: before.dispatchedBy || "", deletedAt: at, deletedBy: by,
+          why: upd === null ? "Order deleted on the dashboard" : upd.mark === "Cancelled" ? "Order cancelled on the dashboard" : "Dispatch undone on the dashboard" });
+    }
+    // the day's dispatched bags by depot: the old line off, the new one on
+    const counts = new Map();
+    for (const [l, sg] of [[was, -1], [now, 1]]) {
+      if (!l || !stockOpen(l.date)) continue;
+      const c = counts.get(l.date) || {}; counts.set(l.date, c);
+      for (const [k, n] of Object.entries(l.items)) { c[l.godown] = c[l.godown] || {}; c[l.godown][k] = (c[l.godown][k] || 0) + sg * n; }
+    }
+    for (const [day, c] of counts) {
+      const inc = {};
+      for (const [g, it] of Object.entries(c)) for (const [k, n] of Object.entries(it)) if (n) (inc[g] = inc[g] || {})[k] = increment(n);
+      if (Object.keys(inc).length) { b.set(fsDoc(fdb, "dispday", day), { ...inc, date: day, at: Date.now(), by }, { merge: true }); extra++; }
+    }
+    return extra ? b : null;
+  };
+  const full = build(true);
+  if (!full) return plain();
+  return full.commit().catch(e => {
+    console.warn("Stock ledger line not saved:", e && (e.code || e.message));
+    const counts = build(false);
+    return (counts ? counts.commit() : Promise.reject(e)).catch(() => plain());
+  });
+}
+
+/* ---------- Brief: the Admin's own page (16 Nov 2026) ----------
+   Alerts first (each one only when something is off), then yesterday, what's pending, stock by depot and this month's
+   checks. Stock figures come from the ledger: whenever someone who can make changes has Stock open, the ledger saves a small
+   summary (stockBrief/latest) that only the Admin can read. "Bring up to date" opens the ledger in the background to refresh
+   it. Reads: the summary and the limits (2, then only when they change), yesterday's totals (1), this month's deleted
+   stock entries (one per entry) when the page is opened. */
+const BRIEF_DEFAULTS = { pendingHours: 4, pendencyBags: 1000, reportBy: 11 };
+const GNAME = { TPN: "Transport Nagar", HAR: "Harrawala", DOI: "Doiwala" }, BNAME = { TPH: "TP + Harrawala", DOI: "Doiwala" };
+const PNAME = { PPC: "PPC", BLACK: "PPC Black", OPC43: "OPC 43", OPC53: "OPC 53", SS: "Super Strong", WSS: "Weather Protect" };
+const PORDER = ["PPC", "BLACK", "OPC43", "OPC53", "SS", "WSS"];
+S.brief = { cfg: { ...BRIEF_DEFAULTS }, snap: undefined, yday: undefined, deleted: undefined };
+const mtx = bags => (bags / 20).toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " MT";
+const signed = n => (n > 0 ? "+" : n < 0 ? "−" : "") + inr(Math.abs(n));
+function pendingByDepot(){
+  const out = { TPN: {}, HAR: {}, DOI: {}, "": {} };
+  for (const o of S.all || []) {
+    if (o.status !== "Pending" && o.status !== "On hold") continue;
+    const g = STOCK_GODOWN[o.depot] || "";
+    for (const it of itemsOf(o)) { const k = STOCK_PRODUCT[it.product], n = Math.round(Number(it.bags) || 0); if (k && n > 0) out[g][k] = (out[g][k] || 0) + n; }
+  }
+  return out;
+}
+function briefAlerts(){
+  const A = [], cfg = S.brief.cfg, snap = S.brief.snap, now = Date.now(), today = istDay(now);
+  const late = (S.all || []).filter(o => o.status === "Pending" && workMs(o.qAt, now) > cfg.pendingHours * 3600e3);
+  if (late.length) A.push({ title: `${late.length} order${late.length > 1 ? "s" : ""} waiting more than ${cfg.pendingHours} working hours`, act: "queue",
+    lines: late.slice(0, 8).map(o => `${o.token ? ofDay(o) : fmtDay(o.day)} · ${o.dealer || "–"} · ${o.party || ""} · ${o.bags} bags · waiting ${hm(workMs(o.qAt, now))}`)
+      .concat(late.length > 8 ? [`and ${late.length - 8} more`] : []) });
+  if (snap === null) { A.push({ amber: true, title: "Stock figures aren't here yet", lines: ["Press Bring up to date below, or open Stock once. After that the ledger keeps them up to date here."] }); return A; }
+  if (!snap) return A;
+  const ist = new Date(now + 19800000), hour = ist.getUTCHours() + ist.getUTCMinutes() / 60;
+  if (hour >= cfg.reportBy) {
+    const miss = ["TPN", "HAR", "DOI"].filter(g => (snap.reports || {})[g] !== today);
+    if (miss.length) A.push({ title: `No SAP report today for ${miss.map(g => GNAME[g]).join(", ")}`, lines: [`Due by ${cfg.reportBy}:00, on Stock → Opening Balance.` + (snap.today !== today ? " (The ledger hasn't been opened today.)" : "")] });
+  }
+  const pend = pendingByDepot(), short = [];
+  for (const g of ["TPN", "HAR", "DOI"]) for (const k of PORDER) {
+    const need = pend[g][k] || 0, have = (((snap.stock || {})[g] || {})[k] || {}).phys || 0;
+    if (need > have) short.push(`${GNAME[g]} · ${PNAME[k]}: pending orders ${inr(need)} bags, physical stock ${inr(have)} (${inr(need - have)} short)`);
+  }
+  for (const k of PORDER) {
+    const need = ["TPN", "HAR", "DOI", ""].reduce((a, g) => a + (pend[g][k] || 0), 0), have = ["TPN", "HAR", "DOI"].reduce((a, g) => a + ((((snap.stock || {})[g] || {})[k] || {}).phys || 0), 0);
+    if (pend[""][k] && need > have) short.push(`All depots · ${PNAME[k]}: pending orders ${inr(need)} bags (${inr(pend[""][k])} with no depot yet), physical stock ${inr(have)}`);
+  }
+  if (short.length) A.push({ title: "Stock below pending orders", lines: short });
+  const over = [];
+  for (const [bk, list] of Object.entries(snap.pend || {})) for (const [name, n] of Object.entries(list || {})) if (-n > cfg.pendencyBags) over.push([name, bk, -n]);
+  over.sort((a, b) => b[2] - a[2]);
+  if (over.length) A.push({ title: `${over.length} dealer${over.length > 1 ? "s" : ""} with pendency above ${inr(cfg.pendencyBags)} bags`, lines: over.slice(0, 10).map(([n, bk, v]) => `${n} (${BNAME[bk] || bk}): ${inr(v)} bags pendency (${mtx(v)})`) });
+  const rec = [];
+  for (const [bk, gap] of Object.entries(snap.recon || {})) { const ks = PORDER.filter(k => gap[k]); if (ks.length) rec.push(`${BNAME[bk] || bk}: ${ks.map(k => PNAME[k] + " " + signed(gap[k])).join(", ")} bags`); }
+  if (rec.length) A.push({ title: "Dealer balances don't match the stock", lines: rec.concat(["Dealers' total vs physical − SAP stock, by product. Fix on Stock with a Correction."]) });
+  const tal = [];
+  for (const [g, t] of Object.entries(snap.tally || {})) {
+    const off = (m, lab) => { const ks = PORDER.filter(k => m && m[k]); return ks.length ? lab + " " + ks.map(k => PNAME[k] + " " + signed(m[k])).join(", ") : ""; };
+    const txt = [off(t.sap, "SAP"), off(t.phys, "physical")].filter(Boolean).join("; ");
+    if (txt) tal.push(`${GNAME[g]} (${fmtDay(t.date)}): ledger vs report ${txt} bags`);
+  }
+  if (tal.length) A.push({ title: "Stock report doesn't tally with the ledger", lines: tal });
+  const gaps = snap.gaps || [];
+  if (gaps.length) A.push({ title: `Orders and the stock ledger differ on ${gaps.length} depot-day${gaps.length > 1 ? "s" : ""} this month`, act: "stock",
+    lines: gaps.slice(0, 8).map(x => `${fmtDay(x.date)} · ${GNAME[x.g]}: orders ${inr(x.orders)} bags, ledger ${inr(x.ledger)}` + (x.manual ? ` (${inr(x.manual)} entered by hand)` : "")) });
+  return A;
+}
+function renderBrief(){
+  const tab = $("briefTab"); if (!tab || !S.isAdmin) return;
+  const A = briefAlerts(), red = A.filter(a => !a.amber).length;
+  $("bn").textContent = red || "";
+  if (S.view !== "brief") return;
+  const now = Date.now(), snap = S.brief.snap;
+  $("briefAlerts").innerHTML = A.length ? A.map(a => `<div class="balert${a.amber ? " amber" : ""}" role="alert"><b>${esc(a.title)}</b><ul>${a.lines.map(l => `<li>${esc(l)}</li>`).join("")}</ul>${a.act === "queue" ? `<div class="actions"><button class="btn sm" type="button" data-act="brief-queue">Open the queue</button></div>` : a.act === "stock" ? `<div class="actions"><button class="btn sm" type="button" data-act="brief-stock">Open Stock</button></div>` : ""}</div>`).join("")
+    : `<div class="balert ok"><b>Nothing needs your attention right now.</b></div>`;
+  // yesterday
+  const yk = dayKey(Date.parse(S.today + "T12:00:00") - 864e5), y = S.brief.yday && S.brief.yday.total;
+  $("briefYdayTitle").textContent = "Yesterday · " + fmtDay(yk);
+  const tile = (lab, val, sub, cls) => `<div class="kpi${cls ? " " + cls : ""}"><span>${lab}</span><b>${val}</b><small>${sub || ""}</small></div>`;
+  $("briefYday").innerHTML = S.brief.yday === undefined ? `<p class="hint">Loading…</p>` : !y ? tile("Orders", "0", "no orders") + tile("Dispatched", "0", "") + tile("Cancelled", "0", "") + tile("Avg time taken", "–", "")
+    : tile("Orders", inr(y.n), inr(y.bags + y.cbags) + " bags") + tile("Dispatched", inr(y.Dispatched), "of these orders")
+      + tile("Cancelled", inr(y.Cancelled), inr(y.cbags) + " bags", "cxl") + tile("Avg time taken", y.tn ? hm(y.tsum / y.tn) : "–", "order → dispatch");
+  // pending now
+  const all = S.all || [], P = all.filter(o => o.status === "Pending"), H = all.filter(o => o.status === "On hold"), Sc = all.filter(o => o.status === "Scheduled");
+  const oldest = P.reduce((m, o) => Math.max(m, workMs(o.qAt, now)), 0);
+  $("briefPend").innerHTML = tile("Pending", inr(P.length), inr(bagsOf(P)) + " bags", "hot") + tile("On hold", inr(H.length), inr(bagsOf(H)) + " bags", "held")
+    + tile("Scheduled", inr(Sc.length), inr(bagsOf(Sc)) + " bags", "sch") + tile("Longest wait", P.length ? hm(oldest) : "–", "working hours");
+  // stock by depot
+  const pend = pendingByDepot(), sum = o => PORDER.reduce((a, k) => a + (o[k] || 0), 0);
+  $("briefStockNote").textContent = snap === undefined ? "Loading…" : !snap ? "No stock figures yet. Press Bring up to date." :
+    `As of ${fmtDT(snap.at)}${snap.today !== istDay(now) ? " (the ledger hasn't been opened today)" : ""}. Pending orders: pending and on hold, by their dispatch depot.` + (sum(pend[""]) ? ` ${inr(sum(pend[""]))} bags of pending orders have no depot yet.` : "");
+  $("briefStock").innerHTML = !snap ? "" : ["TPN", "HAR", "DOI"].map(g => {
+    const st = (snap.stock || {})[g] || {}, sap = PORDER.reduce((a, k) => a + ((st[k] || {}).sap || 0), 0), ph = PORDER.reduce((a, k) => a + ((st[k] || {}).phys || 0), 0), pb = sum(pend[g]);
+    const rep = (snap.reports || {})[g];
+    return `<tr><td>${GNAME[g]}</td><td class="num">${mtx(sap)}</td><td class="num">${mtx(ph)}</td><td class="num ${pb > ph ? "red" : ""}">${mtx(pb)}</td><td class="${rep === istDay(now) ? "okc" : "red"}">${rep ? fmtDay(rep) : "none this month"}</td></tr>`;
+  }).join("");
+  // this month's checks
+  const gaps = (snap && snap.gaps) || [], cor = (snap && snap.corrections) || [], del = S.brief.deleted;
+  const table = (head, rows) => `<div class="tscroll"><table><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+  let h = `<div><h4>Orders vs stock ledger</h4>` + (!snap ? `<p class="hint">Needs the stock figures.</p>` : !gaps.length ? `<p class="hint">Every depot-day matches: bags dispatched in orders = bags dispatched in the ledger.</p>`
+    : table(["Date", "Depot", "Orders (bags)", "Ledger (bags)", "Entered by hand"], gaps.map(x => `<tr><td>${fmtDay(x.date)}</td><td>${GNAME[x.g]}</td><td class="num">${inr(x.orders)}</td><td class="num red">${inr(x.ledger)}</td><td class="num">${x.manual ? inr(x.manual) : ""}</td></tr>`))) + `</div>`;
+  h += `<div><h4>Corrections (${cor.length})</h4>` + (!cor.length ? `<p class="hint">None this month.</p>`
+    : table(["Date", "Depot", "Corrected", "Bags", "Reason", "By"], cor.map(c => `<tr><td>${fmtDay(c.date)}</td><td>${GNAME[c.godown] || ""}</td><td>${esc(c.what)}</td><td class="num">${signed(c.bags)}</td><td>${esc(c.reason || "")}</td><td>${esc(nameOf(c.by))}</td></tr>`))) + `</div>`;
+  h += `<div><h4>Deleted stock entries${del ? ` (${del.length})` : ""}</h4>` + (del === undefined ? `<p class="hint">Loading…</p>` : del === null ? `<p class="hint">Couldn't load them. Check your connection.</p>` : !del.length ? `<p class="hint">None this month.</p>`
+    : table(["Entry date", "Type", "Depot", "Dealer", "Bags", "Saved by", "Deleted", "Why"], del.map(d => `<tr><td>${fmtDay(d.date)}</td><td>${esc(d.type)}</td><td>${GNAME[d.godown] || ""}</td><td>${esc(d.dealer || "")}</td><td class="num">${inr(Object.values(d.items || {}).reduce((a, b) => a + (+b || 0), 0))}</td><td>${esc(nameOf(d.by))}</td><td>${esc(nameOf(d.deletedBy))}, ${esc(fmtDT(Date.parse(d.deletedAt)))}</td><td>${esc(d.why || "Deleted in the ledger")}</td></tr>`))) + `</div>`;
+  $("briefChecks").innerHTML = h;
+}
+async function openBrief(){
+  renderBrief();
+  const yk = dayKey(Date.parse(S.today + "T12:00:00") - 864e5);
+  const live = S.liveDays.has(yk) ? daySumFor(yk) : S.sums.get(yk);
+  if (live) S.brief.yday = live;
+  else { try { const d = await getDoc(fsDoc(fdb, "daysum", yk)); S.brief.yday = d.exists() ? d.data() : null; } catch(e){ S.brief.yday = null; } }
+  const m0 = istDay(Date.now()).slice(0, 7) + "-01T00:00:00+05:30", from = new Date(Date.parse(m0)).toISOString();
+  try { const q = await getDocs(query(fsCollection(fdb, "stockDeleted"), where("deletedAt", ">=", from))); S.brief.deleted = q.docs.map(d => d.data()).sort((a, b) => String(b.deletedAt).localeCompare(String(a.deletedAt))); }
+  catch(e){ S.brief.deleted = null; }
+  renderBrief();
+}
+function renderBriefLimits(){
+  const c = S.brief.cfg, f = $("briefLimits");
+  f.innerHTML = `<div class="fld"><label for="bl-hours">Order waiting longer than (working hours)</label><input id="bl-hours" type="number" min="1" max="48" step="0.5" value="${c.pendingHours}"></div>
+    <div class="fld"><label for="bl-pend">Dealer pendency above (bags)</label><input id="bl-pend" type="number" min="0" step="10" value="${c.pendencyBags}"></div>
+    <div class="fld"><label for="bl-rep">SAP report due by (hour, India)</label><input id="bl-rep" type="number" min="6" max="20" step="1" value="${c.reportBy}"></div>
+    <div class="fld"><button class="btn primary" type="submit">Save limits</button></div>`;
+}
+
+/* ---------- products (18 Nov 2026) ----------
+   The list lives in config/products: { list: [{ name, key, label, active }] }. The Admin adds products on Settings →
+   Products. name = what orders show; key = the product's name inside the stock ledger (the first six keep the keys they
+   always had); label = its column heading on the ledger's dealer sheet. A product taken off the order form stays on old
+   orders and in the ledger. Until the Admin first saves the list, the six below are used. New products show everywhere
+   products do: the order form, order lists, WhatsApp, Excel and the emails (as "name × bags"), the stock ledger's columns
+   (it reads this list when it opens) and the Brief. */
+const BASE_PRODUCTS = [
+  { name: "PPC", key: "PPC", label: "PPC", active: true },
+  { name: "PPC Black", key: "BLACK", label: "BLACK", active: true },
+  { name: "OPC 43", key: "OPC43", label: "OPC 43", active: true },
+  { name: "OPC 53", key: "OPC53", label: "OPC 53", active: true },
+  { name: "Super Strong (SS)", key: "SS", label: "S.S", active: true },
+  { name: "Weather Protect (WSP)", key: "WSS", label: "W.S", active: true },
+];
+S.products = BASE_PRODUCTS.map(p => ({ ...p }));
+let productKeysSeen = null;
+function productKeyFor(name, used){
+  const k = (String(name).toUpperCase().replace(/[^A-Z0-9]/g, "") + "XX").slice(0, 10);
+  let key = k.replace(/X+$/, "").length >= 2 ? k.replace(/X+$/, "") : k.slice(0, 2), n = 2;
+  while (used.has(key)) key = k.slice(0, 9) + n++;
+  return key;
+}
+function applyProducts(list){
+  const ok = Array.isArray(list) ? list.filter(p => p && typeof p.name === "string" && p.name && /^[A-Z0-9]{2,12}$/.test(p.key || "")) : [];
+  S.products = ok.length ? ok : BASE_PRODUCTS.map(p => ({ ...p }));
+  PRODUCTS.splice(0, PRODUCTS.length, ...S.products.filter(p => p.active !== false).map(p => p.name));
+  for (const p of S.products) { STOCK_PRODUCT[p.name] = p.key; if (!PNAME[p.key]) PNAME[p.key] = p.name; if (!PORDER.includes(p.key)) PORDER.push(p.key); }
+  refreshProductSelects();
+  // the ledger reads the list when it opens: open it again if a product was added
+  const keys = S.products.map(p => p.key).join(",");
+  if (productKeysSeen !== null && keys !== productKeysSeen) { const f = $("stockFrame"); if (f && f.dataset.on) { closeStockFrame(); if (S.view === "stock") openStockFrame(); } }
+  productKeysSeen = keys;
+  renderProducts(); renderBrief();
+}
+function refreshProductSelects(){
+  document.querySelectorAll("select.it-prod").forEach(sel => {
+    const cur = sel.value, opts = [...PRODUCTS, ...(cur && !PRODUCTS.includes(cur) ? [cur] : [])];
+    sel.innerHTML = `<option value="">Select product</option>` + opts.map(n => `<option ${n === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
+  });
+}
+function renderProducts(){
+  const box = $("productList"); if (!box || !S.isAdmin) return;
+  const on = S.products.filter(p => p.active !== false).length;
+  $("productCount").textContent = `(${on} on the order form)`;
+  box.innerHTML = S.products.map((p, i) => `<div class="row prow"><span class="pnum">${i + 1}</span>
+    <div class="main"><b>${esc(p.name)}</b><div class="meta"><span>Dealer-sheet column: ${esc(p.label || p.name)}</span>${p.active === false ? `<span class="off">Not on the order form</span>` : `<span>On the order form</span>`}</div></div>
+    <button class="btn sm" type="button" data-act="prod-toggle" data-i="${i}">${p.active === false ? "Put back on the order form" : "Take off the order form"}</button></div>`).join("");
+}
+async function saveProducts(list, msg){
+  try { await setDoc(fsDoc(fdb, "config", "products"), { list, updatedBy: S.me || null, updatedAt: Date.now() }); toast(msg); return true; }
+  catch(ex){ toast(failMsg(ex)); return false; }
+}
+// the headings: on a phone they sit in an even grid, 3 to a row; 5 headings go 3 + 2, 4 go 2 + 2
+function layoutTabs(){
+  const vis = [...document.querySelectorAll("#tabs .tab")].filter(t => !t.hidden), n = vis.length;
+  const spans = n === 5 ? [2, 2, 2, 3, 3] : n === 4 ? [3, 3, 3, 3] : n === 2 ? [3, 3] : n === 1 ? [6] : vis.map(() => 2);
+  vis.forEach((t, i) => t.style.setProperty("--span", String(spans[i] || 2)));
 }
 
 /* ---------- render: shared bits ---------- */
@@ -465,7 +725,7 @@ function render(){
   $("hn").textContent = all.filter(o => o.status === "On hold").length || "";
   $("schn").textContent = all.filter(o => o.status === "Scheduled").length || "";
   dealerOptions($("o-dealer"), true);
-  renderToday(all); renderQueue(all); renderHold(all); renderSched(all); renderOrders(all); renderSummary(); renderDealers(); renderVehicles(); renderTeam(); renderReport();
+  renderToday(all); renderQueue(all); renderHold(all); renderSched(all); renderOrders(all); renderSummary(); renderDealers(); renderVehicles(); renderTeam(); renderReport(); renderBrief(); renderProducts(); layoutTabs();
 }
 
 /* ---------- New order / today ---------- */
@@ -784,6 +1044,7 @@ async function recalcMonth(){
     const ops = [];
     for (const k of days){ const s = daySummary(k, by[k] || []); S.sums.set(k, s); ops.push(["set", fsDoc(fdb, "daysum", k), s]); }
     await writeAll(ops); S.sumAt[m] = Date.now(); toast("Month totals recalculated");
+    try { localStorage.removeItem("dhs.eta"); } catch(e){} S.eta = null; loadEta();   // the estimate learns from the rebuilt days straight away
   } catch(e){ toast(failMsg(e)); }
   btn.disabled = false; btn.textContent = "Recalculate month"; renderSummary();
 }
@@ -1138,8 +1399,8 @@ function validate(d, keepDealer){
 /* ---------- navigation: main tabs, and the switch inside Orders and Settings ---------- */
 // To add a tab later: add a <button class="tab" data-v="NAME"> in index.html, a <section id="v-NAME"> (or a
 // <div class="topview" id="t-NAME"> with its own switch), and list it in TOP below.
-const TOP = { new: "v-new", orders: "t-orders", summary: "v-summary", settings: "t-settings" };
-const SUBS = { orders: ["queue", "hold", "sched", "orders"], settings: ["dealers", "vehicles", "team"] };
+const TOP = { new: "v-new", orders: "t-orders", summary: "v-summary", brief: "v-brief", stock: "v-stock", settings: "t-settings" };
+const SUBS = { orders: ["queue", "hold", "sched", "orders"], settings: ["dealers", "vehicles", "products", "team"] };
 S.sub = { orders: "queue", settings: "dealers" };
 const onPage = (top, sub) => S.view === top && (!sub || S.sub[top] === sub);
 function saveNav(){ try { localStorage.setItem("cod.nav", JSON.stringify({ view: S.view, sub: S.sub })); } catch(e){} }
@@ -1158,6 +1419,9 @@ function showView(v){
   for (const [k, id] of Object.entries(TOP)) $(id).hidden = k !== v;
   if (SUBS[v]) showSub(v, S.sub[v]);
   if (v === "summary") loadSums($("s-month").value);
+  document.body.classList.toggle("stockon", v === "stock");
+  if (v === "stock") openStockFrame();
+  if (v === "brief") openBrief();
   saveNav();
 }
 // Summary cards open All orders with the matching filter.
@@ -1180,7 +1444,7 @@ function openOrdersList(kind, keep){
   if (!["Pending", "On hold", "Scheduled"].includes(st) && !rangeCovered(from, to)) { loadRange(); return; }
   renderOrders(all);
 }
-$("tabs").addEventListener("click", e => { const b = e.target.closest(".tab"); if (!b) return; if (b.dataset.v === "stock") { location.href = "stock.html"; return; } showView(b.dataset.v); });
+$("tabs").addEventListener("click", e => { const b = e.target.closest(".tab"); if (!b) return; showView(b.dataset.v); });
 
 /* ---------- language switch ---------- */
 function applyLang(){
@@ -1224,8 +1488,32 @@ async function checkStock(){
   if (!ok) { try { const a = await getDoc(fsDoc(fdb, "stockConfig", "access")); ok = a.exists() && Array.isArray(a.data().emails) && a.data().emails.includes(S.me); } catch(e){ ok = false; } }
   b.hidden = !ok;
   if (t) t.hidden = !ok || S.isDmo;
+  layoutTabs();
+  if (!ok && S.view === "stock") showView("new");
+  else if (ok && (S.view === "stock" || (S.stockWanted && S.view === "new"))) showView("stock");
+  S.stockWanted = false;
 }
-$("stockBtn").addEventListener("click", () => { location.href = "stock.html"; });
+// The ledger opens as a heading like the others: stock.html in a frame below the tabs, loaded the first time it's
+// opened and kept while the dashboard is open (switching headings costs no reads). It keeps nothing on the device.
+function loadStockFrame(){
+  const f = $("stockFrame"); if (!f) return null;
+  if (!f.dataset.on) { f.dataset.on = "1"; f.src = "stock.html"; }
+  return f;
+}
+function openStockFrame(){
+  if (!loadStockFrame()) return;
+  window.scrollTo(0, 0); sizeStock();
+}
+function sizeStock(){
+  const f = $("stockFrame"); if (!f || $("v-stock").hidden) return;
+  const top = f.getBoundingClientRect().top + window.scrollY;
+  f.style.height = Math.max(420, window.innerHeight - top - 4) + "px";
+}
+function closeStockFrame(){ const f = $("stockFrame"); if (f && f.dataset.on) { delete f.dataset.on; f.src = "about:blank"; } }
+window.addEventListener("resize", sizeStock);
+if (window.ResizeObserver) new ResizeObserver(sizeStock).observe(document.querySelector("header.top"));
+for (const id of ["banner", "jobWarn", "maintBar"]) { const el = $(id); if (el && window.MutationObserver) new MutationObserver(sizeStock).observe(el, { attributes: true, attributeFilter: ["hidden"] }); }
+$("stockBtn").addEventListener("click", () => showView("stock"));
 $("menu").addEventListener("keydown", e => {
   const items = [...$("menu").querySelectorAll(".mi:not([hidden])")], i = items.indexOf(document.activeElement);
   if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus(); }
@@ -1338,6 +1626,15 @@ document.addEventListener("click", async e => {
     return;
   }
   if (act === "load-range") return loadRange();
+  if (act === "brief-queue") { showView("orders"); showSub("orders", "queue"); return; }
+  if (act === "prod-toggle") {
+    const i = +b.dataset.i, list = S.products.map(p => ({ ...p })), p = list[i]; if (!p) return;
+    if (p.active !== false && list.filter(x => x.active !== false).length <= 1) return toast("Keep at least one product on the order form.");
+    p.active = p.active === false; b.disabled = true;
+    await saveProducts(list, p.active ? p.name + " is back on the order form" : p.name + " is off the order form. Old orders keep it.");
+    b.disabled = false; return;
+  }
+  if (act === "brief-stock") { showView("stock"); return; }
   if (act === "kpi") return openOrdersList(b.dataset.kpi, b.dataset.scope === "list");
   if (act === "deliver") { if (o && o.status === "On hold") return toast("Release it from hold first."); if (o && o.status === "Scheduled") return toast("This order is for " + longDay(o.day) + ". Tap Send today first."); if (o && (!hasVehicle(o) || !hasDepot(o) || !hasPhone(o))) return openDispatch(id); S.confirmId = id; render(); return; }
   if (["hold", "release", "resched", "send-today"].includes(act) && !S.canHold) return toast("Only a Supervisor or the Admin can do this.");
@@ -1359,16 +1656,16 @@ document.addEventListener("click", async e => {
     if (o && t < o.orderAt) return toast("Dispatch time can't be before the order time.");
     if (o && (!hasVehicle(o) || !hasDepot(o) || !hasPhone(o))) return openDispatch(id);
     S.confirmId = null; S.lastDisp = id;
-    commit(updateDoc(fsDoc(fdb, "orders", id), { dispatchedAt: t, dispatchedBy: S.me || null, open: false, ...stamp() }), [o && o.day], "Marked dispatched · " + fmtDT(t));
+    commit(orderWrite(id, o, { dispatchedAt: t, dispatchedBy: S.me || null, open: false, ...stamp() }), [o && o.day], "Marked dispatched · " + fmtDT(t));
     return;
   }
   if (act === "undeliver") {
-    commit(updateDoc(fsDoc(fdb, "orders", id), { dispatchedAt: null, dispatchedBy: null, open: !(o && o.mark === "Cancelled"), ...stamp() }), [o && o.day], "Dispatch undone. Order is back in the queue.");
+    commit(orderWrite(id, o, { dispatchedAt: null, dispatchedBy: null, open: !(o && o.mark === "Cancelled"), ...stamp() }), [o && o.day], "Dispatch undone. Order is back in the queue.");
     closeSheet(); return;
   }
   if (act === "delete") {
     if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Tap again to delete"; setTimeout(()=>{ if (b.isConnected){ b.dataset.armed=""; b.textContent="Delete order"; } }, 4000); return; }
-    commit(deleteDoc(fsDoc(fdb, "orders", id)), [o && o.day], "Order deleted"); closeSheet(); return;
+    commit(orderWrite(id, o, null), [o && o.day], "Order deleted"); closeSheet(); return;
   }
   if (act === "dl-del") {
     if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Tap again"; setTimeout(()=>{ if (b.isConnected){ b.dataset.armed=""; b.textContent="Remove"; } }, 4000); return; }
@@ -1379,6 +1676,25 @@ document.addEventListener("click", async e => {
 });
 
 document.addEventListener("submit", async e => {
+  if (e.target.id === "productForm") {
+    e.preventDefault();
+    const name = $("pr-name").value.trim().replace(/\s+/g, " ").slice(0, 40);
+    const label = ($("pr-label").value.trim().replace(/\s+/g, " ") || name).toUpperCase().slice(0, 14);
+    if (name.length < 2) { toast("Type the product's name."); return; }
+    if (/[×,]/.test(name)) { toast("Leave out commas and × in the name."); return; }
+    if (S.products.some(p => p.name.toLowerCase() === name.toLowerCase())) { toast(name + " is already on the list."); return; }
+    const list = [...S.products.map(p => ({ ...p })), { name, key: productKeyFor(name, new Set(S.products.map(p => p.key))), label, active: true, addedBy: S.me || "", addedAt: Date.now() }];
+    if (await saveProducts(list, name + " added. It's on the order form now.")) { $("pr-name").value = ""; $("pr-label").value = ""; }
+    return;
+  }
+  if (e.target.id === "briefLimits") {
+    e.preventDefault();
+    const n = (id, lo, hi, def) => { const v = Number($(id).value); return isFinite(v) && v >= lo && v <= hi ? v : def; };
+    const c = { pendingHours: n("bl-hours", 1, 48, BRIEF_DEFAULTS.pendingHours), pendencyBags: Math.round(n("bl-pend", 0, 1e6, BRIEF_DEFAULTS.pendencyBags)),
+      reportBy: Math.round(n("bl-rep", 6, 20, BRIEF_DEFAULTS.reportBy)), updatedBy: S.me || null, updatedAt: Date.now() };
+    try { await setDoc(fsDoc(fdb, "config", "brief"), c); $("briefLimits").hidden = true; toast("Alert limits saved"); } catch(ex){ toast(failMsg(ex)); }
+    return;
+  }
   if (e.target.id === "editForm") {
     e.preventDefault();
     const id = $("sheet").dataset.id; const orig = (S.all||[]).find(x => x.id === id); if (!orig) return closeSheet();
@@ -1387,7 +1703,7 @@ document.addEventListener("submit", async e => {
       const t = fromLocalInput($("e-exec").value);
       if (isNaN(t) || t === orig.executedAt) return closeSheet();
       if (t < orig.orderAt) return toast("Dispatch time can't be before the order time.");
-      commit(updateDoc(fsDoc(fdb, "orders", id), { dispatchedAt: t, ...stamp() }), [orig.day], "Dispatch time updated"); return closeSheet();
+      commit(orderWrite(id, orig, { dispatchedAt: t, ...stamp() }), [orig.day], "Dispatch time updated"); return closeSheet();
     }
     const d = readForm("e-"); if (!S.canBackdate) d.orderAt = orig.orderAt;
     const err = validate(d, orig.dealer); if (err) return toast(err);
@@ -1404,7 +1720,7 @@ document.addEventListener("submit", async e => {
     if (at != null && orig.depot && !d.depot) return toast("A dispatched order needs its dispatch depot.");
     if (at != null && hasPhone(orig) && !hasPhone(d)) return toast("A dispatched order needs the customer's phone number.");
     upd.open = mark !== "Cancelled" && at == null;
-    commit(updateDoc(fsDoc(fdb, "orders", id), upd), [orig.day, upd.day], "Order updated"); closeSheet();
+    commit(orderWrite(id, orig, upd), [orig.day, upd.day], "Order updated"); closeSheet();
   }
   if (e.target.id === "reschedForm") {
     e.preventDefault();
@@ -1438,7 +1754,7 @@ document.addEventListener("submit", async e => {
     if (isNaN(t)) return toast("Enter the dispatch time.");
     if (t < o.orderAt) return toast("Dispatch time can't be before the order time.");
     S.lastDisp = id;
-    commit(updateDoc(fsDoc(fdb, "orders", id), { ...upd, dispatchedAt: t, dispatchedBy: S.me || null, open: false, ...stamp() }), [o.day],
+    commit(orderWrite(id, o, { ...upd, dispatchedAt: t, dispatchedBy: S.me || null, open: false, ...stamp() }), [o.day],
       "Marked dispatched · " + (upd.vehicle || o.vehicle) + " · " + (upd.depot || o.depot) + " · " + fmtDT(t));
     closeSheet(); return;
   }
@@ -1623,7 +1939,9 @@ $("s-month").value = now.getFullYear() + "-" + pad(now.getMonth()+1);
 // Reopen on the page the person last used (Team waits until we know they are Admin).
 try { S.navSaved = JSON.parse(localStorage.getItem("cod.nav") || "null"); } catch(e){ S.navSaved = null; }
 if (S.navSaved && S.navSaved.sub) Object.assign(S.sub, S.navSaved.sub);
-showView(S.navSaved ? S.navSaved.view : "new");
+// the ledger comes back after the access check (checkStock), so it never opens for someone no longer allowed
+S.stockWanted = !!(S.navSaved && S.navSaved.view === "stock");
+showView(S.navSaved && S.navSaved.view !== "stock" ? S.navSaved.view : "new");
 render();
 S.afterSix = Date.now() >= midnight(Date.now()) + SCHED_START;
 setInterval(() => {
@@ -1722,7 +2040,7 @@ function updateLiveDays(force){
     S.live = new Map(s.docs.map(d => [d.id, { id: d.id, ...d.data() }])); S.liveDays = new Set(list); render(); if (S.lastId) showTicket();
   }, onErr);
 }
-function stop(){ unsubs.forEach(f => { try { f(); } catch(e){} }); unsubs = []; if (daysUnsub){ daysUnsub(); daysUnsub = null; }
+function stop(){ closeStockFrame(); unsubs.forEach(f => { try { f(); } catch(e){} }); unsubs = []; if (daysUnsub){ daysUnsub(); daysUnsub = null; }
   Object.assign(S, { report: null, usage: null, maint: null, pending: [], live: new Map(), liveDays: new Set(), liveKey: "", members: [], vehicles: [], range: { from:null, to:null, map:new Map(), at:null }, sums: new Map(), sumAt: {} });  renderMaint(); }
 
 // Saves many records: 400 at a time in one go. Firebase's rules may refuse a large group (they can look up only
@@ -1819,6 +2137,9 @@ async function boot(u){
   $("who").innerHTML = `<b>${esc(S.myName)}</b><span>${esc(S.me)}</span><span>${ROLE_LABEL[S.role]}</span>`;
   $("menuName").textContent = S.myName;
   document.querySelector('.segb[data-sub="team"]').hidden = !S.isAdmin;
+  $("briefTab").hidden = !S.isAdmin; if (!S.isAdmin && S.view === "brief") showView("new");
+  document.querySelector('.segb[data-sub="products"]').hidden = !S.isAdmin;
+  layoutTabs();
   document.querySelector('.segb[data-sub="vehicles"]').hidden = S.isViewer;
   if (S.isViewer && onPage("settings", "vehicles")) showSub("settings", "dealers");
   $("f-orderAt").disabled = !S.canBackdate; $("f-orderAt-hint").hidden = S.canBackdate; $("f-orderAt").value = toLocalInput(Date.now());
@@ -1860,6 +2181,17 @@ function listen(email){
   // Admin: total database reads by everyone since Google's daily reset (posted every 30 minutes by the email job)
   renderReads();
   if (S.isAdmin) unsubs.push(onSnapshot(fsDoc(fdb, "config", "usage"), s => { S.usage = s.exists() ? s.data() : null; renderReads(); }, () => {}));
+  // the product list (everyone: it fills the order form)
+  unsubs.push(onSnapshot(fsDoc(fdb, "config", "products"), s => applyProducts(s.exists() ? s.data().list : null), () => {}));
+  // the stock ledger link: on from the moment the Admin first opens this version
+  unsubs.push(onSnapshot(fsDoc(fdb, "config", "stockLink"), async s => {
+    S.linkFrom = s.exists() && typeof s.data().from === "number" ? s.data().from : null;
+    if (!s.exists() && S.isAdmin) { try { await setDoc(fsDoc(fdb, "config", "stockLink"), { from: Date.now(), by: S.me || "" }); } catch(e){} }
+  }, () => {}));
+  if (S.isAdmin) {
+    unsubs.push(onSnapshot(fsDoc(fdb, "config", "brief"), s => { S.brief.cfg = { ...BRIEF_DEFAULTS, ...(s.exists() ? s.data() : {}) }; renderBrief(); }, () => {}));
+    unsubs.push(onSnapshot(fsDoc(fdb, "stockBrief", "latest"), s => { S.brief.snap = s.exists() ? s.data() : null; renderBrief(); }, () => { S.brief.snap = null; renderBrief(); }));
+  }
 }
 function renderReads(){
   const b = $("readsBox"), u = S.isAdmin ? S.usage : null;
@@ -1940,7 +2272,7 @@ document.addEventListener("change", async e => {
 /* ---------- Refresh (next to "Live") ----------
    Loads the newer version if one has been uploaded since this page opened; otherwise reconnects every live list
    and reloads the Summary totals, without reloading the page. Change APP_VERSION with every upload. */
-const APP_VERSION = "2026-11-06";
+const APP_VERSION = "2026-11-18";
 async function refreshNow(){
   const b = $("refreshBtn"); if (!b || b.disabled || !S.me) return;
   b.disabled = true; b.classList.add("spin");
@@ -1957,5 +2289,8 @@ async function refreshNow(){
   setTimeout(() => { b.disabled = false; b.classList.remove("spin"); }, 600);
 }
 $("refreshBtn").addEventListener("click", refreshNow);
+$("briefLimitsBtn").addEventListener("click", () => { const f = $("briefLimits"); f.hidden = !f.hidden; if (!f.hidden) { renderBriefLimits(); $("bl-hours").focus(); } });
+$("briefStockBtn").addEventListener("click", () => { loadStockFrame(); toast("Opening the ledger in the background. The figures refresh here in a few seconds."); });
+setInterval(() => { if (S.isAdmin) renderBrief(); }, 60000);   // waiting times and the 11 am check move on by themselves
 if (!configured) gate("setup");
 else { gate("loading"); onAuthStateChanged(auth, u => boot(u)); }
