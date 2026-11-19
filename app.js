@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, doc as fsDoc, collection as fsCollection,
-  getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  getDoc, getDocFromServer, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 /* =====================================================================
@@ -52,9 +52,10 @@ const S = {
   all: []
 };
 
-/* ---------- Hindi labels ----------
-   In Hindi, tab names, headings, column names and field labels switch. Orders, names, products, buttons and
-   messages stay in English. The choice is kept on each device only: no database reads or writes. */
+/* ---------- Hindi ----------
+   These labels switch here. Everything else on the screen (buttons, hints, messages, dates, the stock ledger) is
+   switched by hindi.js as it appears; the Brief stays in English. Names people typed and product names stay as
+   they are. The choice is kept on each device only: no database reads or writes. */
 const HI = {
   "New Order": "नया ऑर्डर", "Orders": "ऑर्डर", "Summary": "सारांश", "Stock": "स्टॉक", "Settings": "सेटिंग्स",
   "Queue": "कतार", "All orders": "सभी ऑर्डर", "Dealers": "डीलर", "Vehicles": "गाड़ियाँ", "Team & emails": "टीम और ईमेल",
@@ -108,7 +109,7 @@ const t = s => S.lang === "hi" && HI[s] ? HI[s] : s;
 
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true, 3200); }
 function failMsg(e){
-  if (e && e.code === "permission-denied") return "Your role doesn't allow this. Ask an Admin to change your role.";
+  if (e && e.code === "permission-denied") return "The database refused this change. Reload the page and try again; if it happens again, tell your Admin.";
   if (e && e.code === "resource-exhausted") return "Daily free limit reached. Ask the Admin to check the Firebase plan.";
   return "Couldn't save. Check your connection and try again.";
 }
@@ -320,9 +321,25 @@ async function syncDay(day){
   } catch(e){ console.warn("Day totals not saved:", day, e && (e.code || e.message)); /* totals can be rebuilt with Recalculate month */ }
 }
 // Fire a write without blocking the screen (works offline too), then refresh the affected days' totals.
-function commit(promise, days, okMsg){
+function commit(promise, days, okMsg, id){
   if (okMsg) toast(okMsg);
-  promise.then(() => { for (const d of new Set(days.filter(Boolean))) syncDay(d); }).catch(e => toast(failMsg(e)));
+  promise.then(() => { for (const d of new Set(days.filter(Boolean))) syncDay(d); })
+    .catch(async e => toast(e && e.code === "permission-denied" && id ? await refusedWhy(id) : failMsg(e)));
+}
+// A change to an order was refused: look at the order as the database has it now and say why, in plain words
+// (someone else cancelled it, dispatched it or put it on hold a moment ago; maintenance; view-only). One read.
+async function refusedWhy(id){
+  if (S.maint && S.maint.on && !S.isAdmin) return "The dashboard is under maintenance, so changes are paused. Try again when it's back.";
+  if (!S.canWrite) return "You have view-only access.";
+  let o = null;
+  try { const s = await getDocFromServer(fsDoc(fdb, "orders", id)); if (!s.exists()) return "Someone deleted this order a moment ago. Nothing was changed."; o = s.data(); } catch(e){}
+  if (o) {
+    const who = em => em && em !== S.me ? nameOf(em) : em === S.me ? "You" : "Someone", at = t => t ? " at " + fmtDT(t) : "";
+    if (o.mark === "Cancelled") return who(o.cancelledBy) + " cancelled this order" + at(o.cancelledAt) + ". Nothing was changed.";
+    if (o.dispatchedAt != null) return who(o.dispatchedBy) + " marked this order dispatched" + at(o.dispatchedAt) + ". Nothing was changed.";
+    if (o.hold === true) return who(o.holdBy) + " put this order on hold" + at(o.holdAt) + ". Release it first.";
+  }
+  return failMsg({ code: "permission-denied" });
 }
 
 /* ---------- the stock ledger link (16 Nov 2026) ----------
@@ -831,7 +848,7 @@ function setDay(o, k){
   const at = Date.parse(k + "T00:00:00");
   commit(updateDoc(fsDoc(fdb, "orders", o.id), { schedAt: at, day: k, ...stamp() }), [o.day, k],
     k !== S.today ? "Scheduled for " + longDay(k) + ". It joins the queue by itself at 6 am that day."
-      : Date.now() < at + SCHED_START ? "It joins today's queue at 6 am." : "Sent to today's queue.");
+      : Date.now() < at + SCHED_START ? "It joins today's queue at 6 am." : "Sent to today's queue.", o.id);
 }
 
 function openHold(id){
@@ -1457,12 +1474,16 @@ function applyLang(){
   $("langTxt").textContent = hi ? "English" : "हिंदी";
   $("langTxt").lang = hi ? "en" : "hi";
   $("langBtn").setAttribute("aria-label", hi ? "Switch to English" : "हिंदी में देखें (Switch to Hindi)");
+  // the rest of the screen, and the stock ledger if it is open
+  const H = window.DHSHindi;
+  if (H) { if (!applyLang.added) { H.add(HI, true); applyLang.added = true; } H.set(S.lang); }
+  try { const f = $("stockFrame"), FH = f && f.dataset.on && f.contentWindow && f.contentWindow.DHSHindi; if (FH) FH.set(S.lang); } catch(e){}
 }
 function setLang(l){
   S.lang = l === "hi" ? "hi" : "en";
   try { localStorage.setItem("dhs.lang", S.lang); } catch(e){}
   applyLang();
-  if (S.role) { render(); if (S.lastId) showTicket(); }
+  if (S.role) { render(); if (S.isAdmin) renderPerms(); if (S.lastId) showTicket(); }
 }
 
 /* ---------- account menu: Help, language, Sign out ---------- */
@@ -1646,7 +1667,7 @@ document.addEventListener("click", async e => {
   if (act === "cancel") { if (S.confirmId === id) S.confirmId = null; openCancel(id); return; }
   if (act === "hold") { if (S.confirmId === id) S.confirmId = null; openHold(id); return; }
   if (act === "release") {
-    commit(updateDoc(fsDoc(fdb, "orders", id), { hold: false, ...stamp() }), [o && o.day], "Released. It's back in the queue at its place by order time.");
+    commit(updateDoc(fsDoc(fdb, "orders", id), { hold: false, ...stamp() }), [o && o.day], "Released. It's back in the queue at its place by order time.", id);
     if (!$("sheet").hidden) closeSheet(); return;
   }
   if (act === "deliver-cancel") { S.confirmId = null; render(); return; }
@@ -1656,16 +1677,16 @@ document.addEventListener("click", async e => {
     if (o && t < o.orderAt) return toast("Dispatch time can't be before the order time.");
     if (o && (!hasVehicle(o) || !hasDepot(o) || !hasPhone(o))) return openDispatch(id);
     S.confirmId = null; S.lastDisp = id;
-    commit(orderWrite(id, o, { dispatchedAt: t, dispatchedBy: S.me || null, open: false, ...stamp() }), [o && o.day], "Marked dispatched · " + fmtDT(t));
+    commit(orderWrite(id, o, { dispatchedAt: t, dispatchedBy: S.me || null, open: false, ...stamp() }), [o && o.day], "Marked dispatched · " + fmtDT(t), id);
     return;
   }
   if (act === "undeliver") {
-    commit(orderWrite(id, o, { dispatchedAt: null, dispatchedBy: null, open: !(o && o.mark === "Cancelled"), ...stamp() }), [o && o.day], "Dispatch undone. Order is back in the queue.");
+    commit(orderWrite(id, o, { dispatchedAt: null, dispatchedBy: null, open: !(o && o.mark === "Cancelled"), ...stamp() }), [o && o.day], "Dispatch undone. Order is back in the queue.", id);
     closeSheet(); return;
   }
   if (act === "delete") {
     if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Tap again to delete"; setTimeout(()=>{ if (b.isConnected){ b.dataset.armed=""; b.textContent="Delete order"; } }, 4000); return; }
-    commit(orderWrite(id, o, null), [o && o.day], "Order deleted"); closeSheet(); return;
+    commit(orderWrite(id, o, null), [o && o.day], "Order deleted", id); closeSheet(); return;
   }
   if (act === "dl-del") {
     if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Tap again"; setTimeout(()=>{ if (b.isConnected){ b.dataset.armed=""; b.textContent="Remove"; } }, 4000); return; }
@@ -1703,7 +1724,7 @@ document.addEventListener("submit", async e => {
       const t = fromLocalInput($("e-exec").value);
       if (isNaN(t) || t === orig.executedAt) return closeSheet();
       if (t < orig.orderAt) return toast("Dispatch time can't be before the order time.");
-      commit(orderWrite(id, orig, { dispatchedAt: t, ...stamp() }), [orig.day], "Dispatch time updated"); return closeSheet();
+      commit(orderWrite(id, orig, { dispatchedAt: t, ...stamp() }), [orig.day], "Dispatch time updated", id); return closeSheet();
     }
     const d = readForm("e-"); if (!S.canBackdate) d.orderAt = orig.orderAt;
     const err = validate(d, orig.dealer); if (err) return toast(err);
@@ -1720,7 +1741,7 @@ document.addEventListener("submit", async e => {
     if (at != null && orig.depot && !d.depot) return toast("A dispatched order needs its dispatch depot.");
     if (at != null && hasPhone(orig) && !hasPhone(d)) return toast("A dispatched order needs the customer's phone number.");
     upd.open = mark !== "Cancelled" && at == null;
-    commit(orderWrite(id, orig, upd), [orig.day, upd.day], "Order updated"); closeSheet();
+    commit(orderWrite(id, orig, upd), [orig.day, upd.day], "Order updated", id); closeSheet();
   }
   if (e.target.id === "reschedForm") {
     e.preventDefault();
@@ -1755,7 +1776,7 @@ document.addEventListener("submit", async e => {
     if (t < o.orderAt) return toast("Dispatch time can't be before the order time.");
     S.lastDisp = id;
     commit(orderWrite(id, o, { ...upd, dispatchedAt: t, dispatchedBy: S.me || null, open: false, ...stamp() }), [o.day],
-      "Marked dispatched · " + (upd.vehicle || o.vehicle) + " · " + (upd.depot || o.depot) + " · " + fmtDT(t));
+      "Marked dispatched · " + (upd.vehicle || o.vehicle) + " · " + (upd.depot || o.depot) + " · " + fmtDT(t), id);
     closeSheet(); return;
   }
   if (e.target.id === "cancelForm") {
@@ -1766,14 +1787,14 @@ document.addEventListener("submit", async e => {
     const upd = { mark: "Cancelled", open: false, cancelNote: $("cx-note").value.trim().slice(0, 120), cancelledBy: S.me || null, cancelledAt: Date.now(), ...stamp() };
     if (o.hold) upd.hold = false;
     if (S.confirmId === id) S.confirmId = null;
-    commit(updateDoc(fsDoc(fdb, "orders", id), upd), [o.day], "Order cancelled. It stays in the records as Cancelled.");
+    commit(updateDoc(fsDoc(fdb, "orders", id), upd), [o.day], "Order cancelled. It stays in the records as Cancelled.", id);
     closeSheet(); return;
   }
   if (e.target.id === "holdForm") {
     e.preventDefault();
     const id = $("sheet").dataset.id, note = $("h-note").value.trim().slice(0, 120);
     commit(updateDoc(fsDoc(fdb, "orders", id), { hold: true, holdAt: Date.now(), holdBy: S.me || null, holdNote: note, ...stamp() }), [((S.all || []).find(x => x.id === id) || {}).day],
-      "On hold. Find it under Orders → On hold.");
+      "On hold. Find it under Orders → On hold.", id);
     closeSheet(); return;
   }
   if (e.target.id === "dealerForm") {
@@ -2272,7 +2293,7 @@ document.addEventListener("change", async e => {
 /* ---------- Refresh (next to "Live") ----------
    Loads the newer version if one has been uploaded since this page opened; otherwise reconnects every live list
    and reloads the Summary totals, without reloading the page. Change APP_VERSION with every upload. */
-const APP_VERSION = "2026-11-18b";
+const APP_VERSION = "2026-11-19";
 async function refreshNow(){
   const b = $("refreshBtn"); if (!b || b.disabled || !S.me) return;
   b.disabled = true; b.classList.add("spin");
